@@ -10,9 +10,6 @@ local pd <const> = playdate
 local gfx <const> = pd.graphics
 local A <const> = pd.kButtonA
 
---local font = nil
-local debugger = nil
-
 local workTimer = nil; local workMinutes = nil
 
 -- changing images does change the appearance of sprites using that image
@@ -20,10 +17,8 @@ local instructorImg = nil; local instructorSprite = nil
 
 -- init() sets up our game environment.
 local function init()
-    debugger = Debugger()
-
     workMinutes = 0.1
-    workTimer = Timer(50, 50, debugger)
+    workTimer = Timer(50, 50)
     workTimer:add()
 
     -- TODO encapsulate all sprites below into classes
@@ -42,7 +37,6 @@ local function init()
     instructorSprite:add()
 
     workTimer:start(workMinutes)
-
 end
 
 init()
@@ -62,7 +56,7 @@ end
 function pd.debugDraw()
     gfx.pushContext()
         gfx.setImageDrawMode(gfx.kDrawModeInverted)
-        debugger:drawLog()
-        debugger:drawIllustrations()
+        debugger.drawLog()
+        debugger.drawIllustrations()
     gfx.popContext()
 end

@@ -16,13 +16,12 @@ local SEC_PER_MIN <const> = 60
 class('Timer').extends(gfx.sprite)
 
 -- TODO decide where I want to set timer posn; amend img size and init params accordingly
--- Timer:init(xpos, ypos, debugger) initializes, but does not start, a Timer.
-function Timer:init(x, y, debugger)
+-- Timer:init(xpos, ypos) initializes, but does not start, a Timer.
+function Timer:init(x, y)
     Timer.super.init(self)
 
     self:setCenter(0, 0)
     self:moveTo(x, y)
-    self.debugger = debugger
 
     self.timer = nil
     self.img = gfx.image.new(100, 50)
@@ -41,8 +40,8 @@ function Timer:update()
     if self.timer then
         local msec = self.timer.value
         local min, sec = convertTime(msec)
-        -- self.debugger:log("min: " .. min .. " sec: " .. sec)
-        -- self.debugger:log(self.timer.value)
+        -- debugger.log("min: " .. min .. " sec: " .. sec)
+        -- debugger.log(self.timer.value)
 
         local timeString = ""
         if min < 10 then timeString = "0" end
@@ -66,7 +65,7 @@ function Timer:update()
     end
 
     Timer.super.update(self)
-    self.debugger:bounds(self)
+    debugger.bounds(self)
 end
 
 function Timer:start(minsDuration)
@@ -75,13 +74,13 @@ function Timer:start(minsDuration)
         -- callback is a function closure that will be called when the timer is complete.
         -- TODO see playdate.timer.timerEndedCallback
         local msecDuration = minsDuration * SEC_PER_MIN * MSEC_PER_SEC
-        self.debugger:log(msecDuration)
+        debugger.log(msecDuration)
         self.timer = pd.timer.new(msecDuration, msecDuration, 0) -- "value-based" timer w linear interpolation
 
-        if self.timer then self.debugger:log("timer was nil - now created") end
+        if self.timer then debugger.log("timer was nil - now created") end
     else
         self.timer:start() -- TODO check that this autostarts the timer
-        self.debugger:log("timer not nil - started")
+        debugger.log("timer not nil - started")
     end
 end
 
@@ -95,7 +94,7 @@ end
 function Timer:reset()
     if self:timerIsNil("reset()") then return end
     self.timer:reset()
-    self.debugger:log("timer reset")
+    debugger.log("timer reset")
 end
 
 -- convertTime(msec) returns a (min, sec) conversion of the argument, rounded down
@@ -109,7 +108,7 @@ end
 -- TODO rm to optimize speed
 function Timer:timerIsNil(fName)
     if not self.timer then
-        self.debugger:log("self.timer is nil. Can't call " .. fName)
+        debugger.log("self.timer is nil. Can't call " .. fName)
         return true
     end
     return false
