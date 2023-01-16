@@ -2,6 +2,7 @@ import "CoreLibs/object"
 import "CoreLibs/graphics"
 
 import "config"
+import "utils"
 
 local pd <const> = playdate
 local gfx <const> = pd.graphics
@@ -94,14 +95,13 @@ local mt = {
         if enabled then 
             return exported[k] 
         else 
+            -- TODO try removing ... below
             return function (...) end -- do nothing but remain callable
         end
-    end,
-    __newindex = function(t,k,v)
-        log("Forbidden to write to debugger pkg")
     end
 }
 debugger = {
+    name = "debugger",
     -- setEnabled(bool) enables or disables *all functionality* of the debugger
     setEnabled = function (bool)
         if bool then
@@ -114,5 +114,6 @@ debugger = {
     end
 }
 setmetatable(debugger, mt)
+makeReadOnly(debugger)
 
 return debugger

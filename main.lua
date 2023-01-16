@@ -15,10 +15,10 @@ local workTimer = nil; local workMinutes = nil
 -- changing images does change the appearance of sprites using that image
 local instructorImg = nil; local instructorSprite = nil
 
+debugger.setEnabled(true)
+
 -- init() sets up our game environment.
 local function init()
-    debugger.setEnabled(true)
-    
     workMinutes = 0.1
     workTimer = Timer(50, 50)
     workTimer:add()

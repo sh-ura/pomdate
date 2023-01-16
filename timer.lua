@@ -5,6 +5,7 @@ import "CoreLibs/timer"
 
 import "config"
 import "debugger"
+import "utils"
 
 local pd <const> = playdate
 local gfx <const> = pd.graphics
@@ -12,7 +13,8 @@ local gfx <const> = pd.graphics
 local MSEC_PER_SEC <const> = 1000
 local SEC_PER_MIN <const> = 60
 
--- Timer packs a timer with its UI
+-- Timer packs a timer with its UI.
+-- Both the class and its instances are read-only (see utils.makeReadOnly()).
 class('Timer').extends(gfx.sprite)
 
 -- TODO decide where I want to set timer posn; amend img size and init params accordingly
@@ -26,6 +28,7 @@ function Timer:init(x, y)
     self.timer = nil
     self.img = gfx.image.new(100, 50)
     self:setImage(self.img)
+    makeReadOnly(self, true, "timer instance")
 end
 
 --[[
@@ -75,7 +78,7 @@ function Timer:start(minsDuration)
         -- TODO see playdate.timer.timerEndedCallback
         local msecDuration = minsDuration * SEC_PER_MIN * MSEC_PER_SEC
         debugger.log(msecDuration)
-        self.timer = pd.timer.new(msecDuration, msecDuration, 0) -- "value-based" timer w linear interpolation
+        rawset(self, "timer", pd.timer.new(msecDuration, msecDuration, 0)) -- "value-based" timer w linear interpolation
 
         if self.timer then debugger.log("timer was nil - now created") end
     else
@@ -92,7 +95,10 @@ end
 --]]
 
 function Timer:reset()
-    if self:timerIsNil("reset()") then return end
+    if not self.timer then
+        debugger.log("self.timer is nil. Can't call Timer:reset().")
+        return
+    end
     self.timer:reset()
     debugger.log("timer reset")
 end
@@ -105,15 +111,6 @@ function convertTime(msec)
     return min, sec
 end
 
--- TODO rm to optimize speed
-function Timer:timerIsNil(fName)
-    if not self.timer then
-        debugger.log("self.timer is nil. Can't call " .. fName)
-        return true
-    end
-    return false
-end
-
 --[[ not needed yet
 -- this function may not need to be named here
 -- define it in the pd.timer.new closure?
@@ -121,3 +118,5 @@ function notify(t)
     -- call when countdown ends
 end
 --]]
+
+makeReadOnly(Timer, true)
