@@ -1,10 +1,4 @@
-import "CoreLibs/object"
-import "CoreLibs/graphics"
-
-import "config"
-import "utils"
-
-local pd <const> = playdate
+local pd <const> = playdate -- _G.playdate etc
 local gfx <const> = pd.graphics
 
 local W_LEFT_MARGIN <const> = 2

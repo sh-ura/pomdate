@@ -1,7 +1,10 @@
+-- if multiple packages need the same import, put that import here
+-- todo write or install a tool to verify that there are no redundant imports in the proj
 import "CoreLibs/object"
 import "CoreLibs/graphics"
-import "CoreLibs/sprites"
 
+import "config"
+import "utils"
 import "debugger"
 import "timer"
 
