@@ -3,12 +3,11 @@
 import "CoreLibs/object"
 import "CoreLibs/graphics"
 
-import "config"
 import "utils"
+import "configs"
 import "debugger"
 import "timer"
 
--- TODO move to config??
 local pd <const> = playdate
 local gfx <const> = pd.graphics
 local A <const> = pd.kButtonA
@@ -18,17 +17,18 @@ local workTimer = nil; local workMinutes = nil
 -- changing images does change the appearance of sprites using that image
 local instructorImg = nil; local instructorSprite = nil
 
-debugger.setEnabled(true)
-
 -- init() sets up our game environment.
 local function init()
+    --utils.disableReadOnly()
+    --debugger.disable()
+
     workMinutes = 0.1
     workTimer = Timer(50, 50)
     workTimer:add()
 
     -- TODO encapsulate all sprites below into classes
 
-    instructorImg = gfx.image.new(W_SCREEN, 16)
+    instructorImg = gfx.image.new(configs.W_SCREEN, 16)
 
     gfx.lockFocus(instructorImg)
         gfx.drawText("press A to reset timer", 0, 0)

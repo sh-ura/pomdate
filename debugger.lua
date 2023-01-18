@@ -1,5 +1,7 @@
 local pd <const> = playdate -- _G.playdate etc
 local gfx <const> = pd.graphics
+local W_SCREEN = configs.W_SCREEN
+local H_SCREEN = configs.H_SCREEN
 
 local W_LEFT_MARGIN <const> = 2
 local H_LINE <const> = 16
@@ -8,7 +10,8 @@ local NUM_LINES <const> = 15 -- 240/16 (screen height / line height)
 local cMsgs = 0                                      -- logged message count
 local logImg = gfx.image.new(W_SCREEN, H_SCREEN)     -- img containing log
 local illImg = gfx.image.new(W_SCREEN, H_SCREEN)     -- img containing illustrations
-local enabled = false                                -- false by default. true if debugger is enabled
+local enabled = true                                 -- true by default. true if debugger is enabled
+
 
 -- log(message) adds text to the debug log.
 -- Messages are prepended by the message count at the time of logging.
@@ -77,37 +80,32 @@ end
 --      - mt: the access metatable, and 
 --      - exported: the table of exported functions and values
 local exported = {
+    name = "debugger",
     log = log,
     clearLog = clearLog,
     drawLog = drawLog,
     bounds = bounds,
     clearIllustrations = clearIllustrations,
-    drawIllustrations = drawIllustrations,
+    drawIllustrations = drawIllustrations
+}
+local readonly = utils.makeReadOnly(exported)
+debugger = {
+    disable = function()
+        enabled = false
+        print("debugger disabled")
+    end
 }
 local mt = {
     __index = function(t,k)
-        if enabled then 
-            return exported[k] 
+        if enabled then
+            return readonly[k]
         else 
             -- TODO try removing ... below
             return function (...) end -- do nothing but remain callable
         end
-    end
-}
-debugger = {
-    name = "debugger",
-    -- setEnabled(bool) enables or disables *all functionality* of the debugger
-    setEnabled = function (bool)
-        if bool then
-            enabled = true
-            print("debugger enabled")
-        else
-            enabled = false
-            print("debugger disabled")
-        end
-    end
+    end,
+    __newindex = readonly
 }
 setmetatable(debugger, mt)
-makeReadOnly(debugger)
 
 return debugger

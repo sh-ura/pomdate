@@ -14,6 +14,7 @@ class('Timer').extends(gfx.sprite)
 -- TODO decide where I want to set timer posn; amend img size and init params accordingly
 -- Timer:init(xpos, ypos) initializes, but does not start, a Timer.
 function Timer:init(x, y)
+    -- TODO give each timer a name
     Timer.super.init(self)
 
     self:setCenter(0, 0)
@@ -22,7 +23,7 @@ function Timer:init(x, y)
     self.timer = nil
     self.img = gfx.image.new(100, 50)
     self:setImage(self.img)
-    makeReadOnly(self, true, "timer instance")
+    self = utils.makeReadOnly(self, "timer instance")
 end
 
 --[[
@@ -112,5 +113,3 @@ function notify(t)
     -- call when countdown ends
 end
 --]]
-
-makeReadOnly(Timer, true)
