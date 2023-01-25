@@ -1,100 +1,66 @@
+-- if multiple packages need the same import, put that import here
+-- todo write or install a tool to verify that there are no redundant imports in the proj
 import "CoreLibs/object"
 import "CoreLibs/graphics"
-import "CoreLibs/sprites"
-import "CoreLibs/timer"
+
+import "utils"; --utils.disableReadOnly()
+import "configs"
+import "debugger"
+import "timer"
 
 local pd <const> = playdate
 local gfx <const> = pd.graphics
 local A <const> = pd.kButtonA
 
-local SEC_PER_MIN <const> = 60
-
---local font = nil
---local targetSec = nil
+local workTimer = nil; local workMinutes = nil
 
 -- changing images does change the appearance of sprites using that image
-local debugImg = nil
-local timerImg = nil
-local instructorImg = nil
-local notifImg = nil
+local instructorImg = nil; local instructorSprite = nil
 
-local debugSprite = nil
-local timerSprite = nil
-local instructorSprite = nil
-local notifSprite = nil
-
-local function countdown()
-    return math.max(targetSeconds - pd.getElapsedTime(), 0)
-end
-
--- init sets up our game environment.
+-- init() sets up our game environment.
 local function init()
-    targetSeconds = 0.1 * SEC_PER_MIN -- 25 mins
+    --debugger.disable()
+
+    workMinutes = 0.1
+    workTimer = Timer(50, 50)
+    workTimer:add()
 
     -- TODO encapsulate all sprites below into classes
-    -- incl. the debugger
 
-    debugImg = gfx.image.new(400, 16)
-    timerImg = gfx.image.new(400, 16)
-    notifImg = gfx.image.new(400, 16)
-    instructorImg = gfx.image.new(400, 16)
+    instructorImg = gfx.image.new(configs.W_SCREEN, 16)
 
     gfx.lockFocus(instructorImg)
         gfx.drawText("press A to reset timer", 0, 0)
     gfx.unlockFocus()
 
-    -- need to add smth to sprite list to initialize it prior to drawing anything
+    -- need to add smth to sprite list to initialize it prior to gfx.draw()ing anything
     -- sprite must have size to be drawn
-    debugSprite = gfx.sprite.new(debugImg)
-    instructorSprite = gfx.sprite.new(instructorImg)
-    notifSprite = gfx.sprite.new(notifImg)
-    timerSprite = gfx.sprite.new(timerImg)
-
---[[
-        :update() is called before :draw is called on all sprites
-        Suspected conditions for redrawing a sprite if getAlwaysRedraw() == false
-            - associated gfx.image has changed
-            - sprite has had some transform applied to it
-        So if we need to update a sprite every frame, do something in its :update()
-        TODO try setting a class var for timerSprite that we update here and print 
-            in :draw(). See if that marks it to be redrawn every frame
---]]
-    function timerSprite:update()
-        gfx.lockFocus(timerImg)
-            gfx.clear()
-            gfx.drawText(countdown(), 160, 0)
-        gfx.unlockFocus()
-    end
-
     -- moveTo moves sprite by its anchor point, defaulted to centre of sprite size
-    instructorSprite:moveTo(200, 16)
+    instructorSprite = gfx.sprite.new(instructorImg)
+    instructorSprite:setCenter(0, 0)
     instructorSprite:add()
-    timerSprite:moveTo(200, 120)
-    timerSprite:add()
-    notifSprite:moveTo(200, 150)
-    notifSprite:add()
-    debugSprite:setZIndex(100)
-    debugSprite:moveTo(200, 224)
-    debugSprite:add()
+
+    workTimer:start(workMinutes)
 end
 
 init()
 
--- update is called right before every frame is drawn onscreen.
+-- update() is called right before every frame is drawn onscreen.
 function pd.update()
-    if pd.buttonIsPressed(A) then
-        pd.resetElapsedTime()
-
-        gfx.lockFocus(debugImg)
-            gfx.clear()
-            gfx.drawText("timer reset", 0, 0)
-        gfx.unlockFocus()
-    else
-        gfx.lockFocus(debugImg)
-            gfx.clear()
-        gfx.unlockFocus()
+    if pd.buttonJustPressed(A) then
+        workTimer:reset()
     end
 
-    -- failing to call timerSprite:draw()
+    pd.timer.updateTimers()
     gfx.sprite.update()
+end
+
+-- debugDraw() is called immediately after update()
+-- Only white pixels are drawn; black transparent
+function pd.debugDraw()
+    gfx.pushContext()
+        gfx.setImageDrawMode(gfx.kDrawModeInverted)
+        debugger.drawLog()
+        debugger.drawIllustrations()
+    gfx.popContext()
 end
