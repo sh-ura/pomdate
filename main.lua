@@ -3,7 +3,7 @@
 import "CoreLibs/object"
 import "CoreLibs/graphics"
 
-import "utils"
+import "utils"; --utils.disableReadOnly()
 import "configs"
 import "debugger"
 import "timer"
@@ -19,7 +19,6 @@ local instructorImg = nil; local instructorSprite = nil
 
 -- init() sets up our game environment.
 local function init()
-    --utils.disableReadOnly()
     --debugger.disable()
 
     workMinutes = 0.1
