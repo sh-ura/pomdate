@@ -1,15 +1,33 @@
+-- timer provides value-based timers, rendered as sprites
+local P = {}; local _G = _G
+timer = {}
+
 import "CoreLibs/sprites"
 import "CoreLibs/timer"
 
 local pd <const> = playdate
 local gfx <const> = pd.graphics
+local utils <const> = utils
+local debugger <const> = debugger
+local floor <const> = math.floor
+
+-- Timer packs a timer with its UI.
+class('Timer').extends(gfx.sprite)
+local Timer <const> = Timer
 
 local MSEC_PER_SEC <const> = 1000
 local SEC_PER_MIN <const> = 60
 
--- Timer packs a timer with its UI.
--- Both the class and its instances are read-only (see utils.makeReadOnly()).
-class('Timer').extends(gfx.sprite)
+local _ENV = P
+name = "timer"
+
+-- convertTime(msec) returns a (min, sec) conversion of the argument, rounded down
+local function convertTime(msec)
+    local sec = msec / MSEC_PER_SEC
+    local min = floor(sec / SEC_PER_MIN)
+    sec = floor(sec - min * SEC_PER_MIN)
+    return min, sec
+end
 
 -- TODO decide where I want to set timer posn; amend img size and init params accordingly
 -- Timer:init(xpos, ypos) initializes, but does not start, a Timer.
@@ -73,7 +91,7 @@ function Timer:start(minsDuration)
         -- TODO see playdate.timer.timerEndedCallback
         local msecDuration = minsDuration * SEC_PER_MIN * MSEC_PER_SEC
         debugger.log(msecDuration)
-        rawset(self, "timer", pd.timer.new(msecDuration, msecDuration, 0)) -- "value-based" timer w linear interpolation
+        _G.rawset(self, "timer", pd.timer.new(msecDuration, msecDuration, 0)) -- "value-based" timer w linear interpolation
 
         if self.timer then debugger.log("timer was nil - now created") end
     else
@@ -98,14 +116,6 @@ function Timer:reset()
     debugger.log("timer reset")
 end
 
--- convertTime(msec) returns a (min, sec) conversion of the argument, rounded down
-function convertTime(msec)
-    local sec = msec / MSEC_PER_SEC
-    local min = math.floor(sec / SEC_PER_MIN)
-    sec = math.floor(sec - min * SEC_PER_MIN)
-    return min, sec
-end
-
 --[[ not needed yet
 -- this function may not need to be named here
 -- define it in the pd.timer.new closure?
@@ -113,3 +123,11 @@ function notify(t)
     -- call when countdown ends
 end
 --]]
+
+function new(x, y)
+    return Timer(x, y)
+end
+
+local _ENV = _G
+timer = utils.makeReadOnly(P)
+return timer

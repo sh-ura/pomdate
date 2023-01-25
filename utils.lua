@@ -1,8 +1,17 @@
 -- pkgs decorators such as access control
+local P = {}; local _G = _G
+utils = {}
+
+------ package contents and logic, within the package env ------
+local _ENV = P
+name = "utils"
 
 local enabled = true
 
-local function disableReadOnly()
+-- disableReadOnly() disables the readonly feature
+--      for all tables after this function is called.
+-- Tables previously declared as read-only are unaffected.
+function disableReadOnly()
     enabled = false
 end
 
@@ -13,14 +22,14 @@ end
 --  t                   target table
 --  tname               table name
 --  SPECIAL EFFECTS     1. overwrites metatable's \_\_index and \_\_newindex
-local function makeReadOnly(t0, tname, indexMetaBehaviour)
+function makeReadOnly(t0, tname, indexMetaBehaviour)
     if not enabled then
         return t0
     end
 
     local proxy = {}
     local mt = { __index = t0 }
-    setmetatable(proxy, mt)
+    _G.setmetatable(proxy, mt)
 
     if not tname then 
         if t0.name then tname = t0.name
@@ -31,16 +40,13 @@ local function makeReadOnly(t0, tname, indexMetaBehaviour)
     local msg = tname .. " read-only; forbidden to write to it directly. Rejected key: "
     
     mt.__newindex = function(t,k,v)
-        error(msg .. k)
+        _G.error(msg .. k)
     end
 
     return proxy
 end
 
-local exported = {
-    name = "utils",
-    disableReadOnly = disableReadOnly,
-    makeReadOnly = makeReadOnly
-}
-utils = makeReadOnly(exported)
+-- prepare package for export, in the global env --
+local _ENV = _G
+utils = P.makeReadOnly(P)
 return utils

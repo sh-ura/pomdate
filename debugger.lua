@@ -1,11 +1,19 @@
+-- debugger draws and logs debugging messages
+local P = {}; local _G = _G
+debugger = {}
+
 local pd <const> = playdate -- _G.playdate etc
 local gfx <const> = pd.graphics
-local W_SCREEN = configs.W_SCREEN
-local H_SCREEN = configs.H_SCREEN
+local fmod = math.fmod
 
+local W_SCREEN <const> = configs.W_SCREEN
+local H_SCREEN <const> = configs.H_SCREEN
 local W_LEFT_MARGIN <const> = 2
 local H_LINE <const> = 16
 local NUM_LINES <const> = 15 -- 240/16 (screen height / line height)
+
+local _ENV = P
+name = "debugger"
 
 local cMsgs = 0                                      -- logged message count
 local logImg = gfx.image.new(W_SCREEN, H_SCREEN)     -- img containing log
@@ -17,15 +25,15 @@ local enabled = true                                 -- true by default. true if
 -- Messages are prepended by the message count at the time of logging.
 -- Returns current message count.
 -- Log is drawn upon calling debugger.draw()
-local function log (msg)
+function log (msg)
     cMsgs = cMsgs + 1
     local logText = cMsgs .. ": " .. msg
 
-    local iLine = math.fmod(cMsgs - 1, NUM_LINES) -- index of current line to draw
+    local iLine = fmod(cMsgs - 1, NUM_LINES) -- index of current line to draw
     local xpos = W_LEFT_MARGIN
     local ypos = iLine * H_LINE
 
-    print(logText)
+    _G.print(logText)
     gfx.pushContext(logImg)
         gfx.setColor(gfx.kColorClear)
         gfx.fillRect(xpos, ypos, W_SCREEN, H_LINE) -- clear the current line
@@ -39,7 +47,7 @@ end
 -- clearLog() clears the log image of all content.
 -- Avoid using if possible. Inconvenient special effects.
 -- TODO could modify to clear message at a specific index
-local function clearLog ()
+function clearLog ()
     gfx.pushContext(logImg)
         gfx.clear()
     gfx.popContext()
@@ -48,12 +56,12 @@ end
 -- drawLog() draws the debug log image in black pixels.
 -- Call gfx.setImageDrawMode(gfx.kDrawModeInverted) prior to this func for
 --  visualization by pd.debugDraw()
-local function drawLog ()
+function drawLog ()
     logImg:draw(0,0)
 end
 
 -- bounds(sprite) visualizes the rectangular bounds of the sprite
-local function bounds (sprite)
+function bounds (sprite)
     gfx.pushContext(illImg)
         gfx.drawRect(sprite:getBounds())
     gfx.popContext()
@@ -62,7 +70,7 @@ end
 -- clearIllustrations() clears the log image of all content.
 -- Avoid using if possible. Inconvenient special effects.
 -- TODO could modify to clear message at a specific index
-local function clearIllustrations ()
+function clearIllustrations ()
     gfx.pushContext(logImg)
         gfx.clear()
     gfx.popContext()
@@ -71,24 +79,15 @@ end
 -- drawIllustrations() draws the debug illustrations image in black pixels.
 -- Call gfx.setImageDrawMode(gfx.kDrawModeInverted) prior to this func for
 --  visualization by pd.debugDraw()
-local function drawIllustrations ()
+function drawIllustrations ()
     illImg:draw(0,0)
 end
 
-
+local _ENV = _G
 -- debugger is actually a mostly-empty middle layer between
---      - mt: the access metatable, and 
---      - exported: the table of exported functions and values
-local exported = {
-    name = "debugger",
-    log = log,
-    clearLog = clearLog,
-    drawLog = drawLog,
-    bounds = bounds,
-    clearIllustrations = clearIllustrations,
-    drawIllustrations = drawIllustrations
-}
-local readonly = utils.makeReadOnly(exported)
+--      - the package contents, and
+--      - the metatable configuring access to those contents
+local readonly = utils.makeReadOnly(P)
 debugger = {
     disable = function()
         enabled = false

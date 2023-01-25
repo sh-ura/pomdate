@@ -20,9 +20,9 @@ local instructorImg = nil; local instructorSprite = nil
 -- init() sets up our game environment.
 local function init()
     --debugger.disable()
-
+    
     workMinutes = 0.1
-    workTimer = Timer(50, 50)
+    workTimer = timer.new(50, 50)
     workTimer:add()
 
     -- TODO encapsulate all sprites below into classes
