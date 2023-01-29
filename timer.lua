@@ -31,6 +31,7 @@ end
 
 -- TODO decide where I want to set timer posn; amend img size and init params accordingly
 -- Timer:init(xpos, ypos) initializes, but does not start, a Timer.
+-- Use timer.new instead pls.     
 function Timer:init(x, y)
     -- TODO give each timer a name
     Timer.super.init(self)
@@ -81,7 +82,7 @@ function Timer:update()
     end
 
     Timer.super.update(self)
-    debugger.bounds(self)
+    --debugger.bounds(self)
 end
 
 function Timer:start(minsDuration)
@@ -96,8 +97,12 @@ function Timer:start(minsDuration)
         if self.timer then debugger.log("timer was nil - now created") end
     else
         self.timer:start() -- TODO check that this autostarts the timer
-        debugger.log("timer not nil - started")
+        --debugger.log("timer not nil - started")
     end
+end
+
+function Timer:stop()
+    self.timer = nil
 end
 
 --[[ not needed yet
@@ -107,6 +112,7 @@ function Timer:pause()
 end
 --]]
 
+--[[ not needed yet
 function Timer:reset()
     if not self.timer then
         debugger.log("self.timer is nil. Can't call Timer:reset().")
@@ -115,6 +121,7 @@ function Timer:reset()
     self.timer:reset()
     debugger.log("timer reset")
 end
+--]]
 
 --[[ not needed yet
 -- this function may not need to be named here
@@ -124,6 +131,7 @@ function notify(t)
 end
 --]]
 
+-- new(xpos, ypos) initializes, but does not start, a Timer.
 function new(x, y)
     return Timer(x, y)
 end

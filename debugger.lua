@@ -60,7 +60,7 @@ function drawLog ()
     logImg:draw(0,0)
 end
 
--- bounds(sprite) visualizes the rectangular bounds of the sprite
+-- bounds(sprite) visualizes the rectangular bounds of the sprite.
 function bounds (sprite)
     gfx.pushContext(illImg)
         gfx.drawRect(sprite:getBounds())
@@ -71,7 +71,7 @@ end
 -- Avoid using if possible. Inconvenient special effects.
 -- TODO could modify to clear message at a specific index
 function clearIllustrations ()
-    gfx.pushContext(logImg)
+    gfx.pushContext(illImg)
         gfx.clear()
     gfx.popContext()
 end
@@ -98,9 +98,8 @@ local mt = {
     __index = function(t,k)
         if enabled then
             return readonly[k]
-        else 
-            -- TODO try removing ... below
-            return function (...) end -- do nothing but remain callable
+        else
+            return function () end -- do nothing but remain callable
         end
     end,
     __newindex = readonly
