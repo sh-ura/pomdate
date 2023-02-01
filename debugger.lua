@@ -4,6 +4,7 @@ debugger = {}
 
 local pd <const> = playdate -- _G.playdate etc
 local gfx <const> = pd.graphics
+local type = type; local pairs = pairs; local tostring = tostring
 local fmod = math.fmod
 
 local W_SCREEN <const> = configs.W_SCREEN
@@ -82,6 +83,32 @@ end
 function drawIllustrations ()
     illImg:draw(0,0)
 end
+
+--- Stringify any object, incl nested tables.
+--- By hookenz: https://stackoverflow.com/questions/9168058/how-to-dump-a-table-to-console
+---@param o any object to dump
+local function stringify(o)
+    if not o then
+        return 'nil'
+    end
+    if type(o) == 'table' then
+       local s = '{ '
+       for k,v in pairs(o) do
+          if type(k) ~= 'number' then k = '"'..k..'"' end
+          s = s .. '['..k..'] = ' .. dump(v) .. ','
+       end
+       return s .. '} '
+    else
+       return tostring(o)
+    end
+end
+--- Print an object to console. Useful for debugging tables.
+---@param o any object to dump
+function dump(o)
+    print("dumping")
+    print(stringify(o))
+end
+ 
 
 local _ENV = _G
 -- debugger is actually a mostly-empty middle layer between

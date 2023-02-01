@@ -1,4 +1,4 @@
--- timer provides value-based timers, rendered as sprites
+-- pkg 'timer' provides value-based timers, rendered as sprites
 local P = {}; local _G = _G
 button = {}
 
@@ -16,9 +16,12 @@ local Button <const> = Button
 local _ENV = P
 name = "button"
 
--- Button:init(label, xpos, ypos, callback) initializes a button sprite.
---      callback is called when the button is pressed.
--- Use button.new instead pls.
+-- Initializes a button sprite.
+--- Call new() *instead of* instantiating directly with Button().
+---@param label string text to print on the button graphic
+---@param x integer x-position
+---@param y integer y-position
+---@param callback function is called when the button is pressed.
 function Button:init(label, x, y, callback)
     -- TODO give each timer a name
     Button.super.init(self)
@@ -37,18 +40,23 @@ function Button:init(label, x, y, callback)
     self = utils.makeReadOnly(self, "button instance")
 end
 
--- Button:update() updates the button sprite
+--- Updates the button sprite.
 function Button:update()
     Button.super.update(self)
     --debugger.bounds(self)
 end
 
+--- Triggers the button's callback.
 function Button:press()
     self.callback()
 end
 
--- new(label, xpos, ypos, callback) initializes a button sprite.
---      callback is called when the button is pressed.
+--- Creates a button sprite.
+---@param label string text to print on the button graphic
+---@param x integer x-position
+---@param y integer y-position
+---@param callback function is called when the button is pressed.
+---@return Button instance
 function new(label, x, y, callback)
     return Button(label, x, y, callback)
 end
