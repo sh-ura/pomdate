@@ -4,6 +4,7 @@ debugger = {}
 
 local pd <const> = playdate -- _G.playdate etc
 local gfx <const> = pd.graphics
+local print = print
 local type = type; local pairs = pairs; local tostring = tostring
 local fmod = math.fmod
 
@@ -34,7 +35,7 @@ function log (msg)
     local xpos = W_LEFT_MARGIN
     local ypos = iLine * H_LINE
 
-    _G.print(logText)
+    print(logText)
     gfx.pushContext(logImg)
         gfx.setColor(gfx.kColorClear)
         gfx.fillRect(xpos, ypos, W_SCREEN, H_LINE) -- clear the current line
@@ -85,28 +86,34 @@ function drawIllustrations ()
 end
 
 --- Stringify any object, incl nested tables.
---- By hookenz: https://stackoverflow.com/questions/9168058/how-to-dump-a-table-to-console
+--- Ignores anything with a nil value.
+--- Limits the depth to prevent stackoverflow for self-referencing tables (ex. playdate Classes)
+--- Based on this code by hookenz: https://stackoverflow.com/questions/9168058/how-to-dump-a-table-to-console
 ---@param o any object to dump
-local function stringify(o)
-    if not o then
-        return 'nil'
-    end
+---@param depth integer how many more recursions are permitted
+local function stringify(o, depth)
+    if depth == 0 then return '' end
+
     if type(o) == 'table' then
-       local s = '{ '
-       for k,v in pairs(o) do
-          if type(k) ~= 'number' then k = '"'..k..'"' end
-          s = s .. '['..k..'] = ' .. dump(v) .. ','
-       end
-       return s .. '} '
+        local s = '{ '
+        for k,v in pairs(o) do
+            if type(k) ~= 'number' then k = '"'..k..'"' end
+            s = s .. '['..k..'] = ' .. stringify(v, depth-1) .. ','
+        end
+        return s .. '} '
     else
-       return tostring(o)
+        print("tostring")
+        return tostring(o)
     end
 end
 --- Print an object to console. Useful for debugging tables.
+--- Ignores anything with a nil value.
+--- Set maximum depth to prevent stackoverflow for self-referencing tables (ex. playdate Classes)
 ---@param o any object to dump
-function dump(o)
+---@param maxdepth maximum number of levels to dump.
+function dump(o, maxdepth)
     print("dumping")
-    print(stringify(o))
+    print(stringify(o, maxdepth))
 end
  
 
