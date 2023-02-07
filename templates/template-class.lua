@@ -13,6 +13,7 @@ local P = {}; local _G = _G
 package = {}
 
 local pd <const> = playdate
+local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
 local configs <const> = configs
@@ -27,6 +28,8 @@ name = "package"
 
 --local localstatic <const> = val --TODO non-imported statics go here
 
+--local localvar = val --TODO local vars go here
+
 --local function localfunc() end --TODO local funcs go here
 
 --- Initializes a new Class instance.
@@ -34,7 +37,7 @@ name = "package"
 ---@param x integer: global x-position
 ---@param y integer: global y-position
 function Class:init(x, y)
-    self.super.init(self)
+    Class.super.init(self)
 
     self:setCenter(0, 0)
     self:moveTo(x, y)
@@ -48,11 +51,11 @@ end
 function Class:update()
     
 
-    self.super.update(self)
+    Class.super.update(self)
     --debugger.bounds(self)
 end
 
---- Initializes and returns new instance.
+--- Initializes and returns new Class instance.
 --- Call new() *instead of* instantiating directly with Class().
 ---@param x integer: global x-position
 ---@param y integer: global y-position

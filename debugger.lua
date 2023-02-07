@@ -4,9 +4,10 @@ debugger = {}
 
 local pd <const> = playdate -- _G.playdate etc
 local gfx <const> = pd.graphics
+local printTable = printTable
 local print = print
-local type = type; local pairs = pairs; local tostring = tostring
-local fmod = math.fmod
+local type = type; local pairs = pairs
+local fmod = math.fmod -- TODO may be able to replace this w % modulo lua operator?
 
 local W_SCREEN <const> = configs.W_SCREEN
 local H_SCREEN <const> = configs.H_SCREEN
@@ -23,19 +24,30 @@ local illImg = gfx.image.new(W_SCREEN, H_SCREEN)     -- img containing illustrat
 local enabled = true                                 -- true by default. true if debugger is enabled
 
 
--- log(message) adds text to the debug log.
--- Messages are prepended by the message count at the time of logging.
--- Returns current message count.
--- Log is drawn upon calling debugger.draw()
-function log (msg)
+--- log adds text to the debug log.
+--- Messages are prepended by the message count at the time of logging.
+--- Returns current message count.
+--- Log is drawn upon calling debugger.draw()
+---@param msg string message
+---@param ... any anything to dump to console.
+function log (msg, ...)
     cMsgs = cMsgs + 1
-    local logText = cMsgs .. ": " .. msg
+
+    local logText = cMsgs .. "- " .. msg
 
     local iLine = fmod(cMsgs - 1, NUM_LINES) -- index of current line to draw
     local xpos = W_LEFT_MARGIN
     local ypos = iLine * H_LINE
 
     print(logText)
+    if ... then
+        logText = logText .. " DUMPING"
+        for k,v in pairs({...}) do
+            print("-- DUMPING ARG " .. k .. " BELOW ; TYPE IS " .. type(v).." --")
+            dump(v)
+        end
+    end
+
     gfx.pushContext(logImg)
         gfx.setColor(gfx.kColorClear)
         gfx.fillRect(xpos, ypos, W_SCREEN, H_LINE) -- clear the current line
@@ -85,35 +97,15 @@ function drawIllustrations ()
     illImg:draw(0,0)
 end
 
---- Stringify any object, incl nested tables.
+--- Print an object to console.
 --- Ignores anything with a nil value.
---- Limits the depth to prevent stackoverflow for self-referencing tables (ex. playdate Classes)
---- Based on this code by hookenz: https://stackoverflow.com/questions/9168058/how-to-dump-a-table-to-console
 ---@param o any object to dump
----@param depth integer how many more recursions are permitted
-local function stringify(o, depth)
-    if depth == 0 then return '' end
-
+function dump(o)
     if type(o) == 'table' then
-        local s = '{ '
-        for k,v in pairs(o) do
-            if type(k) ~= 'number' then k = '"'..k..'"' end
-            s = s .. '['..k..'] = ' .. stringify(v, depth-1) .. ','
-        end
-        return s .. '} '
+        printTable(o)
     else
-        print("tostring")
-        return tostring(o)
+        print(o)
     end
-end
---- Print an object to console. Useful for debugging tables.
---- Ignores anything with a nil value.
---- Set maximum depth to prevent stackoverflow for self-referencing tables (ex. playdate Classes)
----@param o any object to dump
----@param maxdepth maximum number of levels to dump.
-function dump(o, maxdepth)
-    print("dumping")
-    print(stringify(o, maxdepth))
 end
  
 
