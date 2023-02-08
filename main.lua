@@ -49,7 +49,6 @@ local function init()
     --debugger.disable()
 
     ui = uilib.instantiate()
-    ui:add()
     
     timers.work = timer.new(0, 0)
     selectedTimer = timers.work
@@ -99,6 +98,7 @@ function pd.update()
     if state == STATES.LOADING then
         if pd.buttonJustPressed(A) then
             splashSprite:remove()
+            ui:add()
             toMenu()
         end
     elseif state == STATES.TIMER then --TODO we are doing way too many STATES lookups

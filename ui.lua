@@ -42,26 +42,30 @@ local timersmenu = {} -- seq that timer buttons appear in
 function UI:init()
     UI.super.init(self)
 
-    buttons.work = button.new(
-        "work",
-        0,
-        0,
-        function ()
-            selectedTimer = timers.work
-            toRun()
-        end
-    )
+    buttons.work = button.new("work", 0, 0)
+    buttons.work.isSelected = function ()
+        return state == STATES.MENU
+    end
+    buttons.work.isPressed = function ()
+        return pd.buttonJustPressed(A)
+    end
+    buttons.work.action = function ()
+        selectedTimer = timers.work
+        state = STATES.TIMER
+        buttons.work:remove()
+        toRun()
+    end
     timersmenu = {buttons.work, buttons.short, buttons.long}
 
-    buttons.pause = button.new(
-        "pause",
-        40,
-        40,
-        function ()
-            toMenu()
-            --TODO actually these should ONLY change the global state and animate themselves
-        end
-    )
+    -- buttons.pause = button.new(
+    --     "pause",
+    --     40,
+    --     40,
+    --     function ()
+    --         toMenu()
+    --         --TODO actually these should ONLY change the global state and animate themselves
+    --     end
+    -- )
 
     self = utils.makeReadOnly(self, "UI instance")
 end
@@ -69,19 +73,14 @@ end
 ---TODO desc
 function UI:update()
     if state == STATES.MENU then
-        buttons.work:add() --TODO we dont wanna do this every frame; figure out how we wanna do transitions
-        if pd.buttonJustPressed(A) then
-            buttons.work:press()
-            buttons.work:remove() --TODO fig out how to seq press and detrans button
-            state = STATES.TIMER
-        end
-    elseif state == STATES.TIMER then
-        buttons.pause:add() --TODO we dont wanna do this every frame; figure out how we wanna do transitions
-        if pd.buttonJustPressed(B) then
-            buttons.pause:press()
-            buttons.pause:remove()
-            state = STATES.MENU
-        end
+        buttons.work:add()
+    -- elseif state == STATES.TIMER then
+    --     buttons.pause:add() --TODO we dont wanna do this every frame; figure out how we wanna do transitions
+    --     if pd.buttonJustPressed(B) then
+    --         buttons.pause:press()
+    --         buttons.pause:remove()
+    --         state = STATES.MENU
+    --     end
     end
 
     UI.super.update(self)
