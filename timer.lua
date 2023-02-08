@@ -6,10 +6,10 @@ import "CoreLibs/sprites"
 import "CoreLibs/timer"
 
 local pd <const> = playdate
+local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
-local debugger <const> = debugger
-local floor <const> = math.floor
+local floor <const> = math.floor -- TODO may be able to replace this w // floor division lua operator?
 
 -- Timer packs a timer with its UI.
 class('Timer').extends(gfx.sprite)
@@ -30,6 +30,9 @@ local function convertTime(msec)
 end
 
 -- TODO decide where I want to set timer posn; amend img size and init params accordingly
+-- TODO instead of the (inevitably public) init method, 
+--      should have set-config methods, while timer.new()
+--      does init (and calls set-config)
 -- Timer:init(xpos, ypos) initializes, but does not start, a Timer.
 -- Use timer.new instead pls.     
 function Timer:init(x, y)
@@ -82,7 +85,7 @@ function Timer:update()
     end
 
     Timer.super.update(self)
-    --debugger.bounds(self)
+    --debugger.illustrateBounds(self)
 end
 
 function Timer:start(minsDuration)
@@ -91,10 +94,10 @@ function Timer:start(minsDuration)
         -- callback is a function closure that will be called when the timer is complete.
         -- TODO see playdate.timer.timerEndedCallback
         local msecDuration = minsDuration * SEC_PER_MIN * MSEC_PER_SEC
-        debugger.log(msecDuration)
+        d.log(msecDuration)
         _G.rawset(self, "timer", pd.timer.new(msecDuration, msecDuration, 0)) -- "value-based" timer w linear interpolation
 
-        if self.timer then debugger.log("timer was nil - now created") end
+        if self.timer then d.log("timer was nil - now created") end
     else
         self.timer:start() -- TODO check that this autostarts the timer
         --debugger.log("timer not nil - started")
@@ -126,7 +129,7 @@ end
 --[[ not needed yet
 -- this function may not need to be named here
 -- define it in the pd.timer.new closure?
-function notify(t)
+local function notify(t)
     -- call when countdown ends
 end
 --]]

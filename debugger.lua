@@ -75,7 +75,7 @@ function drawLog ()
 end
 
 -- bounds(sprite) visualizes the rectangular bounds of the sprite.
-function bounds (sprite)
+function illustrateBounds (sprite)
     gfx.pushContext(illImg)
         gfx.drawRect(sprite:getBounds())
     gfx.popContext()
@@ -110,10 +110,11 @@ end
  
 
 local _ENV = _G
--- debugger is actually a mostly-empty middle layer between
---      - the package contents, and
---      - the metatable configuring access to those contents
-local readonly = utils.makeReadOnly(P)
+-- debugger is the package wrapper: a mostly-empty middle layer between
+--      P:        the package contents, and
+--      mt:       the metatable configuring access to those contents
+-- This permits the disabling of all debugger functions.
+P = utils.makeReadOnly(P)
 debugger = {
     disable = function()
         enabled = false
@@ -123,12 +124,12 @@ debugger = {
 local mt = {
     __index = function(t,k)
         if enabled then
-            return readonly[k]
+            return P[k]
         else
             return function () end -- do nothing but remain callable
         end
     end,
-    __newindex = readonly
+    __newindex = P
 }
 setmetatable(debugger, mt)
 

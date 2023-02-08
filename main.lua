@@ -10,121 +10,108 @@ import "configs"
 import "debugger"
 import "timer"
 import "button"
+import "ui"
 
 local pd <const> = playdate
+local d <const> = debugger
 local gfx <const> = pd.graphics
+local uilib <const> = ui
 local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
 
 -- TODO can states be a set of update funcs, or do we need the enum?
 STATES = configs.STATES
-state = STATES.loadApp -- should be loadApp
-local update = nil
+state = STATES.LOADING
 local initComplete = false
 
+local ui = nil
 local selectedTimer = nil
-local workTimer = nil; local workMinutes = nil
-local splashImg = nil; local splashSprite = nil
-local workButton = nil
+local workMinutes = 0.1
+local splashImg;    local splashSprite = nil
+timers = {
+    work = 'nil',
+    short = 'nil',
+    long = 'nil'
+}
 
 -- debugDraw() is called immediately after update()
 -- Only white pixels are drawn; black transparent
 function pd.debugDraw()
     gfx.pushContext()
         gfx.setImageDrawMode(gfx.kDrawModeInverted)
-        debugger.drawLog()
-        debugger.drawIllustrations()
+        d.drawLog()
+        d.drawIllustrations()
     gfx.popContext()
 end
 
 -- init() sets up our game environment.
 local function init()
-    debugger.disable()
-    
-    workMinutes = 0.1
-    workTimer = timer.new(0, 0)
+    --debugger.disable()
 
-    workButton = button.new(
-        "work",
-        0,
-        0,
-        function ()
-            selectedTimer = workTimer
-            toRun()
-        end
-    )
+    ui = uilib.instantiate()
+    ui:add()
     
-    selectedTimer = workTimer
+    timers.work = timer.new(0, 0)
+    selectedTimer = timers.work
+
     initComplete = true
 end
 
 
-function toLoadApp()
+local function splash()
     -- TODO maybe the configs really should just be globals in main. or in configs.lua w/o namespacing
     splashImg = gfx.image.new(configs.W_SCREEN, configs.H_SCREEN)
     gfx.lockFocus(splashImg)
         gfx.drawText("POMDATE", configs.W_CENTRE, configs.H_CENTRE)
+        gfx.drawText("press A to continue", configs.W_CENTRE, configs.H_CENTRE + 50)
     gfx.unlockFocus()
     splashSprite = gfx.sprite.new(splashImg)
     splashSprite:moveTo(configs.W_CENTRE, configs.H_CENTRE)
+    splashSprite:setZIndex(100)
     splashSprite:add()
-    update = loadAppUpdate
 end
+
+-- 2 funcs below can be moved to ui
 
 -- performs done -> select transition
 -- then inits select
 -- then switches update func
 -- TODO need to transition run -> select sometimes; refactor
-function toSelect()
+-- TODO align semantics of menu w pause
+function toMenu()
     selectedTimer:stop()
     selectedTimer:remove() -- DEBUG dont actually want to do exactly this
-    
-    workButton:add()
-
-    update = selectUpdate
+    state = STATES.MENU
 end
 
 function toRun()
-    workButton:remove()
-
     selectedTimer:moveTo(50, 50)
     selectedTimer:add()
     selectedTimer:start(workMinutes)
-    update = runUpdate
+    state = STATES.TIMER
 end
 
-function loadAppUpdate()
-    local playerReady = false
-    if pd.buttonJustPressed(A) then
-        playerReady = true
-    end
-    if initComplete and playerReady then
-        splashSprite:remove()
-        toSelect()
-    end
-end
 
-function selectUpdate ()
-    -- check inputs; select buttons accordingly
-    -- if a pressed, transition to run state
-    if pd.buttonJustPressed(A) then
-        workButton:press()
-    end
-end
 
-function runUpdate()
-    if pd.buttonJustPressed(B) then
-        toSelect()
-    end
-    pd.timer.updateTimers() -- DEBUG does having this here cause issues with starting timers?
-end
 
--- update() is called right before every frame is drawn onscreen.
+-- pd.update() is called right before every frame is drawn onscreen.
 function pd.update()
-    update()
+    if state == STATES.LOADING then
+        if pd.buttonJustPressed(A) then
+            splashSprite:remove()
+            toMenu()
+        end
+    elseif state == STATES.TIMER then --TODO we are doing way too many STATES lookups
+        if pd.buttonJustPressed(B) then
+            toMenu()
+        end
+        pd.timer.updateTimers() -- DEBUG does having this here cause issues with starting timers?    
+    end
 
     gfx.sprite.update()
 end
 
-toLoadApp()
+------- APP START -------
+
+splash()
 init()

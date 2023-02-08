@@ -14,9 +14,10 @@ H_CENTRE = 120
 
 -- todo rm??
 STATES = {
-    configApp = 1,
-    menu = 2,
-    timer = 3
+    LOADING     = 1,
+    CONFIG      = 2,
+    MENU        = 3,
+    TIMER       = 4
 }
 
 -- prepare package for export, in the global env --

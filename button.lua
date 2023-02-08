@@ -8,6 +8,8 @@ local utils <const> = utils
 local debugger <const> = debugger
 
 -- Button is a UI element governing some behaviour if selected
+-- A button, when pressed, may modify global state indicators and animate itself.
+-- The scope of what it knows should otherwise be limited.
 class('Button').extends(gfx.sprite)
 local Button <const> = Button
 
