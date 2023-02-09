@@ -5,6 +5,8 @@
     Find+Replace 'classinstance' with the classname (lowercase)
     Find+Replace 'package' with the classname (lowercase)
 --]]
+--TODO this file should not get compiled into main
+--  make sure it doesn't go into the src folder
 
 ---TODO pkg 'package' DESC
 
@@ -17,7 +19,7 @@ local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
 local configs <const> = configs
-local debugger <const> = debugger
+local d <const> = debugger
 --local externalfunc <const> = somepkg.func --TODO any other external vars go here
 
 ---TODO Class desc

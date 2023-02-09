@@ -1,6 +1,7 @@
 ---pkg 'ui' defines a singleton UI class
 
 import 'ui/button'
+import 'ui/panel'
 
 --[[
     TODO 
@@ -25,7 +26,7 @@ class('UI').extends(gfx.sprite)
 --local localstatic <const> = val --TODO non-imported statics go here
 
 local instance = nil
-local buttons = {
+local buttons = { --TODO rm dont actually need these to persist here
     work = nil,
     short = nil,
     long = nil,
@@ -33,7 +34,7 @@ local buttons = {
     pause = nil,
     snooze = nil
 }
-local timersmenu = {} -- seq that timer buttons appear in
+local timersmenu = nil -- seq that timer buttons appear in
 
 --local function localfunc() end --TODO local funcs go here
 
@@ -43,19 +44,21 @@ function UI:init()
     UI.super.init(self)
 
     buttons.work = button.new("work", 0, 0)
-    buttons.work.isSelected = function ()
-        return state == STATES.MENU
-    end
     buttons.work.isPressed = function ()
         return pd.buttonJustPressed(A)
     end
     buttons.work.action = function ()
         selectedTimer = timers.work
         state = STATES.TIMER
-        buttons.work:remove()
+        timersmenu:transitionOut()
         toRun()
     end
-    timersmenu = {buttons.work, buttons.short, buttons.long}
+    timersmenu = panel.new("timers", 0, 0)
+    timersmenu.isSelected = function ()
+        return state == STATES.MENU
+    end
+    timersmenu:addChild(buttons.work)
+    
 
     -- buttons.pause = button.new(
     --     "pause",
@@ -73,7 +76,7 @@ end
 ---TODO desc
 function UI:update()
     if state == STATES.MENU then
-        buttons.work:add()
+        timersmenu:transitionIn()
     -- elseif state == STATES.TIMER then
     --     buttons.pause:add() --TODO we dont wanna do this every frame; figure out how we wanna do transitions
     --     if pd.buttonJustPressed(B) then
