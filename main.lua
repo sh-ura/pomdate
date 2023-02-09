@@ -9,8 +9,7 @@ import "utils"; --utils.disableReadOnly()
 import "configs"
 import "debugger"
 import "timer"
-import "button"
-import "ui"
+import "ui/ui"
 
 local pd <const> = playdate
 local d <const> = debugger

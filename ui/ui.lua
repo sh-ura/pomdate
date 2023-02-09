@@ -1,6 +1,6 @@
 ---pkg 'ui' defines a singleton UI class
 
-import 'button'
+import 'ui/button'
 
 --[[
     TODO 
