@@ -32,6 +32,8 @@ name = "uielement"
 ---@param x integer x-position
 ---@param y integer y-position
 function UIElement:init(name, x, y)
+    UIElement.super.init(self)
+
     self.children = {} -- list of UIElements this panel parents
     self.i_selected = 1 -- index of currently selected child
 
@@ -44,7 +46,6 @@ function UIElement:init(name, x, y)
         return false
     end
 
-    UIElement.super.init(self)
     self = utils.makeReadOnly(self, "UIElement instance '" .. self.name .. "'")
 end
 
@@ -99,11 +100,14 @@ end
 ---@param x integer x-position
 ---@param y integer y-position
 function UIElement:moveTo(x, y)
-    for _, child in ipairs(self.children) do
-        -- globally reposition child, keeping local posn (ie. distance from parent)
-        child:moveTo(x + child.x - self.x, y + child.y - self.y)
-    end
+    local x_o = self.x; local y_o = self.y
     UIElement.super.moveTo(self, x, y)
+    
+    if not self.children then return end -- needed for gfx.sprite.init()
+    for _, child in ipairs(self.children) do
+        -- globally reposition child, keeping local posn (ie. distance from parent's prev locn)
+        child:moveTo(self.x + child.x - x_o, self.y + child.y - y_o)
+    end
 end
 
 --- Initializes and returns new UIElement instance.

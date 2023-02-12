@@ -37,6 +37,8 @@ name = "panel"
 ---    next to each other in the x dimension.
 ---    Defaults to vertical layout.
 function Panel:init(name, x, y, horizontal)
+    Panel.super.init(self, name, x, y)
+
     -- selection buttons depend on layout
     if horizontal then
         Panel.prev = LEFT
@@ -46,7 +48,6 @@ function Panel:init(name, x, y, horizontal)
         Panel.next = DOWN
     end
 
-    Panel.super.init(self, name, x, y)
     self = utils.makeReadOnly(self, "panel instance")
 end
 
@@ -60,7 +61,7 @@ function Panel:update()
         end
     end
     Panel.super.update(self)
-    --debugger.bounds(self)
+    --d.illustrateBounds(self)
 end
 
 --- Creates a panel UIElement.
