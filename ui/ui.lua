@@ -58,6 +58,7 @@ function UI:init()
         return state == STATES.MENU
     end
     timersmenu:addChild(buttons.work)
+    timersmenu:moveTo(300,20)
     
 
     -- buttons.pause = button.new(

@@ -25,8 +25,8 @@ name = "button"
 --- Initializes a button UIElement.
 --- Call new() *instead of* instantiating directly with Button().
 ---@param name string button name for debugging
----@param x integer x-position relative to parent
----@param y integer y-position relative to parent
+---@param x integer x-position
+---@param y integer y-position
 function Button:init(name, x, y)
     -- TODO give each timer a name
     Button.super.init(self, name, x, y)
