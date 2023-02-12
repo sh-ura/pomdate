@@ -2,7 +2,6 @@
 --- For dev convenience, this package accesses the global namespace,
 --- but is not intended to modify any global var other than STATE.
 
-import 'ui/uielement'
 import 'ui/button'
 import 'ui/panel'
 
@@ -26,7 +25,7 @@ local B <const> = pd.kButtonB
 --- UIManager is the singleton root of all UIElements in the program.
 --- It is in charge of defining the specific behaviours and layouts
 ---     of all UIElements, as well as configuring the UI object heirarchy.
-class('UIManager').extends(UIElement)
+class('UIManager').extends(Panel)
 --local localstatic <const> = val --TODO non-imported statics go here
 
 local instance = nil
@@ -50,7 +49,9 @@ function UIManager:init()
         return instance
     end
 
-    UIManager.super.init(self, "uimanager <<singleton>>")
+    UIManager.super.init(self, "uimanager <<singleton>>", "horizontal")
+
+    self.isSelected = function () return true end
 
     buttons.work = Button("work")
     buttons.work.isPressed = function ()
@@ -62,10 +63,8 @@ function UIManager:init()
         timersmenu:transitionOut()
         toRun()
     end
+
     timersmenu = Panel("timers")
-    timersmenu.isSelected = function ()
-        return state == STATES.MENU
-    end
     timersmenu:addChild(buttons.work)
     timersmenu:moveTo(300,20)
     self:addChild(timersmenu)
@@ -77,6 +76,8 @@ end
 ---TODO desc
 function UIManager:update()
     if state == STATES.MENU then
+        --TODO once config menu exists, set up L/R selection b/w config menu and timers menu
+
         timersmenu:transitionIn()
     -- elseif state == STATES.TIMER then
     --     buttons.pause:add() --TODO we dont wanna do this every frame; figure out how we wanna do transitions

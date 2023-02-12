@@ -52,9 +52,9 @@ end
 function Panel:update()
     if self.isSelected() then
         if pd.buttonJustPressed(self.prev) then
-            self.i_selected = (self.i_selected - 1) % getn(self)
+            self.i_selectChild = (self.i_selectChild - 1) % getn(self)
         elseif pd.buttonJustPressed(self.next) then
-            self.i_selected = (self.i_selected + 1) % getn(self)
+            self.i_selectChild = (self.i_selectChild + 1) % getn(self)
         end
     end
     Panel.super.update(self)

@@ -33,7 +33,7 @@ function UIElement:init(name)
 
     self.name = name
     self.children = {} -- list of UIElements this panel parents
-    self.i_selected = 1 -- index of currently selected child
+    self.i_selectChild = 1 -- index of currently selected child
 
     self.isSelected = function ()
         d.log("uielement '" .. self.name .. "' select criteria not set")
@@ -85,7 +85,7 @@ function UIElement:addChild(element, keepGlobalPos)
 
     insert(self.children, element)
     element.isSelected = function ()
-        return element == self.children[self.i_selected]
+        return element == self.children[self.i_selectChild]
     end
     if not keepGlobalPos then
         element:moveTo(self.x + element.x, self.y + element.y)
