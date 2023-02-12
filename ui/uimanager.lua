@@ -1,4 +1,4 @@
---- pkg 'ui' defines a singleton UI class
+--- pkg 'ui' defines a singleton UIManager class
 --- For dev convenience, this package accesses the global namespace,
 --- but is not intended to modify any global var other than STATE.
 
@@ -23,8 +23,10 @@ local gfx <const> = pd.graphics
 local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
 
----TODO UI desc
-class('UI').extends(UIElement)
+--- UIManager is the singleton root of all UIElements in the program.
+--- It is in charge of defining the specific behaviours and layouts
+---     of all UIElements, as well as configuring the UI object heirarchy.
+class('UIManager').extends(UIElement)
 --local localstatic <const> = val --TODO non-imported statics go here
 
 local instance = nil
@@ -40,15 +42,15 @@ local timersmenu = nil -- seq that timer buttons appear in
 
 --local function localfunc() end --TODO local funcs go here
 
---- Initializes and returns new UI instance.
+--- Initializes and returns new UIManager singleton instance.
 --- If instance already exists, this func does nothing but returns that instance.
-function UI:init()
+function UIManager:init()
     if instance then 
-        d.log("UI instance exists; not reinstantiating; returning instance")
+        d.log("UIManager instance exists; not reinstantiating; returning instance")
         return instance
     end
 
-    UI.super.init(self, "uimanager <<singleton>>")
+    UIManager.super.init(self, "uimanager <<singleton>>")
 
     buttons.work = Button("work")
     buttons.work.isPressed = function ()
@@ -66,13 +68,14 @@ function UI:init()
     end
     timersmenu:addChild(buttons.work)
     timersmenu:moveTo(300,20)
+    self:addChild(timersmenu)
 
     instance = self
-    self = utils.makeReadOnly(self, "UI instance")
+    self = utils.makeReadOnly(self, "UIManager instance")
 end
 
 ---TODO desc
-function UI:update()
+function UIManager:update()
     if state == STATES.MENU then
         timersmenu:transitionIn()
     -- elseif state == STATES.TIMER then
@@ -84,12 +87,12 @@ function UI:update()
     --     end
     end
 
-    UI.super.update(self)
+    UIManager.super.update(self)
     --debugger.bounds(self)
 end
 
 --TODO function get() end
 
-ui = {name = "ui"}
-ui = utils.makeReadOnly(ui)
-return ui
+uimanager = {name = "uimanager"}
+uimanager = utils.makeReadOnly(uimanager)
+return uimanager

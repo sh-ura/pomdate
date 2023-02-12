@@ -9,12 +9,11 @@ import "utils"; --utils.disableReadOnly()
 import "configs"
 import "debugger"
 import "timer"
-import "ui/ui"
+import "ui/uimanager"
 
 local pd <const> = playdate
 local d <const> = debugger
 local gfx <const> = pd.graphics
-local uilib <const> = ui
 local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
 
@@ -47,7 +46,7 @@ end
 local function init()
     --debugger.disable()
 
-    ui = UI()
+    ui = UIManager()
     
     timers.work = Timer()
     selectedTimer = timers.work
