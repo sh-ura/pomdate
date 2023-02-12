@@ -27,24 +27,20 @@ name = "uielement"
 --local function localfunc() end --TODO local funcs go here
 
 --- Initializes a new uielement sprite.
---- Call new() *instead of* instantiating directly with UIElement().
 ---@param name string button name for debugging
----@param x integer x-position
----@param y integer y-position
-function UIElement:init(name, x, y)
+function UIElement:init(name)
     UIElement.super.init(self)
 
+    self.name = name
     self.children = {} -- list of UIElements this panel parents
     self.i_selected = 1 -- index of currently selected child
 
-    self:setCenter(0, 0)
-    self:moveTo(x, y)
-
-    self.name = name
     self.isSelected = function ()
         d.log("uielement '" .. self.name .. "' select criteria not set")
         return false
     end
+
+    self:setCenter(0, 0)
 
     self = utils.makeReadOnly(self, "UIElement instance '" .. self.name .. "'")
 end
@@ -108,15 +104,6 @@ function UIElement:moveTo(x, y)
         -- globally reposition child, keeping local posn (ie. distance from parent's prev locn)
         child:moveTo(self.x + child.x - x_o, self.y + child.y - y_o)
     end
-end
-
---- Initializes and returns new UIElement instance.
---- Call new() *instead of* instantiating directly with UIElement().
----@param x integer: global x-position
----@param y integer: global y-position
----@return UIElement instance
-function new(x, y)
-    return UIElement()
 end
 
 -- pkg footer: pack and export the namespace.

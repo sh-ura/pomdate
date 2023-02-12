@@ -35,17 +35,14 @@ name = "package"
 --local function localfunc() end --TODO local funcs go here
 
 --- Initializes a new Class instance.
---- Call new() *instead of* instantiating directly with Class().
 ---@param x integer: global x-position
 ---@param y integer: global y-position
 function Class:init(x, y)
-    Class.super.init(self)
-
-    self:setCenter(0, 0)
-    self:moveTo(x, y)
-
+    Class.super.init(self) --should always be at top of init func
+    
 --    self.property = val   -- TODO instance properties. Public
 
+    self:setCenter(0, 0)
     self = utils.makeReadOnly(self, "Class instance")
 end
 
@@ -55,15 +52,6 @@ function Class:update()
 
     Class.super.update(self)
     --debugger.bounds(self)
-end
-
---- Initializes and returns new Class instance.
---- Call new() *instead of* instantiating directly with Class().
----@param x integer: global x-position
----@param y integer: global y-position
----@return Class instance
-function new(x, y)
-    return Class()
 end
 
 -- pkg footer: pack and export the namespace.

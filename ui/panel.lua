@@ -29,15 +29,12 @@ name = "panel"
 
 --TODO this may not be needed, due to parent
 --- Initializes a panel UIElement.
---- Call new() *instead of* instantiating directly with Panel().
 ---@param name string panel name for debugging
----@param x integer x-position
----@param y integer y-position
 ---@param horizontal (option) lay the panel's children out
 ---    next to each other in the x dimension.
 ---    Defaults to vertical layout.
-function Panel:init(name, x, y, horizontal)
-    Panel.super.init(self, name, x, y)
+function Panel:init(name, horizontal)
+    Panel.super.init(self, name)
 
     -- selection buttons depend on layout
     if horizontal then
@@ -62,16 +59,6 @@ function Panel:update()
     end
     Panel.super.update(self)
     --d.illustrateBounds(self)
-end
-
---- Creates a panel UIElement.
----@param label string text to print on the panel graphic
----@param x integer x-position
----@param y integer y-position
----@param callback function is called when the panel is pressed.
----@return Panel instance
-function new(name, x, y)
-    return Panel(name, x, y)
 end
 
 local _ENV = _G

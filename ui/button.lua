@@ -23,13 +23,10 @@ local _ENV = P
 name = "button"
 
 --- Initializes a button UIElement.
---- Call new() *instead of* instantiating directly with Button().
 ---@param name string button name for debugging
----@param x integer x-position
----@param y integer y-position
-function Button:init(name, x, y)
+function Button:init(name)
     -- TODO give each timer a name
-    Button.super.init(self, name, x, y)
+    Button.super.init(self, name)
 
     self.img = gfx.image.new(100, 50)
     self:setImage(self.img)
@@ -60,17 +57,6 @@ function Button:update()
     end
     Button.super.update(self)
     --debugger.bounds(self)
-end
-
-
---- Creates a button UIElement.
----@param label string text to print on the button graphic
----@param x integer x-position
----@param y integer y-position
----@param callback function is called when the button is pressed.
----@return Button instance
-function new(name, x, y)
-    return Button(name, x, y)
 end
 
 local _ENV = _G

@@ -1,5 +1,8 @@
----pkg 'ui' defines a singleton UI class
+--- pkg 'ui' defines a singleton UI class
+--- For dev convenience, this package accesses the global namespace,
+--- but is not intended to modify any global var other than STATE.
 
+import 'ui/uielement'
 import 'ui/button'
 import 'ui/panel'
 
@@ -21,8 +24,7 @@ local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
 
 ---TODO UI desc
---TODO im not convinced this needs to be a sprite or even a class at all?
-class('UI').extends(gfx.sprite)
+class('UI').extends(UIElement)
 --local localstatic <const> = val --TODO non-imported statics go here
 
 local instance = nil
@@ -38,12 +40,17 @@ local timersmenu = nil -- seq that timer buttons appear in
 
 --local function localfunc() end --TODO local funcs go here
 
---- Initializes a new UI instance.
---- Call instantiate() *instead of* instantiating directly with UI().
+--- Initializes and returns new UI instance.
+--- If instance already exists, this func does nothing but returns that instance.
 function UI:init()
-    UI.super.init(self)
+    if instance then 
+        d.log("UI instance exists; not reinstantiating; returning instance")
+        return instance
+    end
 
-    buttons.work = button.new("work", 0, 0)
+    UI.super.init(self, "uimanager <<singleton>>")
+
+    buttons.work = Button("work")
     buttons.work.isPressed = function ()
         return pd.buttonJustPressed(A)
     end
@@ -53,24 +60,14 @@ function UI:init()
         timersmenu:transitionOut()
         toRun()
     end
-    timersmenu = panel.new("timers", 0, 0)
+    timersmenu = Panel("timers")
     timersmenu.isSelected = function ()
         return state == STATES.MENU
     end
     timersmenu:addChild(buttons.work)
     timersmenu:moveTo(300,20)
-    
 
-    -- buttons.pause = button.new(
-    --     "pause",
-    --     40,
-    --     40,
-    --     function ()
-    --         toMenu()
-    --         --TODO actually these should ONLY change the global state and animate themselves
-    --     end
-    -- )
-
+    instance = self
     self = utils.makeReadOnly(self, "UI instance")
 end
 
@@ -91,24 +88,8 @@ function UI:update()
     --debugger.bounds(self)
 end
 
---- Initializes and returns new UI instance.
---- If instance already exists, this func does nothing but returns that instance.
---- Call new() *instead of* instantiating directly with UI().
----@return UI instance
-local function instantiate()
-    if instance then 
-        d.log("UI instance exists; can't reinstantiate.")
-    else
-        instance = UI()
-    end
-    return instance
-end
-
 --TODO function get() end
 
-ui = {
-    name = "ui",
-    instantiate = instantiate
-}
+ui = {name = "ui"}
 ui = utils.makeReadOnly(ui)
 return ui

@@ -29,18 +29,12 @@ local function convertTime(msec)
     return min, sec
 end
 
--- TODO decide where I want to set timer posn; amend img size and init params accordingly
--- TODO instead of the (inevitably public) init method, 
---      should have set-config methods, while timer.new()
---      does init (and calls set-config)
 -- Timer:init(xpos, ypos) initializes, but does not start, a Timer.
--- Use timer.new instead pls.     
-function Timer:init(x, y)
+function Timer:init()
     -- TODO give each timer a name
     Timer.super.init(self)
 
     self:setCenter(0, 0)
-    self:moveTo(x, y)
 
     self.timer = nil
     self.img = gfx.image.new(100, 50)
@@ -133,11 +127,6 @@ local function notify(t)
     -- call when countdown ends
 end
 --]]
-
--- new(xpos, ypos) initializes, but does not start, a Timer.
-function new(x, y)
-    return Timer(x, y)
-end
 
 local _ENV = _G
 timer = utils.makeReadOnly(P)

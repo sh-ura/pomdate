@@ -47,9 +47,9 @@ end
 local function init()
     --debugger.disable()
 
-    ui = uilib.instantiate()
+    ui = UI()
     
-    timers.work = timer.new(0, 0)
+    timers.work = Timer()
     selectedTimer = timers.work
 
     initComplete = true
