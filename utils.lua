@@ -22,7 +22,7 @@ end
 --  t                   target table
 --  tname               table name
 --  SPECIAL EFFECTS     1. overwrites metatable's \_\_index and \_\_newindex
-function makeReadOnly(t0, tname, indexMetaBehaviour)
+function makeReadOnly(t0, tname)
     if not enabled then
         return t0
     end

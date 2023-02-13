@@ -30,8 +30,8 @@ name = "uielement"
 ---@param name string button name for debugging
 function UIElement:init(name)
     UIElement.super.init(self)
-
     self.name = name
+
     self.children = {} -- list of UIElements this panel parents
     self.i_selectChild = 1 -- index of currently selected child
 
@@ -40,7 +40,7 @@ function UIElement:init(name)
         return false
     end
 
-    self:setCenter(0, 0)
+    self:setCenter(0, 0) --anchor top-left
 
     self = utils.makeReadOnly(self, "UIElement instance '" .. self.name .. "'")
 end
@@ -75,6 +75,8 @@ end
 ---@param element UIElement the child element
 ---@param keepGlobalPos boolean (option) keep the child's global positios as is
 function UIElement:addChild(element, keepGlobalPos)
+    --TODO move this check into children metatable.__newindex
+    --so that other class implementations can override this func safely
     if not element:isa(UIElement) then
         local name = ""
         if element.name then name = element.name
@@ -95,15 +97,19 @@ end
 --- Moves the UIElement and its children
 ---@param x integer x-position
 ---@param y integer y-position
+---@return x1,y1 integer new coordinates of the top-left corner
+---@return x2,y2 integer new coordinates of the bottom-left corner
 function UIElement:moveTo(x, y)
     local x_o = self.x; local y_o = self.y
     UIElement.super.moveTo(self, x, y)
-    
+
     if not self.children then return end -- needed for gfx.sprite.init()
     for _, child in ipairs(self.children) do
         -- globally reposition child, keeping local posn (ie. distance from parent's prev locn)
         child:moveTo(self.x + child.x - x_o, self.y + child.y - y_o)
     end
+
+    return x, y, x + self.width, y + self.height
 end
 
 -- pkg footer: pack and export the namespace.

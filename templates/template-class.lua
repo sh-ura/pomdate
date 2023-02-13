@@ -35,14 +35,14 @@ name = "package"
 --local function localfunc() end --TODO local funcs go here
 
 --- Initializes a new Class instance.
----@param x integer: global x-position
----@param y integer: global y-position
-function Class:init(x, y)
+---@param name string instance name for debugging
+function Class:init(name)
     Class.super.init(self) --should always be at top of init func
     
+    self.name = name
 --    self.property = val   -- TODO instance properties. Public
 
-    self:setCenter(0, 0)
+    self:setCenter(0, 0) --anchor top-left
     self = utils.makeReadOnly(self, "Class instance")
 end
 

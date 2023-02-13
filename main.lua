@@ -20,10 +20,8 @@ local B <const> = pd.kButtonB
 -- TODO can states be a set of update funcs, or do we need the enum?
 STATES = configs.STATES
 state = STATES.LOADING
-local initComplete = false
 
 local ui = nil
-local selectedTimer = nil
 local workMinutes = 0.1
 local splashImg;    local splashSprite = nil
 timers = {
@@ -31,6 +29,7 @@ timers = {
     short = 'nil',
     long = 'nil'
 }
+selectedTimer = nil
 
 -- debugDraw() is called immediately after update()
 -- Only white pixels are drawn; black transparent
@@ -47,11 +46,12 @@ local function init()
     --debugger.disable()
 
     ui = UIManager()
-    
-    timers.work = Timer()
-    selectedTimer = timers.work
 
-    initComplete = true
+    timers.work = Timer("work")
+    timers.short = Timer("short")
+    timers.long = Timer("long")
+    timers = utils.makeReadOnly(timers, "timers")
+    selectedTimer = timers.work
 end
 
 
@@ -82,14 +82,12 @@ function toMenu()
 end
 
 function toRun()
+    d.log(selectedTimer.name)
     selectedTimer:moveTo(50, 50)
     selectedTimer:add()
     selectedTimer:start(workMinutes)
     state = STATES.TIMER
 end
-
-
-
 
 -- pd.update() is called right before every frame is drawn onscreen.
 function pd.update()

@@ -28,11 +28,11 @@ function Button:init(name)
     -- TODO give each timer a name
     Button.super.init(self, name)
 
-    self.img = gfx.image.new(100, 50)
+    self.img = gfx.image.new(70, 40)
     self:setImage(self.img)
     gfx.lockFocus(self.img)
         gfx.drawRect(self:getBounds())
-        gfx.drawText(name, 20, 20) -- TODO refactor
+        gfx.drawText(name, 2, 2) -- TODO refactor
     gfx.unlockFocus()
 
     -- declare button behaviours, to be configured elsewhere
@@ -52,6 +52,7 @@ function Button:update()
     if self.isSelected() then
         -- do selected visual
         if self.isPressed() then
+            --d.log(self.name .. " is pressed")
             self.action()
         end 
     end

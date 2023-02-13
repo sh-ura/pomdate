@@ -29,16 +29,18 @@ local function convertTime(msec)
     return min, sec
 end
 
--- Timer:init(xpos, ypos) initializes, but does not start, a Timer.
-function Timer:init()
+--- Initializes, but does not start, a Timer.
+---@param name string timer's name for graybox and debugging
+function Timer:init(name)
     -- TODO give each timer a name
     Timer.super.init(self)
-
-    self:setCenter(0, 0)
+    self.name = name
 
     self.timer = nil
     self.img = gfx.image.new(100, 50)
     self:setImage(self.img)
+
+    self:setCenter(0, 0) --anchor top-left
     self = utils.makeReadOnly(self, "timer instance")
 end
 
@@ -91,7 +93,7 @@ function Timer:start(minsDuration)
         d.log(msecDuration)
         _G.rawset(self, "timer", pd.timer.new(msecDuration, msecDuration, 0)) -- "value-based" timer w linear interpolation
 
-        if self.timer then d.log("timer was nil - now created") end
+        if self.timer then d.log("timer '" .. self.name .. "' was nil - now created") end
     else
         self.timer:start() -- TODO check that this autostarts the timer
         --debugger.log("timer not nil - started")

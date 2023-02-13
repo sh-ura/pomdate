@@ -1,6 +1,9 @@
 --- pkg 'ui' defines a singleton UIManager class
 --- For dev convenience, this package accesses the global namespace,
---- but is not intended to modify any global var other than STATE.
+---     but is not intended to modify any global vars other than:
+---         - STATE
+---         - selectedTimer
+--- TODO may be nice to encapsulate this env, pass refs to selectedTimer and STATE on init
 
 import 'ui/button'
 import 'ui/panel'
@@ -22,6 +25,9 @@ local gfx <const> = pd.graphics
 local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
 
+local isApressed = function() return pd.buttonJustPressed(A) end
+local isBpressed = function() return pd.buttonJustPressed(B) end
+
 --- UIManager is the singleton root of all UIElements in the program.
 --- It is in charge of defining the specific behaviours and layouts
 ---     of all UIElements, as well as configuring the UI object heirarchy.
@@ -29,17 +35,36 @@ class('UIManager').extends(Panel)
 --local localstatic <const> = val --TODO non-imported statics go here
 
 local instance = nil
-local buttons = { --TODO rm dont actually need these to persist here
-    work = nil,
-    short = nil,
-    long = nil,
-    configApp = nil,
-    pause = nil,
-    snooze = nil
-}
-local timersmenu = nil -- seq that timer buttons appear in
+local timersMenu = nil -- seq that timer buttons appear in
 
---local function localfunc() end --TODO local funcs go here
+local function populateTimersMenu ()
+    if not timersMenu then
+        d.log("timersMenu nil; can't config")
+        return
+    end
+
+    local function runTimer(t)
+        selectedTimer = t
+        state = STATES.TIMER
+        timersMenu:transitionOut()
+        toRun()
+    end
+
+    local workButton = Button("work")
+    workButton.isPressed = isApressed
+    workButton.action = function () runTimer(timers.work) end
+    timersMenu:addChild(workButton)
+
+    local shortButton = Button("short")
+    shortButton.isPressed = isApressed
+    shortButton.action = function () runTimer(timers.short) end
+    timersMenu:addChild(shortButton)
+
+    local longButton = Button("long")
+    longButton.isPressed = isApressed
+    longButton.action = function () runTimer(timers.long) end
+    timersMenu:addChild(longButton)
+end
 
 --- Initializes and returns new UIManager singleton instance.
 --- If instance already exists, this func does nothing but returns that instance.
@@ -49,25 +74,13 @@ function UIManager:init()
         return instance
     end
 
-    UIManager.super.init(self, "uimanager <<singleton>>", "horizontal")
-
+    UIManager.super.init(self, "uimanager", 2, "horizontal")
     self.isSelected = function () return true end
 
-    buttons.work = Button("work")
-    buttons.work.isPressed = function ()
-        return pd.buttonJustPressed(A)
-    end
-    buttons.work.action = function ()
-        selectedTimer = timers.work
-        state = STATES.TIMER
-        timersmenu:transitionOut()
-        toRun()
-    end
-
-    timersmenu = Panel("timers")
-    timersmenu:addChild(buttons.work)
-    timersmenu:moveTo(300,20)
-    self:addChild(timersmenu)
+    timersMenu = Panel("timersMenu", 2)
+    populateTimersMenu()
+    self:addChild(timersMenu)
+    timersMenu:moveTo(200,20)
 
     instance = self
     self = utils.makeReadOnly(self, "UIManager instance")
@@ -78,7 +91,7 @@ function UIManager:update()
     if state == STATES.MENU then
         --TODO once config menu exists, set up L/R selection b/w config menu and timers menu
 
-        timersmenu:transitionIn()
+        timersMenu:transitionIn()
     -- elseif state == STATES.TIMER then
     --     buttons.pause:add() --TODO we dont wanna do this every frame; figure out how we wanna do transitions
     --     if pd.buttonJustPressed(B) then
