@@ -73,8 +73,9 @@ function Timer:update()
 
         gfx.lockFocus(self.img)
             gfx.clear()
-            gfx.drawText(timeString, 0, 0)
+            gfx.drawText("*"..timeString.."*", 0, 0)
         gfx.unlockFocus()
+        self:setImage(self.img:scaledImage(4))
 
         -- if timer has completed
         if msec <= 0 then

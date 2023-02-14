@@ -31,8 +31,10 @@ function Button:init(name)
     self.img = gfx.image.new(70, 40)
     self:setImage(self.img)
     gfx.lockFocus(self.img)
-        gfx.drawRect(self:getBounds())
-        gfx.drawText(name, 2, 2) -- TODO refactor
+        gfx.setColor(gfx.kColorWhite)
+        gfx.fillRect(self:getBounds())
+        gfx.setColor(gfx.kColorBlack)
+        gfx.drawText("*"..name.."*", 2, 2) -- TODO refactor
     gfx.unlockFocus()
 
     -- declare button behaviours, to be configured elsewhere
@@ -50,11 +52,13 @@ end
 --- Updates the button UIElement.
 function Button:update()
     if self.isSelected() then
-        -- do selected visual
+        self:setImage(self.img:invertedImage())
         if self.isPressed() then
             --d.log(self.name .. " is pressed")
             self.action()
         end 
+    else
+        self:setImage(self.img)
     end
     Button.super.update(self)
     --debugger.bounds(self)

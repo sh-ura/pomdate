@@ -97,7 +97,7 @@ function UIManager:init()
     timersMenu = Panel("timersMenu", 2)
     populateTimersMenu()
     self:addChild(timersMenu)
-    timersMenu:moveTo(200,20)
+    timersMenu:moveTo(250, 60)
 
     instance = self
     self = utils.makeReadOnly(self, "UIManager instance")

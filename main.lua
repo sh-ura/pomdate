@@ -25,7 +25,7 @@ state = STATES.LOADING
 
 local ui = nil
 local workMinutes = 0.1
-local splashImg;    local splashSprite = nil
+local splashSprite = nil
 timers = {
     work = 'nil',
     short = 'nil',
@@ -33,15 +33,9 @@ timers = {
 }
 currentTimer = nil
 
---- Get the duration the timer should run for
----@return float the duration in minutes. MUST BE FLOAT.
-local function getMinsDuration()
-    return 25.0
-end
-
 -- init() sets up our game environment.
 local function init()
-    --debugger.disable()
+    debugger.disable()
 
     ui = UIManager()
 
@@ -54,13 +48,13 @@ end
 
 local function splash()
     -- TODO maybe the configs really should just be globals in main. or in configs.lua w/o namespacing
-    splashImg = gfx.image.new(configs.W_SCREEN, configs.H_SCREEN)
+    local splashImg = gfx.image.new(configs.W_SCREEN, configs.H_SCREEN)
     gfx.lockFocus(splashImg)
-        gfx.drawText("POMDATE", configs.W_CENTRE, configs.H_CENTRE)
-        gfx.drawText("press A to continue", configs.W_CENTRE, configs.H_CENTRE + 50)
+        gfx.drawText("*POMDATE*", 50, 90)
+        gfx.drawText("press A to continue", 50, 140)
     gfx.unlockFocus()
     splashSprite = gfx.sprite.new(splashImg)
-    splashSprite:moveTo(configs.W_CENTRE, configs.H_CENTRE)
+    splashSprite:setCenter(0, 0) --anchor top-left
     splashSprite:setZIndex(100)
     splashSprite:add()
 end
@@ -80,7 +74,7 @@ end
 
 function toRun()
     d.log(currentTimer.name)
-    currentTimer:moveTo(50, 50)
+    currentTimer:moveTo(50, 85)
     currentTimer:add()
     currentTimer:start(workMinutes)
     state = STATES.TIMER
