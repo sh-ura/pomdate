@@ -4,12 +4,14 @@ timer = {}
 
 import "CoreLibs/sprites"
 import "CoreLibs/timer"
+import "CoreLibs/easing" --TODO rm
 
 local pd <const> = playdate
 local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
 local floor <const> = math.floor -- TODO may be able to replace this w // floor division lua operator?
+local linease = pd.easingFunctions.linear --TODO rm
 
 -- Timer packs a timer with its UI.
 class('Timer').extends(gfx.sprite)
@@ -21,7 +23,10 @@ local SEC_PER_MIN <const> = 60
 local _ENV = P
 name = "timer"
 
--- convertTime(msec) returns a (min, sec) conversion of the argument, rounded down
+--- Converts the msec argument into the clock time, rounded down
+---@param msec integer milliseconds
+---@return min integer minutes
+---@return sec integer seconds remaining after msec is converted to min 
 local function convertTime(msec)
     local sec = msec / MSEC_PER_SEC
     local min = floor(sec / SEC_PER_MIN)
@@ -36,6 +41,7 @@ function Timer:init(name)
     Timer.super.init(self)
     self.name = name
 
+    self._duration = 0.0 -- float timer duration in msec
     self.timer = nil
     self.img = gfx.image.new(100, 50)
     self:setImage(self.img)
@@ -84,16 +90,11 @@ function Timer:update()
     --debugger.illustrateBounds(self)
 end
 
-function Timer:start(minsDuration)
+function Timer:start()
     if not self.timer then -- TODO do  completed timers pass this? if not, test for playdate.timer.timeLeft instead
-        -- Returns a new playdate.timer that will run for duration milliseconds. 
-        -- callback is a function closure that will be called when the timer is complete.
-        -- TODO see playdate.timer.timerEndedCallback
-        local msecDuration = minsDuration * SEC_PER_MIN * MSEC_PER_SEC
-        d.log(msecDuration)
-        _G.rawset(self, "timer", pd.timer.new(msecDuration, msecDuration, 0)) -- "value-based" timer w linear interpolation
+        _G.rawset(self, "timer", pd.timer.new(self._duration, self._duration, 0)) -- "value-based" timer w linear interpolation
 
-        if self.timer then d.log("timer '" .. self.name .. "' was nil - now created") end
+        if self.timer then d.log("timer '" .. self.name .. "' was nil - now created", self.timer) end
     else
         self.timer:start() -- TODO check that this autostarts the timer
         --debugger.log("timer not nil - started")
@@ -102,6 +103,13 @@ end
 
 function Timer:stop()
     self.timer = nil
+end
+
+
+--- Set the duration the timer should run for
+---@param mins integer duration
+function Timer:setDuration(mins)
+    self._duration = (mins + 0.0) * SEC_PER_MIN * MSEC_PER_SEC
 end
 
 --[[ not needed yet

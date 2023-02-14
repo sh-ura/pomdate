@@ -97,8 +97,8 @@ end
 --- Moves the UIElement and its children
 ---@param x integer x-position
 ---@param y integer y-position
----@return x1,y1 integer new coordinates of the top-left corner
----@return x2,y2 integer new coordinates of the bottom-left corner
+---@return integer,integer new coordinates (x1,y1) of the top-left corner
+---@return integer,integer new coordinates (x2,y2) of the bottom-left corner
 function UIElement:moveTo(x, y)
     local x_o = self.x; local y_o = self.y
     UIElement.super.moveTo(self, x, y)

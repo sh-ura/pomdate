@@ -2,8 +2,8 @@
 --- For dev convenience, this package accesses the global namespace,
 ---     but is not intended to modify any global vars other than:
 ---         - STATE
----         - selectedTimer
---- TODO may be nice to encapsulate this env, pass refs to selectedTimer and STATE on init
+---         - currentTimer
+--- TODO may be nice to encapsulate this env, pass refs to currentTimer and STATE on init
 
 import 'ui/button'
 import 'ui/panel'
@@ -44,25 +44,42 @@ local function populateTimersMenu ()
     end
 
     local function runTimer(t)
-        selectedTimer = t
+        currentTimer = t
         state = STATES.TIMER
         timersMenu:transitionOut()
         toRun()
     end
 
+    --TODO refactor timer buttons:
+        -- funtion startTimer(t) sets the duration and runs runTimer
+        -- buttons are indexed in the timersmenu as an array/nameless.
+        --      Instead they get their names from their assigned timers
+
     local workButton = Button("work")
     workButton.isPressed = isApressed
-    workButton.action = function () runTimer(timers.work) end
+    workButton.action = function () -- TODO this could be generic to all timer buttons
+        t = timers.work
+        t:setDuration(25) -- TODO replace arg w local var selectedDuration (int)
+        runTimer(t)
+    end
     timersMenu:addChild(workButton)
 
     local shortButton = Button("short")
     shortButton.isPressed = isApressed
-    shortButton.action = function () runTimer(timers.short) end
+    shortButton.action = function () -- TODO this could be generic to all timer buttons
+        t = timers.short
+        t:setDuration(5)
+        runTimer(t)
+    end
     timersMenu:addChild(shortButton)
 
     local longButton = Button("long")
     longButton.isPressed = isApressed
-    longButton.action = function () runTimer(timers.long) end
+    longButton.action = function () -- TODO this could be generic to all timer buttons
+        t = timers.long
+        t:setDuration(20)
+        runTimer(t)
+    end
     timersMenu:addChild(longButton)
 end
 

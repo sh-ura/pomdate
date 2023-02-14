@@ -1,6 +1,8 @@
 -- if multiple packages need the same import, put that import here
 -- todo write or install a tool to verify that there are no redundant imports in the proj
 -- todo replace all func comments w the template generated when --- is typed
+-- todo replace type-checking or similar if statements with assert()
+-- todo name private fields on objects _var like in the pd sdk
 import "CoreLibs/object"
 import "CoreLibs/graphics"
 import "CoreLibs/sprites"
@@ -29,16 +31,12 @@ timers = {
     short = 'nil',
     long = 'nil'
 }
-selectedTimer = nil
+currentTimer = nil
 
--- debugDraw() is called immediately after update()
--- Only white pixels are drawn; black transparent
-function pd.debugDraw()
-    gfx.pushContext()
-        gfx.setImageDrawMode(gfx.kDrawModeInverted)
-        d.drawLog()
-        d.drawIllustrations()
-    gfx.popContext()
+--- Get the duration the timer should run for
+---@return float the duration in minutes. MUST BE FLOAT.
+local function getMinsDuration()
+    return 25.0
 end
 
 -- init() sets up our game environment.
@@ -51,9 +49,8 @@ local function init()
     timers.short = Timer("short")
     timers.long = Timer("long")
     timers = utils.makeReadOnly(timers, "timers")
-    selectedTimer = timers.work
+    currentTimer = timers.work
 end
-
 
 local function splash()
     -- TODO maybe the configs really should just be globals in main. or in configs.lua w/o namespacing
@@ -76,16 +73,16 @@ end
 -- TODO need to transition run -> select sometimes; refactor
 -- TODO align semantics of menu w pause
 function toMenu()
-    selectedTimer:stop()
-    selectedTimer:remove() -- DEBUG dont actually want to do exactly this
+    currentTimer:stop()
+    currentTimer:remove() -- DEBUG dont actually want to do exactly this
     state = STATES.MENU
 end
 
 function toRun()
-    d.log(selectedTimer.name)
-    selectedTimer:moveTo(50, 50)
-    selectedTimer:add()
-    selectedTimer:start(workMinutes)
+    d.log(currentTimer.name)
+    currentTimer:moveTo(50, 50)
+    currentTimer:add()
+    currentTimer:start(workMinutes)
     state = STATES.TIMER
 end
 
@@ -105,6 +102,16 @@ function pd.update()
     end
 
     gfx.sprite.update()
+end
+
+-- debugDraw() is called immediately after update()
+-- Only white pixels are drawn; black transparent
+function pd.debugDraw()
+    gfx.pushContext()
+        gfx.setImageDrawMode(gfx.kDrawModeInverted)
+        d.drawLog()
+        d.drawIllustrations()
+    gfx.popContext()
 end
 
 ------- APP START -------
