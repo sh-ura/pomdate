@@ -1,3 +1,7 @@
+local getmetatable = getmetatable
+local setmetatable = setmetatable
+local error = error
+
 -- pkgs decorators such as access control
 local P = {}; local _G = _G
 utils = {}
@@ -15,29 +19,28 @@ function disableReadOnly()
     enabled = false
 end
 
--- makeReadOnly() uses metamethods to prevent adding new keys.
--- Not true readonly, as k-v reassignment is unfortunately still permitted.
--- Can use on tables such as class instances, but not on Playdate classes directly,
---      due to Classes needing to be callable for Classname()-style instantiation.
---  t                   target table
---  tname               table name
---  SPECIAL EFFECTS     1. overwrites metatable's \_\_index and \_\_newindex
-function makeReadOnly(t0, tname)
+---TODO DEBUG
+---     1. when no proxy is used (ie. setmetatable(t, mt)), class instances become readonly
+---TODO dont need to return a table if we dont use a proxy here; refactor in all files that use this func
+--- Prevents adding new keys.
+--- Not true readonly, as k-v reassignment is unfortunately still permitted.
+---@param t table to make read-only
+---@param name string (optional) table name to use
+---  SPECIAL EFFECT     Overrides metatable's \_\_newindex
+function makeReadOnly(t, name)
     if not enabled then
-        return t0
+        return t
     end
 
     local proxy = {}
-    local mt = { __index = t0 }
-    _G.setmetatable(proxy, mt)
+    local mt = { __index = t }
+    setmetatable(proxy, mt)
 
-    if not tname then 
-        if t0.name then tname = t0.name
-        elseif t0.className then
-            tname = t0.className
-        else tname = "<unknown table name>" end
+    if not name then 
+        if t.name then name = t.name
+        else name = "<unknown table name>" end
     end
-    local msg = tname .. " read-only; forbidden to write to it directly. Rejected key: "
+    local msg = name .. " read-only; forbidden to write to it directly. Rejected key: "
     
     mt.__newindex = function(t,k,v)
         _G.error(msg .. k)

@@ -42,12 +42,12 @@ function Timer:init(name)
     self.name = name
 
     self._duration = 0.0 -- float timer duration in msec
-    self.timer = nil
-    self.img = gfx.image.new(100, 50)
+    self.img = gfx.image.new(200,150)
     self:setImage(self.img)
 
+    self.timer = nil
+
     self:setCenter(0, 0) --anchor top-left
-    self = utils.makeReadOnly(self, "timer instance")
 end
 
 --[[
@@ -71,19 +71,19 @@ function Timer:update()
         if sec < 10 then timeString = timeString .. "0" end
         timeString = timeString .. sec
 
-        gfx.lockFocus(self.img)
+        gfx.pushContext(self.img)
             gfx.clear()
             gfx.drawText("*"..timeString.."*", 0, 0)
-        gfx.unlockFocus()
+        gfx.popContext()
         self:setImage(self.img:scaledImage(4))
 
         -- if timer has completed
         if msec <= 0 then
             self.timer = nil
-            gfx.lockFocus(self.img)
+            gfx.pushContext(self.img)
                 gfx.clear()
                 gfx.drawText("DONE", 0, 0)
-            gfx.unlockFocus()
+            gfx.popContext()
         end
     end
 
@@ -92,14 +92,7 @@ function Timer:update()
 end
 
 function Timer:start()
-    if not self.timer then -- TODO do  completed timers pass this? if not, test for playdate.timer.timeLeft instead
-        _G.rawset(self, "timer", pd.timer.new(self._duration, self._duration, 0)) -- "value-based" timer w linear interpolation
-
-        if self.timer then d.log("timer '" .. self.name .. "' was nil - now created", self.timer) end
-    else
-        self.timer:start() -- TODO check that this autostarts the timer
-        --debugger.log("timer not nil - started")
-    end
+    self.timer = pd.timer.new(self._duration, self._duration, 0) -- "value-based" timer w linear interpolation
 end
 
 function Timer:stop()
