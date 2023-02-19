@@ -3,9 +3,11 @@
 -- todo replace all func comments w the template generated when --- is typed
 -- todo replace type-checking or similar if statements with assert()
 -- todo name private fields on objects _var like in the pd sdk
+-- todo for all classes, add @property docs to @class doc
 import "CoreLibs/object"
 import "CoreLibs/graphics"
 import "CoreLibs/sprites"
+import "CoreLibs/ui"
 
 import "utils"; --utils.disableReadOnly()
 import "configs"
@@ -35,7 +37,7 @@ currentTimer = nil
 
 -- init() sets up our game environment.
 local function init()
-    debugger.disable()
+    --debugger.disable()
 
     ui = UIManager()
 
@@ -49,14 +51,15 @@ end
 local function splash()
     -- TODO maybe the configs really should just be globals in main. or in configs.lua w/o namespacing
     local splashImg = gfx.image.new(configs.W_SCREEN, configs.H_SCREEN)
-    gfx.lockFocus(splashImg)
+    gfx.pushContext(splashImg)
         gfx.drawText("*POMDATE*", 50, 90)
         gfx.drawText("press A to continue", 50, 140)
-    gfx.unlockFocus()
+    gfx.popContext()
     splashSprite = gfx.sprite.new(splashImg)
     splashSprite:setCenter(0, 0) --anchor top-left
     splashSprite:setZIndex(100)
     splashSprite:add()
+    pd.ui.crankIndicator:start()
 end
 
 -- 2 funcs below can be moved to ui
@@ -83,6 +86,7 @@ end
 -- pd.update() is called right before every frame is drawn onscreen.
 function pd.update()
     if state == STATES.LOADING then
+        pd.ui.crankIndicator:update() --TODO why isnt this working??
         if pd.buttonJustPressed(A) then
             splashSprite:remove()
             ui:add()
@@ -92,9 +96,9 @@ function pd.update()
         if pd.buttonJustPressed(B) then
             toMenu()
         end
-        pd.timer.updateTimers() -- DEBUG does having this here cause issues with starting timers?    
     end
 
+    pd.timer.updateTimers()
     gfx.sprite.update()
 end
 

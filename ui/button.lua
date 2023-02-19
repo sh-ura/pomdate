@@ -11,9 +11,9 @@ local gfx <const> = pd.graphics
 local utils <const> = utils
 local d <const> = debugger
 
--- Button is a UI element governing some behaviour if selected
--- A button, when pressed, may modify global state indicators and animate itself.
--- The scope of what it knows should otherwise be limited.
+---@class Button is a UI element governing some behaviour if selected.
+--- A button, when pressed, may modify global state indicators and animate itself.
+--- The scope of what it knows should otherwise be limited.
 class('Button').extends(UIElement)
 local Button <const> = Button
 
@@ -28,16 +28,16 @@ function Button:init(name)
     -- TODO give each timer a name
     Button.super.init(self, name)
 
-    self.img = gfx.image.new(70, 40)
+    self.img = gfx.image.new(70, 40) ---@field desc desc
     self:setImage(self.img)
-    gfx.lockFocus(self.img)
+    gfx.pushContext(self.img)
         gfx.setColor(gfx.kColorWhite)
         gfx.fillRect(self:getBounds())
         gfx.setColor(gfx.kColorBlack)
         gfx.drawText("*"..name.."*", 2, 2) -- TODO refactor
-    gfx.unlockFocus()
+    gfx.popContext()
 
-    -- declare button behaviours, to be configured elsewhere
+    -- declare button behaviours, to be configured elsewhere, prob by UI Manager
     self.isPressed = function ()
         d.log("button '" .. self.name .. "' press criteria not set")
         return false

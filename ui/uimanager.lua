@@ -7,6 +7,7 @@
 
 import 'ui/button'
 import 'ui/panel'
+import 'ui/dial'
 
 --[[
     TODO 
@@ -35,7 +36,8 @@ class('UIManager').extends(Panel)
 --local localstatic <const> = val --TODO non-imported statics go here
 
 local instance = nil
-local timersMenu = nil -- seq that timer buttons appear in
+local timersMenu = nil  -- seq that timer buttons appear in
+local timerDial = nil   -- dial for configuring timer duration
 
 local function populateTimersMenu ()
     if not timersMenu then
@@ -99,6 +101,39 @@ function UIManager:init()
     self:addChild(timersMenu)
     timersMenu:moveTo(250, 60)
 
+    timerDial = Dial("timerDial", "min", 1)
+    d.log("timerDial ", timerDial)
+    timerDial.isSelected = function()
+        return state == STATES.MENU
+    end
+    timerDial.isDialingForth = function()
+        --TODO next
+
+
+
+
+
+
+        -- set timerdial to track cranks
+        -- some way of passing timerDial.value to the submitted timers duration
+
+
+
+
+
+
+
+
+
+
+
+    end
+    timerDial.isDialingBack = function()
+        
+    end
+    self:addChild(timerDial)
+    timerDial:moveTo(20, 60)
+
     instance = self
     self = utils.makeReadOnly(self, "UIManager instance")
 end
@@ -108,14 +143,9 @@ function UIManager:update()
     if state == STATES.MENU then
         --TODO once config menu exists, set up L/R selection b/w config menu and timers menu
 
+        --TODO this should probs be done by pause button once set up
         timersMenu:transitionIn()
-    -- elseif state == STATES.TIMER then
-    --     buttons.pause:add() --TODO we dont wanna do this every frame; figure out how we wanna do transitions
-    --     if pd.buttonJustPressed(B) then
-    --         buttons.pause:press()
-    --         buttons.pause:remove()
-    --         state = STATES.MENU
-    --     end
+        timerDial:transitionIn()
     end
 
     UIManager.super.update(self)

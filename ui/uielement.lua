@@ -41,8 +41,6 @@ function UIElement:init(name)
     end
 
     self:setCenter(0, 0) --anchor top-left
-
-    self = utils.makeReadOnly(self, "UIElement instance '" .. self.name .. "'")
 end
 
 ---TODO desc
