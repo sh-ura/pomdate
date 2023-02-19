@@ -72,6 +72,7 @@ end
 function toMenu()
     currentTimer:stop()
     currentTimer:remove() -- DEBUG dont actually want to do exactly this
+    pd.setAutoLockDisabled(false)
     state = STATES.MENU
 end
 
@@ -80,6 +81,7 @@ function toRun()
     currentTimer:moveTo(50, 85)
     currentTimer:add()
     currentTimer:start(workMinutes)
+    pd.setAutoLockDisabled(true)
     state = STATES.TIMER
 end
 
