@@ -84,9 +84,6 @@ function UIElement:addChild(element, keepGlobalPos)
     end
 
     insert(self.children, element)
-    element.isSelected = function ()
-        return element == self.children[self.i_selectChild]
-    end
     if not keepGlobalPos then
         element:moveTo(self.x + element.x, self.y + element.y)
     end

@@ -28,12 +28,12 @@ state = STATES.LOADING
 local ui = nil
 local workMinutes = 0.1
 local splashSprite = nil
+local currentTimer = nil
 timers = {
     work = 'nil',
     short = 'nil',
     long = 'nil'
 }
-currentTimer = nil
 
 -- init() sets up our game environment.
 local function init()
@@ -76,7 +76,8 @@ function toMenu()
     state = STATES.MENU
 end
 
-function toRun()
+function toRun(t)
+    currentTimer = t
     d.log(currentTimer.name)
     currentTimer:moveTo(50, 85)
     currentTimer:add()

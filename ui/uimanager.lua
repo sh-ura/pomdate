@@ -3,8 +3,9 @@
 ---     but is not intended to modify any global vars other than:
 ---         - STATE
 ---         - currentTimer
---- TODO may be nice to encapsulate this env, pass refs to currentTimer and STATE on init
+--- TODO may be nice to encapsulate this env, pass ref to STATE on init
 
+import 'CoreLibs/crank'
 import 'ui/button'
 import 'ui/panel'
 import 'ui/dial'
@@ -26,13 +27,17 @@ local gfx <const> = pd.graphics
 local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
 
+local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
+
 local isApressed = function() return pd.buttonJustPressed(A) end
 local isBpressed = function() return pd.buttonJustPressed(B) end
 
+-- TODO UIManager should be a base UIElement rather than a panel
+--      later, can parent menuPanel for stacking timersMenu next to configMenu
 --- UIManager is the singleton root of all UIElements in the program.
 --- It is in charge of defining the specific behaviours and layouts
 ---     of all UIElements, as well as configuring the UI object heirarchy.
-class('UIManager').extends(Panel)
+class('UIManager').extends(UIElement)
 --local localstatic <const> = val --TODO non-imported statics go here
 
 local instance = nil
@@ -46,10 +51,10 @@ local function populateTimersMenu ()
     end
 
     local function runTimer(t)
-        currentTimer = t
-        state = STATES.TIMER
+        timerDial:transitionOut()
         timersMenu:transitionOut()
-        toRun()
+        t:setDuration(timerDial.value)
+        toRun(t)
     end
 
     --TODO refactor timer buttons:
@@ -97,41 +102,24 @@ function UIManager:init()
     self.isSelected = function () return true end
 
     timersMenu = Panel("timersMenu", 2)
-    populateTimersMenu()
     self:addChild(timersMenu)
     timersMenu:moveTo(250, 60)
+    -- TODO when configmenu + menuPanel, remove the following line
+    timersMenu.isSelected= function()
+        return state == STATES.MENU
+    end
+    populateTimersMenu()
 
-    timerDial = Dial("timerDial", "min", 1)
-    d.log("timerDial ", timerDial)
+    timerDial = Dial("timerDial", "min", 1, 1, 60)
     timerDial.isSelected = function()
         return state == STATES.MENU
     end
-    timerDial.isDialingForth = function()
-        --TODO next
-
-
-
-
-
-
-        -- set timerdial to track cranks
-        -- some way of passing timerDial.value to the submitted timers duration
-
-
-
-
-
-
-
-
-
-
-
+    local ticks = 60 / CRANK_ROTS_PER_HOUR
+    timerDial.getDialChange = function ()
+        return pd.getCrankTicks(ticks)
     end
-    timerDial.isDialingBack = function()
-        
-    end
-    self:addChild(timerDial)
+
+    --self:addChild(timerDial)
     timerDial:moveTo(20, 60)
 
     instance = self

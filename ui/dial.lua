@@ -31,25 +31,30 @@ name = "dial"
 ---@param name string instance name for debugging
 ---@param unit string unit being enumerated, ex. "min"
 ---@param step integer step to inc/decrement the value on the dial by
-function Dial:init(name, unit, step)
+---@param lowerLimit integer (optional) cease dialing back past this value
+---@param upperLimit integer (optional) cease dialing forward past this value
+function Dial:init(name, unit, step, lowerLimit, upperLimit)
     Dial.super.init(self, name) --should always be at top of init func
     
-    self._prevValue = 0
-    self._img = gfx.image.new(200, 150)
-    self:setImage(self._img)
-
-    self.value = 0      -- value shown on dial 'face'
+    self.value = 5      -- value shown on dial 'face'
     self.step = step    -- step to inc/decrement value by
+    self.lowerLimit = lowerLimit
+    self.upperLimit = upperLimit
     self.unit = unit    -- unit being enumerated
 
-    -- declare dial behaviour, to be configured elsewhere, prob by UI Manager
-    self.isDialingForth = function ()
-        d.log("dial '" .. self.name .. "' dialing-forth criteria not set")
-        return false
-    end
-    self.isDialingBack = function ()
-        d.log("dial '" .. self.name .. "' dialing-back criteria not set")
-        return false
+    self._prevValue = 0
+    self._img = gfx.image.new(200, 150)
+    gfx.pushContext(self._img)
+                gfx.clear()
+                gfx.drawText("*".. self.value .. " " .. self.unit .."*", 2, 2)
+            gfx.popContext()
+    self:setImage(self._img)
+
+    --- Declare dial behaviour, to be configured elsewhere, prob by UI Manager
+    ---@return integer amount to dial. pos for forward, neg for backward, 0 for no change
+    self.getDialChange = function ()
+        d.log("dial '" .. self.name .. "' dial-change measures not configured")
+        return 0
     end
 
     self:setCenter(0, 0) --anchor top-left
@@ -59,14 +64,15 @@ end
 ---TODO desc
 function Dial:update()
     if self.isSelected() then
-        if self.isDialingForth then
             self._prevValue = self.value
-            self.value = self.value + self.step
-        elseif self.isDialingBack then 
-            self._prevValue = self.value
-            self.value = self.value - self.step
-        end
-    -- only redraw if val has changed
+            self.value = self.value + self.getDialChange() * self.step
+            if self.lowerLimit and self.value <= self.lowerLimit then
+                self.value = self.lowerLimit
+            elseif self.upperLimit and self.value >= self.upperLimit then
+                self.value = self.upperLimit
+            end
+
+        -- only redraw if val has changed
         if self.value ~= self._prevValue then
             gfx.pushContext(self._img)
                 gfx.clear()

@@ -25,8 +25,8 @@ name = "timer"
 
 --- Converts the msec argument into the clock time, rounded down
 ---@param msec integer milliseconds
----@return min integer minutes
----@return sec integer seconds remaining after msec is converted to min 
+---@return integer minutes
+---@return integer seconds remaining after msec is converted to min 
 local function convertTime(msec)
     local sec = msec / MSEC_PER_SEC
     local min = floor(sec / SEC_PER_MIN)

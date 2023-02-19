@@ -1,4 +1,5 @@
 --- pkg 'panel' provides a panel UIElement.
+--TODO rename panel to "list"?
 
 import 'ui/uielement'
 
@@ -84,6 +85,9 @@ function Panel:init(name, spacing, horizontal)
 end
 
 --- Updates the panel sprite.
+--- Cycles through its children on button-press.
+--- Not all panels/panel-children make use of this functionality.
+--- Depends on what the children's isSelected criteria are configured to.
 function Panel:update()
     if self.isSelected() then
         if pd.buttonJustPressed(self.prevButton) then
@@ -104,8 +108,11 @@ end
 ---@param element UIElement the child element
 function Panel:addChild(element)
     Panel.super.addChild(self, element)
-
     d.log("adding child " .. element.name)
+
+    element.isSelected = function ()
+        return element == self.children[self.i_selectChild]
+    end
     _, _, x, y = element:moveTo(self.layout())
     if (x >= self.x + self.width) or (y >= self.y + self.height) then
         d.log("UIElement '" .. element.name .. "' out-of-bounds in layout. Illustrating bounds.")
