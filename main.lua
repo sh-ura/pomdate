@@ -72,6 +72,7 @@ function toMenu()
     currentTimer:stop()
     currentTimer:remove() -- DEBUG dont actually want to do exactly this
     pd.setAutoLockDisabled(false)
+    pd.getCrankTicks(1) --TODO move this crank-data-dump to ui file
     state = STATES.MENU
 end
 
