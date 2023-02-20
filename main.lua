@@ -38,14 +38,13 @@ timers = {
 -- init() sets up our game environment.
 local function init()
     --debugger.disable()
-
-    ui = UIManager()
-
     timers.work = Timer("work")
     timers.short = Timer("short")
     timers.long = Timer("long")
     timers = utils.makeReadOnly(timers, "timers")
     currentTimer = timers.work
+
+    ui = UIManager()
 end
 
 local function splash()

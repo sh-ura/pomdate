@@ -37,8 +37,9 @@ name = "panel"
 ---    Defaults to vertical layout.
 function Panel:init(name, spacing, horizontal)
     Panel.super.init(self, name)
-    self.img = gfx.image.new(100, 200)
-    self:setImage(self.img)
+    self._img = gfx.image.new(100, 200)
+    self:setImage(self._img)
+    self:setZIndex(10)
 
     -- orientation-based layouts
     -- could be split into orientation-specific subclasses,
@@ -81,6 +82,7 @@ function Panel:init(name, spacing, horizontal)
         end
     end
 
+    self._isConfigured = true
     self = utils.makeReadOnly(self, "panel instance")
 end
 
@@ -113,7 +115,7 @@ function Panel:addChild(element)
     element.isSelected = function ()
         return element == self.children[self.i_selectChild]
     end
-    _, _, x, y = element:moveTo(self.layout())
+    local _, _, x, y = element:moveTo(self.layout())
     if (x >= self.x + self.width) or (y >= self.y + self.height) then
         d.log("UIElement '" .. element.name .. "' out-of-bounds in layout. Illustrating bounds.")
         d.illustrateBounds(self)

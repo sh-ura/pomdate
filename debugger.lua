@@ -74,6 +74,7 @@ function drawLog ()
     logImg:draw(0,0)
 end
 
+--TODO need to rename this to draw..... despite naming clash..
 -- bounds(sprite) visualizes the rectangular bounds of the sprite.
 function illustrateBounds (sprite)
     gfx.pushContext(illImg)

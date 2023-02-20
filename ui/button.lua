@@ -36,16 +36,18 @@ function Button:init(name)
         gfx.setColor(gfx.kColorBlack)
         gfx.drawText("*"..name.."*", 2, 2) -- TODO refactor
     gfx.popContext()
+    self:setZIndex(80)
 
     -- declare button behaviours, to be configured elsewhere, prob by UI Manager
     self.isPressed = function ()
         d.log("button '" .. self.name .. "' press criteria not set")
         return false
     end
-    self.action = function ()
-        d.log("button '" .. self.name .. "' action not set")
+    self.pressedAction = function ()
+        d.log("button '" .. self.name .. "' pressedAction not set")
     end
 
+    self._isConfigured = true
     self = utils.makeReadOnly(self, "button instance")
 end
 
@@ -55,7 +57,7 @@ function Button:update()
         self:setImage(self.img:invertedImage())
         if self.isPressed() then
             --d.log(self.name .. " is pressed")
-            self.action()
+            self.pressedAction()
         end 
     else
         self:setImage(self.img)

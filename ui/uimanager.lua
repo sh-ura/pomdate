@@ -6,6 +6,7 @@
 --- TODO may be nice to encapsulate this env, pass ref to STATE on init
 
 import 'CoreLibs/crank'
+import 'ui/group'
 import 'ui/button'
 import 'ui/panel'
 import 'ui/dial'
@@ -28,7 +29,11 @@ local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
 
 local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
-
+local DURATION_DEFAULTS <const> = {
+    work = 25,
+    short = 5,
+    long = 20
+}
 local isApressed = function() return pd.buttonJustPressed(A) end
 local isBpressed = function() return pd.buttonJustPressed(B) end
 
@@ -42,7 +47,13 @@ class('UIManager').extends(UIElement)
 
 local instance = nil
 local timersMenu = nil  -- seq that timer buttons appear in
-local timerDial = nil   -- dial for configuring timer duration
+local timerDials = {}
+local timerButtons = {}
+
+-- TODO once button factory is set up this can be demodularized
+local function setTimerDial(d, t)
+    d:set(t:getDuration())
+end
 
 local function populateTimersMenu ()
     if not timersMenu then
@@ -50,11 +61,37 @@ local function populateTimersMenu ()
         return
     end
 
-    local function runTimer(t)
-        timerDial:transitionOut()
-        timersMenu:transitionOut()
-        t:setDuration(timerDial.value)
-        toRun(t)
+    local function makeTimerSelector(name, t)
+        local button = Button(name .. "Button")
+        timerButtons[name] = button
+        button.isPressed = isApressed
+
+        local dial = Dial(name .. "Dial", "mins", 1, 1, 60)
+        timerDials[name] = dial
+        local ticks = 60 / CRANK_ROTS_PER_HOUR
+        dial.getDialChange = function ()
+            return pd.getCrankTicks(ticks)
+        end
+        dial:set(DURATION_DEFAULTS[name])
+        dial:moveTo(20, 60)
+
+        local group = Group(name .. "Group")
+        group:addChild(button)
+        group:addChild(dial)
+        group:configRect(button.x, button.y, button.width, button.height)
+
+        group.isSelected = function()
+            return button.isSelected()
+        end
+        group.selectedAction = function() dial:add() end
+        group.notSelectedAction = function() dial:remove() end
+        button.pressedAction = function ()
+            timersMenu:transitionOut()
+            t:setDuration(dial.value) --TODO move this to toRun in main?
+            toRun(t)
+        end
+        
+        return group
     end
 
     --TODO refactor timer buttons:
@@ -62,32 +99,12 @@ local function populateTimersMenu ()
         -- buttons are indexed in the timersmenu as an array/nameless.
         --      Instead they get their names from their assigned timers
 
-    local workButton = Button("work")
-    workButton.isPressed = isApressed
-    workButton.action = function () -- TODO this could be generic to all timer buttons
-        t = timers.work
-        t:setDuration(25) -- TODO replace arg w local var selectedDuration (int)
-        runTimer(t)
-    end
-    timersMenu:addChild(workButton)
-
-    local shortButton = Button("short")
-    shortButton.isPressed = isApressed
-    shortButton.action = function () -- TODO this could be generic to all timer buttons
-        t = timers.short
-        t:setDuration(5)
-        runTimer(t)
-    end
-    timersMenu:addChild(shortButton)
-
-    local longButton = Button("long")
-    longButton.isPressed = isApressed
-    longButton.action = function () -- TODO this could be generic to all timer buttons
-        t = timers.long
-        t:setDuration(20)
-        runTimer(t)
-    end
-    timersMenu:addChild(longButton)
+    local workGroup = makeTimerSelector("work", timers.work)
+    timersMenu:addChild(workGroup)
+    local shortGroup = makeTimerSelector("short", timers.short)
+    timersMenu:addChild(shortGroup)
+    local longGroup = makeTimerSelector("long", timers.long)
+    timersMenu:addChild(longGroup)
 end
 
 --- Initializes and returns new UIManager singleton instance.
@@ -110,18 +127,12 @@ function UIManager:init()
     end
     populateTimersMenu()
 
-    timerDial = Dial("timerDial", "min", 1, 1, 60)
-    timerDial.isSelected = function()
-        return state == STATES.MENU
-    end
-    local ticks = 60 / CRANK_ROTS_PER_HOUR
-    timerDial.getDialChange = function ()
-        return pd.getCrankTicks(ticks)
+    for _, dial in pairs(timerDials) do
+        dial:moveTo(20, 60)
+        dial:setZIndex(20)
     end
 
-    --self:addChild(timerDial)
-    timerDial:moveTo(20, 60)
-
+    self._isConfigured = true
     instance = self
     self = utils.makeReadOnly(self, "UIManager instance")
 end
@@ -133,7 +144,6 @@ function UIManager:update()
 
         --TODO this should probs be done by pause button once set up
         timersMenu:transitionIn()
-        timerDial:transitionIn()
     end
 
     UIManager.super.update(self)

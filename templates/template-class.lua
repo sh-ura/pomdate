@@ -51,7 +51,7 @@ function Class:update()
     
 
     Class.super.update(self)
-    --debugger.bounds(self)
+    --d.illustrateBounds(self)
 end
 
 -- pkg footer: pack and export the namespace.

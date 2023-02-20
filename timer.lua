@@ -42,6 +42,7 @@ function Timer:init(name)
     self.name = name
 
     self._duration = 0.0 -- float timer duration in msec
+    self._minsDuration = 0 -- cache int duration in min, saves some computation in getDuration()
     self.img = gfx.image.new(200,150)
     self:setImage(self.img)
 
@@ -100,10 +101,17 @@ function Timer:stop()
 end
 
 
---- Set the duration the timer should run for
+--- Set the duration the timer should run for (in minutes).
 ---@param mins integer duration
 function Timer:setDuration(mins)
+    self._minsDuration = mins
     self._duration = (mins + 0.0) * SEC_PER_MIN * MSEC_PER_SEC
+end
+
+--- Get the duration the timer will run for (in minutes).
+---@return integer mins duration
+function Timer:getDuration()
+    return self._minsDuration
 end
 
 --[[ not needed yet
