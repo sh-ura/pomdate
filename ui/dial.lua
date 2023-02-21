@@ -29,7 +29,7 @@ name = "dial"
 
 --- Initializes a new Dial instance.
 ---@param name string instance name for debugging
----@param unit string unit being enumerated, ex. "min"
+---@param unit string unit being enumerated, singular, ex. "min"
 ---@param step integer step to inc/decrement the value on the dial by
 ---@param lowerLimit integer (optional) cease dialing back past this value
 ---@param upperLimit integer (optional) cease dialing forward past this value
@@ -64,21 +64,28 @@ end
 ---TODO desc
 function Dial:update()
     if self.isSelected() then
+        local val = self.value
+        local prev = self._prevValue
+        local low = self.lowerLimit
+        local upp = self.upperLimit
+
         -- only redraw if val has changed
-        if self.value ~= self._prevValue then
+        if val ~= prev then
+            local unit = self.unit
+            if val ~= 1 then unit = unit .. "s" end
             gfx.pushContext(self._img)
                 gfx.clear()
-                gfx.drawText("*".. self.value .. " " .. self.unit .."*", 2, 2)
+                gfx.drawText("*".. val .. " " .. unit .."*", 2, 2)
             gfx.popContext()
             self:setImage(self._img:scaledImage(2))
         end
 
-        self._prevValue = self.value
-        self.value = self.value + self.getDialChange() * self.step
-        if self.lowerLimit and self.value <= self.lowerLimit then
-            self.value = self.lowerLimit
-        elseif self.upperLimit and self.value >= self.upperLimit then
-            self.value = self.upperLimit
+        self._prevValue = val
+        self.value = val + self.getDialChange() * self.step
+        if low and self.value <= low then
+            self.value = low
+        elseif upp and self.value >= upp then
+            self.value = upp
         end
     end
 
