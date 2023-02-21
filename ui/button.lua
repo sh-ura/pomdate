@@ -28,14 +28,9 @@ function Button:init(name)
     -- TODO give each timer a name
     Button.super.init(self, name)
 
-    self.img = gfx.image.new(70, 40) ---@field desc desc
+    self.img = gfx.image.new(100, 40)
     self:setImage(self.img)
-    gfx.pushContext(self.img)
-        gfx.setColor(gfx.kColorWhite)
-        gfx.fillRect(self:getBounds())
-        gfx.setColor(gfx.kColorBlack)
-        gfx.drawText("*"..name.."*", 2, 2) -- TODO refactor
-    gfx.popContext()
+    self:setLabel(name)
     self:setZIndex(80)
 
     -- declare button behaviours, to be configured elsewhere, prob by UI Manager
@@ -64,6 +59,18 @@ function Button:update()
     end
     Button.super.update(self)
     --debugger.bounds(self)
+end
+
+--- Set the label to show on the button
+---@param label string
+function Button:setLabel(label)
+    gfx.pushContext(self.img)
+        gfx.clear()
+        gfx.setColor(gfx.kColorWhite)
+        gfx.fillRect(self:getBounds())
+        gfx.setColor(gfx.kColorBlack)
+        gfx.drawText("*"..label.."*", 2, 2) -- TODO refactor
+    gfx.popContext()
 end
 
 local _ENV = _G

@@ -117,6 +117,10 @@ function UIManager:init()
     end
     populateTimersMenu()
 
+    timerButtons.work:setLabel("work")
+    timerButtons.short:setLabel("short break")
+    timerButtons.long:setLabel("long break")
+    
     for _, dial in pairs(timerDials) do
         dial:moveTo(20, 60)
         dial:setZIndex(20)

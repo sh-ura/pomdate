@@ -37,7 +37,7 @@ name = "panel"
 ---    Defaults to vertical layout.
 function Panel:init(name, spacing, horizontal)
     Panel.super.init(self, name)
-    self._img = gfx.image.new(100, 200)
+    self._img = gfx.image.new(140, 200)
     self:setImage(self._img)
     self:setZIndex(10)
 
