@@ -39,6 +39,11 @@ timers = {
     short = 'nil',
     long = 'nil'
 }
+local notifSound = nil
+
+--TODO move below asset path info to config or smth
+local soundPathPrefix = "assets/sound/"
+local notifSoundPath = "xylo-notif.wav"
 
 --- Sets up the app environment.
 --- If a state save file exists, it will be loaded here.
@@ -58,6 +63,7 @@ local function init()
     timers.short = Timer("short")
     timers.long = Timer("long")
     timers = utils.makeReadOnly(timers, "timers")
+    timer.setNotifSound(pd.sound.sampleplayer.new(soundPathPrefix .. notifSoundPath))
     currentTimer = timers.work
 
     ui = UIManager()

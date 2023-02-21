@@ -20,6 +20,8 @@ local Timer <const> = Timer
 local MSEC_PER_SEC <const> = 1000
 local SEC_PER_MIN <const> = 60
 
+local notifSound = nil
+
 local _ENV = P
 name = "timer"
 
@@ -32,6 +34,22 @@ local function convertTime(msec)
     local min = floor(sec / SEC_PER_MIN)
     sec = floor(sec - min * SEC_PER_MIN)
     return min, sec
+end
+
+--- Notifies user that timer is complete
+local function notify()
+    d.log("notification pushed")
+    if notifSound then notifSound:play(0) end
+end
+
+--- Set the sound to be played when a timer finishes
+---@param sound pd.sound.sampleplayer or pd.sound.fileplayer
+function setNotifSound(sound)
+    if not sound.play or not sound.stop then
+        d.log("attempting to set unplayable notif sound", sound)
+        return
+    end
+    notifSound = sound
 end
 
 --- Initializes, but does not start, a Timer.
@@ -76,20 +94,29 @@ function Timer:update()
             gfx.clear()
             gfx.drawText("*"..timeString.."*", 0, 0)
         gfx.popContext()
-        self:setImage(self.img:scaledImage(4))
 
         -- if timer has completed
         if msec <= 0 then
-            self.timer = nil
             gfx.pushContext(self.img)
                 gfx.clear()
-                gfx.drawText("DONE", 0, 0)
+                gfx.drawText("*DONE*", 0, 0)
             gfx.popContext()
+            self.timer = nil
+            notify()
         end
+
+        --DEBUG doing this prevents the sprite from auto-refreshing when self.img changes
+        --TODO set a larger font instead of upscaling default text
+        self:setImage(self.img:scaledImage(4))
     end
 
     Timer.super.update(self)
     --debugger.illustrateBounds(self)
+end
+
+function Timer:remove()
+    notifSound:stop()
+    Timer.super.remove(self)
 end
 
 function Timer:start()
@@ -99,7 +126,6 @@ end
 function Timer:stop()
     self.timer = nil
 end
-
 
 --- Set the duration the timer should run for (in minutes).
 ---@param mins integer duration
@@ -113,32 +139,6 @@ end
 function Timer:getDuration()
     return self._minsDuration
 end
-
---[[ not needed yet
-function Timer:pause()
-    if self:timerIsNil("pause()") then return end
-    self.timer:pause()
-end
---]]
-
---[[ not needed yet
-function Timer:reset()
-    if not self.timer then
-        debugger.log("self.timer is nil. Can't call Timer:reset().")
-        return
-    end
-    self.timer:reset()
-    debugger.log("timer reset")
-end
---]]
-
---[[ not needed yet
--- this function may not need to be named here
--- define it in the pd.timer.new closure?
-local function notify(t)
-    -- call when countdown ends
-end
---]]
 
 local _ENV = _G
 timer = utils.makeReadOnly(P)
