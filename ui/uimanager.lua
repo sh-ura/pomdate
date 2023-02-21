@@ -61,7 +61,7 @@ local function populateTimersMenu ()
         timerButtons[name] = button
         button.isPressed = isApressed
 
-        local dial = Dial(name .. "Dial", "mins", 1, 1, 60)
+        local dial = Dial(name .. "Dial", "min", 1, 1, 60)
         timerDials[name] = dial
         local ticks = 60 / CRANK_ROTS_PER_HOUR
         dial.getDialChange = function ()
@@ -138,6 +138,17 @@ function UIManager:update()
 
     UIManager.super.update(self)
     --debugger.bounds(self)
+end
+
+--- Get the value currently set on a specified dial
+---@return integer minutes value on this dial, or -1 if dial is not found
+function UIManager:getDialValue(name)
+    local dial = timerDials[name]
+    if not dial then
+        d.log("dial '" .. name .. "' not known to uimanager")
+        return -1
+    end
+    return dial.value
 end
 
 --TODO function get() end

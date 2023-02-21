@@ -52,7 +52,7 @@ local function init()
         duration_defaults.short = loadedState.short
         duration_defaults.long = loadedState.long
     end
-    d.log("loading complete; dumping loadedState table", loadedState)
+    d.log("loading attempt complete; dumping loadedState table", loadedState)
 
     timers.work = Timer("work")
     timers.short = Timer("short")
@@ -80,21 +80,19 @@ end
 
 local function saveState()
     d.log("attempting to saveState")
-    --TODO DEBUG not hitting the check below. timers is empty, but isnt??
-    d.log("dumping timers", timers)
-    for _, t in pairs(timers) do
-        d.log("checking that timer exists")
-        if not t then
-            d.log(t.name .. " timer nil; durations state not overwritten", timers)
-            return
-        end
-    end
 
     local durations = {
-        work = timers.work:getDuration(),
-        short = timers.short:getDuration(),
-        long = timers.long:getDuration()
+        work = ui:getDialValue("work"),
+        short = ui:getDialValue("short"),
+        long = ui:getDialValue("long")
     }
+    for name, duration in pairs(durations) do
+        if duration <= -1 then
+            durations[name] = duration_defaults[name]
+        end
+    end
+    d.log("dumping durations to be saved", durations)
+
     pd.datastore.write(durations, "durations")
     d.log("save attempt complete. Dumping datastore contents", pd.datastore.read("durations"))
 end
