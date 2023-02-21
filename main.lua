@@ -24,6 +24,11 @@ local B <const> = pd.kButtonB
 -- TODO can states be a set of update funcs, or do we need the enum?
 STATES = configs.STATES
 state = STATES.LOADING
+duration_defaults = {
+    work = 25,
+    short = 5,
+    long = 20
+}
 
 local ui = nil
 local workMinutes = 0.1
@@ -35,9 +40,20 @@ timers = {
     long = 'nil'
 }
 
--- init() sets up our game environment.
+--- Sets up the app environment.
+--- If a state save file exists, it will be loaded here.
 local function init()
     --debugger.disable()
+    d.log("attempting to loadState")
+    local loadedState = pd.datastore.read("durations")
+    if loadedState then
+        d.log("state file exists")
+        duration_defaults.work = loadedState.work
+        duration_defaults.short = loadedState.short
+        duration_defaults.long = loadedState.long
+    end
+    d.log("loading complete; dumping loadedState table", loadedState)
+
     timers.work = Timer("work")
     timers.short = Timer("short")
     timers.long = Timer("long")
@@ -47,6 +63,7 @@ local function init()
     ui = UIManager()
 end
 
+--TODO replace with a launchImage, configurable in pdxinfo
 local function splash()
     -- TODO maybe the configs really should just be globals in main. or in configs.lua w/o namespacing
     local splashImg = gfx.image.new(configs.W_SCREEN, configs.H_SCREEN)
@@ -61,7 +78,26 @@ local function splash()
     pd.ui.crankIndicator:start()
 end
 
--- 2 funcs below can be moved to ui
+local function saveState()
+    d.log("attempting to saveState")
+    --TODO DEBUG not hitting the check below. timers is empty, but isnt??
+    d.log("dumping timers", timers)
+    for _, t in pairs(timers) do
+        d.log("checking that timer exists")
+        if not t then
+            d.log(t.name .. " timer nil; durations state not overwritten", timers)
+            return
+        end
+    end
+
+    local durations = {
+        work = timers.work:getDuration(),
+        short = timers.short:getDuration(),
+        long = timers.long:getDuration()
+    }
+    pd.datastore.write(durations, "durations")
+    d.log("save attempt complete. Dumping datastore contents", pd.datastore.read("durations"))
+end
 
 -- performs done -> select transition
 -- then inits select
@@ -103,6 +139,13 @@ function pd.update()
 
     pd.timer.updateTimers()
     gfx.sprite.update()
+end
+
+function pd.gameWillTerminate()
+    saveState()
+end
+function pd.deviceWillSleep()
+    saveState()
 end
 
 -- debugDraw() is called immediately after update()

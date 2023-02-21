@@ -1,0 +1,5 @@
+name=pomdate
+author=Sasha P
+description=Pomodoro timer for Playdate
+bundleID=com.sashap.pomdate
+version=0.1

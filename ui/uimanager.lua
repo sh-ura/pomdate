@@ -29,11 +29,6 @@ local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
 
 local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
-local DURATION_DEFAULTS <const> = {
-    work = 25,
-    short = 5,
-    long = 20
-}
 local isApressed = function() return pd.buttonJustPressed(A) end
 local isBpressed = function() return pd.buttonJustPressed(B) end
 
@@ -72,7 +67,7 @@ local function populateTimersMenu ()
         dial.getDialChange = function ()
             return pd.getCrankTicks(ticks)
         end
-        dial:set(DURATION_DEFAULTS[name])
+        dial:set(duration_defaults[name])
         dial:moveTo(20, 60)
 
         local group = Group(name .. "Group")
@@ -93,11 +88,6 @@ local function populateTimersMenu ()
         
         return group
     end
-
-    --TODO refactor timer buttons:
-        -- funtion startTimer(t) sets the duration and runs runTimer
-        -- buttons are indexed in the timersmenu as an array/nameless.
-        --      Instead they get their names from their assigned timers
 
     local workGroup = makeTimerSelector("work", timers.work)
     timersMenu:addChild(workGroup)
