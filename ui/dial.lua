@@ -47,7 +47,7 @@ function Dial:init(name, unit, step, lowerLimit, upperLimit)
     self.unit = unit    -- unit being enumerated
 
     self._prevValue = 0
-    self._img = gfx.image.new(100, 80)
+    self._img = gfx.image.new(80, 30)
     self:setImage(self._img)
 
     --- Declare dial behaviour, to be configured elsewhere, prob by UI Manager
@@ -90,7 +90,7 @@ function Dial:update()
     end
 
     Dial.super.update(self)
-    --d.illustrateBounds(self)
+    d.illustrateBounds(self)
 end
 
 --TODO needed?

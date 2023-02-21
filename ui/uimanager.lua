@@ -10,6 +10,7 @@ import 'ui/group'
 import 'ui/button'
 import 'ui/panel'
 import 'ui/dial'
+import 'ui/textbox'
 
 --[[
     TODO 
@@ -44,6 +45,7 @@ local instance = nil
 local timersMenu = nil  -- seq that timer buttons appear in
 local timerDials = {}
 local timerButtons = {}
+local menuInstructions = nil
 
 -- TODO once button factory is set up this can be demodularized
 local function setTimerDial(d, t)
@@ -80,8 +82,10 @@ local function populateTimersMenu ()
         end
         group.selectedAction = function() dial:add() end
         group.notSelectedAction = function() dial:remove() end
+        -- TODO move func def below to be local func more visible at root of this file
         button.pressedAction = function ()
             timersMenu:transitionOut()
+            menuInstructions:transitionOut()
             t:setDuration(dial.value) --TODO move this to toRun in main?
             toRun(t)
         end
@@ -117,10 +121,27 @@ function UIManager:init()
     end
     populateTimersMenu()
 
+    --TODO this is bad to look at; rename
+    menuInstructions = Panel("menuInstructions", 0)
+    self:addChild(menuInstructions)
+    menuInstructions.isSelected = function() return false end
+    menuInstructions:moveTo(20, 140)
+
+    local menuButtonInstructions = Textbox("menuButtonInstructions", 220, 20)
+    menuInstructions:addChild(menuButtonInstructions)
+    menuButtonInstructions:setText("_Press A to start selected timer_")
+    menuButtonInstructions:setZIndex(20)
+    local menuDialInstructions = Textbox("menuDialInstructions", 220, 20)
+    menuInstructions:addChild(menuDialInstructions)
+    menuDialInstructions:setText("_Crank to set pom duration_")
+    menuDialInstructions:setZIndex(20)
+
+    
+
     timerButtons.work:setLabel("work")
     timerButtons.short:setLabel("short break")
     timerButtons.long:setLabel("long break")
-    
+
     for _, dial in pairs(timerDials) do
         dial:moveTo(20, 60)
         dial:setZIndex(20)
@@ -138,6 +159,7 @@ function UIManager:update()
 
         --TODO this should probs be done by pause button once set up
         timersMenu:transitionIn()
+        menuInstructions:transitionIn()
     end
 
     UIManager.super.update(self)

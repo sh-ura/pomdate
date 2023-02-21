@@ -48,7 +48,7 @@ local notifSoundPath = "xylo-notif.wav"
 --- Sets up the app environment.
 --- If a state save file exists, it will be loaded here.
 local function init()
-    --debugger.disable()
+    debugger.disable()
     d.log("attempting to loadState")
     local loadedState = pd.datastore.read("durations")
     if loadedState then
