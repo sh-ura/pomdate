@@ -28,26 +28,34 @@ local Panel <const> = Panel
 local _ENV = P
 name = "panel"
 
---TODO this may not be needed, due to parent
+--TODO NEED TO SET DIMENSIONS.
+--      bug in current app is caused by the text not fitting in the panel
 --- Initializes a panel UIElement.
 ---@param name string panel name for debugging
----@param spacing integer number of pixels between UIElements (this panel & its children)
----@param horizontal (option) lay the panel's children out
+---@param w integer initial width, 0 defaults to screen width
+---@param h integer initial height, 0 defaults to screen height
+---@param spacing integer (optional) number of pixels between UIElements (this panel & its children)
+---@param horizontal boolean (optional) lay the panel's children out
 ---    next to each other in the x dimension.
 ---    Defaults to vertical layout.
-function Panel:init(name, spacing, horizontal)
-    Panel.super.init(self, name)
-    self._img = gfx.image.new(140, 200)
-    self:setImage(self._img)
+function Panel:init(name, w, h, spacing, horizontal)
+    if not spacing then spacing = 0 end
+    Panel.super.init(self, name, w, h)
+
+    self._spacing = spacing
+    self._isHorizontal = false
+    self._lastChild = nil -- latest child added to panel
     self:setZIndex(10)
 
     -- orientation-based layouts
     -- could be split into orientation-specific subclasses,
     --      but atm I don't want to spare the extra __index lookup
     if horizontal then
+        self._isHorizontal = true
         self.prevButton = LEFT
         self.nextButton = RIGHT
 
+        --TODO refactor layout functions to use _lastChild
         --- Compute a new child's global position
         ---@return x,y the coordinate to place the next child at
         self.layout = function()
@@ -94,10 +102,10 @@ function Panel:update()
     if self.isSelected() then
         if pd.buttonJustPressed(self.prevButton) then
             self.i_selectChild = (self.i_selectChild - 2) % #self.children + 1
-            d.log(self.name .. " prev button pressed. i: " .. self.i_selectChild)
+            --d.log(self.name .. " prev button pressed. i: " .. self.i_selectChild)
         elseif pd.buttonJustPressed(self.nextButton) then
             self.i_selectChild = self.i_selectChild % #self.children + 1
-            d.log(self.name .. " next button pressed. i: " .. self.i_selectChild)
+            --d.log(self.name .. " next button pressed. i: " .. self.i_selectChild)
         end
     end
     Panel.super.update(self)
@@ -110,17 +118,70 @@ end
 ---@param element UIElement the child element
 function Panel:addChild(element)
     Panel.super.addChild(self, element)
-    d.log("adding child " .. element.name)
+    --d.log("adding child " .. element.name)
 
     element.isSelected = function ()
         return element == self.children[self.i_selectChild]
     end
-    local _, _, x, y = element:moveTo(self.layout())
+    local x1, y1, x, y = element:moveTo(self.layout())
+    d.log("x " .. x1 .. " y " .. y1)
+    self._lastChild = element
+
     if (x >= self.x + self.width) or (y >= self.y + self.height) then
         d.log("UIElement '" .. element.name .. "' out-of-bounds in layout. Illustrating bounds.")
         d.illustrateBounds(self)
         d.illustrateBounds(element)
     end
+end
+
+--TODO this returns floats, want int pixels
+--- Get the maximum dimensions of an element that would fit 
+---     in this panel without triggering the 'out-of-bounds'
+---     debug warning.
+--- Accounts for space occupied by elements presently in the panel.
+--- These dimensions are not enforced anywhere; using them is suggested, 
+---     but voluntary.
+---@param nNewElements integer (optional) the number of identically-sized new children to 'slice' for
+---@return integer maximum width
+---@return integer maximum height
+function Panel:getMaxContentDim(nNewElements)
+    local spacing = self._spacing
+    local lastChild = self._lastChild
+    if not nNewElements then nNewElements = 1 end
+
+    --- Return empty space remaining after accounting for existing children in the panel
+    ---@param dim string target dimension, ie. 'x' or 'y'
+    ---@return integer remaining pixels
+    local function spaceAfterChildren(dim)
+        local measure = nil
+        if dim == 'x' then
+            measure = "width"
+        elseif dim == 'y' then
+            measure = "height"
+        else
+            d.log("can't position along '" .. dim .. "' dimension")
+            return 0
+        end
+
+        local available = 0
+        if lastChild then
+            available = (self[dim] + self[measure]) - (lastChild[dim] + lastChild[measure])
+        else
+            available = self[measure]
+        end
+        return (available - spacing * (nNewElements + 1))
+    end
+
+    local w = 0 ; local h = 0
+    if self._isHorizontal then
+        w = spaceAfterChildren('x') // nNewElements
+        h = self.height - 2 * spacing
+    else
+        w = self.width - 2 * spacing
+        h = spaceAfterChildren('y') // nNewElements
+    end
+
+    return w , h 
 end
 
 local _ENV = _G

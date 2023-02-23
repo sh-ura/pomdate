@@ -29,12 +29,14 @@ name = "dial"
 
 --- Initializes a new Dial instance.
 ---@param name string instance name for debugging
+---@param w integer initial width, defaults to screen width
+---@param h integer initial height, defaults to screen height
 ---@param unit string unit being enumerated, singular, ex. "min"
 ---@param step integer step to inc/decrement the value on the dial by
 ---@param lowerLimit integer (optional) cease dialing back past this value
 ---@param upperLimit integer (optional) cease dialing forward past this value
-function Dial:init(name, unit, step, lowerLimit, upperLimit)
-    Dial.super.init(self, name) --should always be at top of init func
+function Dial:init(name, w, h, unit, step, lowerLimit, upperLimit)
+    Dial.super.init(self, name, w, h) --should always be at top of init func
     
     self.step = step    -- step to inc/decrement value by
     self.lowerLimit = lowerLimit
@@ -47,8 +49,6 @@ function Dial:init(name, unit, step, lowerLimit, upperLimit)
     self.unit = unit    -- unit being enumerated
 
     self._prevValue = 0
-    self._img = gfx.image.new(80, 30)
-    self:setImage(self._img)
 
     --- Declare dial behaviour, to be configured elsewhere, prob by UI Manager
     ---@return integer amount to dial. pos for forward, neg for backward, 0 for no change
@@ -90,10 +90,11 @@ function Dial:update()
     end
 
     Dial.super.update(self)
-    d.illustrateBounds(self)
+    --d.illustrateBounds(self)
 end
 
---TODO needed?
+--- Set the value on the dial.
+---@param value integer
 function Dial:set(value)
     local low = self.lowerLimit
     local upp = self.upperLimit
@@ -104,7 +105,7 @@ function Dial:set(value)
     else
         self.value = value
     end
-    d.log(self.name .. " duration set to " .. value)
+    --d.log(self.name .. " duration set to " .. value)
 end
 
 -- pkg footer: pack and export the namespace.

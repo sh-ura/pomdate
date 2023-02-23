@@ -28,12 +28,14 @@ local d <const> = debugger
 local gfx <const> = pd.graphics
 local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
+local pairs = pairs
+local ipairs = ipairs
 
 local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
 local isApressed = function() return pd.buttonJustPressed(A) end
 local isBpressed = function() return pd.buttonJustPressed(B) end
 
--- TODO UIManager should be a base UIElement rather than a panel
+-- TODO UIManager should be a panel and we should use addChild to position its elements on a nice margin
 --      later, can parent menuPanel for stacking timersMenu next to configMenu
 --- UIManager is the singleton root of all UIElements in the program.
 --- It is in charge of defining the specific behaviours and layouts
@@ -42,16 +44,17 @@ class('UIManager').extends(UIElement)
 --local localstatic <const> = val --TODO non-imported statics go here
 
 local instance = nil
-local timersMenu = nil  -- seq that timer buttons appear in
-local timerDials = {}
-local timerButtons = {}
-local menuInstructions = nil
+-- TODO all below should be 'private' instance vars
+local timersMenu = nil  -- contains the buttons for selecting timers
+local timerDials = {} -- visualize/manipulate timer durations
+local timerSelectButtons = {} -- select timer to run
+local menuInst = nil -- instructions shown in MENU state
+local timerInst = nil -- instructions shown in TIMER state
 
--- TODO once button factory is set up this can be demodularized
-local function setTimerDial(d, t)
-    d:set(t:getDuration())
-end
-
+-- TODO I want to position these buttons within timerInstPanel
+--      using getMaxContentDim
+--- Add all of the timer-selecting/-configuring UIElements that are
+---     displayed on the MENU screen.
 local function populateTimersMenu ()
     if not timersMenu then
         d.log("timersMenu nil; can't config")
@@ -59,11 +62,11 @@ local function populateTimersMenu ()
     end
 
     local function makeTimerSelector(name, t)
-        local button = Button(name .. "Button")
-        timerButtons[name] = button
+        local button = Button(name .. "Button", 100, 40)
+        timerSelectButtons[name] = button
         button.isPressed = isApressed
 
-        local dial = Dial(name .. "Dial", "min", 1, 1, 60)
+        local dial = Dial(name .. "Dial", 80, 40, "min", 1, 1, 60) --TODO this is.... long..............
         timerDials[name] = dial
         local ticks = 60 / CRANK_ROTS_PER_HOUR
         dial.getDialChange = function ()
@@ -85,7 +88,7 @@ local function populateTimersMenu ()
         -- TODO move func def below to be local func more visible at root of this file
         button.pressedAction = function ()
             timersMenu:transitionOut()
-            menuInstructions:transitionOut()
+            menuInst:transitionOut()
             t:setDuration(dial.value) --TODO move this to toRun in main?
             toRun(t)
         end
@@ -101,6 +104,26 @@ local function populateTimersMenu ()
     timersMenu:addChild(longGroup)
 end
 
+--- Populate a panel containing instructions for the user.
+---@param panel the panel UIElement to use as a container
+---@param instructions table containing name:text pairs
+local function writeInstructions(panel, instructions)
+    panel.isSelected = function() return false end -- no reason for user to select instructions
+    
+    -- count all instructions to be stacked into panel
+    local n = 0
+    for _, _ in pairs(instructions) do n = n + 1 end
+    n = n + #instructions
+    local w, h = panel:getMaxContentDim(n)
+    d.log("w: " .. w .. " h: " .. h)
+
+    for name, text in pairs(instructions) do
+        local inst = Textbox(name, w, h)
+        inst:setText("_"..text.."_", "dontResize")
+        panel:addChild(inst)
+    end
+end
+
 --- Initializes and returns new UIManager singleton instance.
 --- If instance already exists, this func does nothing but returns that instance.
 function UIManager:init()
@@ -108,44 +131,46 @@ function UIManager:init()
         d.log("UIManager instance exists; not reinstantiating; returning instance")
         return instance
     end
-
-    UIManager.super.init(self, "uimanager", 2, "horizontal")
+    UIManager.super.init(self, "uimanager", 0, 0)
     self.isSelected = function () return true end
 
-    timersMenu = Panel("timersMenu", 2)
+    timersMenu = Panel("timersMenu", 70, 140)
     self:addChild(timersMenu)
-    timersMenu:moveTo(250, 60)
     -- TODO when configmenu + menuPanel, remove the following line
     timersMenu.isSelected= function()
         return state == STATES.MENU
     end
     populateTimersMenu()
+    timersMenu:moveTo(250, 60)
 
-    --TODO this is bad to look at; rename
-    menuInstructions = Panel("menuInstructions", 0)
-    self:addChild(menuInstructions)
-    menuInstructions.isSelected = function() return false end
-    menuInstructions:moveTo(20, 140)
-
-    local menuButtonInstructions = Textbox("menuButtonInstructions", 220, 20)
-    menuInstructions:addChild(menuButtonInstructions)
-    menuButtonInstructions:setText("_Press A to start selected timer_")
-    menuButtonInstructions:setZIndex(20)
-    local menuDialInstructions = Textbox("menuDialInstructions", 220, 20)
-    menuInstructions:addChild(menuDialInstructions)
-    menuDialInstructions:setText("_Crank to set pom duration_")
-    menuDialInstructions:setZIndex(20)
-
-    
-
-    timerButtons.work:setLabel("work")
-    timerButtons.short:setLabel("short break")
-    timerButtons.long:setLabel("long break")
+    timerSelectButtons.work:setLabel("work")
+    timerSelectButtons.short:setLabel("short break")
+    timerSelectButtons.long:setLabel("long break")
 
     for _, dial in pairs(timerDials) do
         dial:moveTo(20, 60)
         dial:setZIndex(20)
     end
+
+    menuInst = Panel("menuInstPanel", 200, 60)
+    writeInstructions(menuInst, {
+        runTimerInst = "A starts selected timer",
+        setTimerInst = "Crank sets pom duration"
+    })
+    menuInst:moveTo(20, 140)
+    menuInst:setZIndex(90)
+    d.clearIllustrations()
+    d.illustrateBounds(menuInst)
+    for _, button in ipairs(menuInst) do
+        d.illustrateBounds(button)
+    end
+
+    timerInst = Panel("timerInstPanel", 300, 30)
+    writeInstructions(timerInst, {
+        toMenuInst = "B returns to menu"
+    })
+    timerInst:moveTo(20, 140)
+    timerInst:setZIndex(90)
 
     self._isConfigured = true
     instance = self
@@ -157,13 +182,17 @@ function UIManager:update()
     if state == STATES.MENU then
         --TODO once config menu exists, set up L/R selection b/w config menu and timers menu
 
+        timerInst:transitionOut()
+
         --TODO this should probs be done by pause button once set up
         timersMenu:transitionIn()
-        menuInstructions:transitionIn()
+        menuInst:transitionIn()
+    elseif state == STATES.TIMER then
+        timerInst:transitionIn()
     end
 
     UIManager.super.update(self)
-    --debugger.bounds(self)
+    --d.illustrateBounds(self)
 end
 
 --- Get the value currently set on a specified dial

@@ -38,7 +38,7 @@ end
 
 --- Notifies user that timer is complete
 local function notify()
-    d.log("notification pushed")
+    --d.log("notification pushed")
     if notifSound then notifSound:play(0) end
 end
 
@@ -61,9 +61,9 @@ function Timer:init(name)
 
     self._duration = 0.0 -- float timer duration in msec
     self._minsDuration = 0 -- cache int duration in min, saves some computation in getDuration()
-    self.img = gfx.image.new(200,150)
+    self._img = gfx.image.new(200,150)
     self:setImage(self.img)
-
+    
     self.timer = nil
 
     self:setCenter(0, 0) --anchor top-left
@@ -90,14 +90,14 @@ function Timer:update()
         if sec < 10 then timeString = timeString .. "0" end
         timeString = timeString .. sec
 
-        gfx.pushContext(self.img)
+        gfx.pushContext(self._img)
             gfx.clear()
             gfx.drawText("*"..timeString.."*", 0, 0)
         gfx.popContext()
 
         -- if timer has completed
         if msec <= 0 then
-            gfx.pushContext(self.img)
+            gfx.pushContext(self._img)
                 gfx.clear()
                 gfx.drawText("*DONE*", 0, 0)
             gfx.popContext()
@@ -105,9 +105,9 @@ function Timer:update()
             notify()
         end
 
-        --DEBUG doing this prevents the sprite from auto-refreshing when self.img changes
+        --DEBUG doing this prevents the sprite from auto-refreshing when self._img changes
         --TODO set a larger font instead of upscaling default text
-        self:setImage(self.img:scaledImage(4))
+        self:setImage(self._img:scaledImage(4))
     end
 
     Timer.super.update(self)

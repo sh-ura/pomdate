@@ -11,6 +11,8 @@ W_SCREEN = 400
 W_CENTRE = 200
 H_SCREEN = 240
 H_CENTRE = 120
+Z_MAX = 32767
+Z_MIN = -32768
 
 -- todo rm??
 STATES = {

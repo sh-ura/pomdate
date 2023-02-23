@@ -23,13 +23,13 @@ local _ENV = P
 name = "button"
 
 --- Initializes a button UIElement.
----@param name string button name for debugging
-function Button:init(name)
+---@param name string button name for 
+---@param w integer (optional) initial width, defaults to screen width
+---@param h integer (optional) initial height, defaults to screen height
+function Button:init(name, w, h)
     -- TODO give each timer a name
-    Button.super.init(self, name)
+    Button.super.init(self, name, w, h)
 
-    self.img = gfx.image.new(100, 40)
-    self:setImage(self.img)
     self:setLabel(name)
     self:setZIndex(80)
 
@@ -49,13 +49,13 @@ end
 --- Updates the button UIElement.
 function Button:update()
     if self.isSelected() then
-        self:setImage(self.img:invertedImage())
+        self:setImage(self._img:invertedImage())
         if self.isPressed() then
             --d.log(self.name .. " is pressed")
             self.pressedAction()
         end 
     else
-        self:setImage(self.img)
+        self:setImage(self._img)
     end
     Button.super.update(self)
     --debugger.bounds(self)
@@ -64,7 +64,7 @@ end
 --- Set the label to show on the button
 ---@param label string
 function Button:setLabel(label)
-    gfx.pushContext(self.img)
+    gfx.pushContext(self._img)
         gfx.clear()
         gfx.setColor(gfx.kColorWhite)
         gfx.fillRect(self:getBounds())

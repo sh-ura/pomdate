@@ -1,5 +1,6 @@
 ---pkg 'group' provides a minimal UIElement container, whose children may share
 ---     visibility and selection criteria without parenting one another.
+---TODO rename to layer, and ensure that it behaves like one!
 
 import 'ui/uielement'
 
@@ -26,9 +27,8 @@ name = "group"
 --- Initializes a new Group instance.
 ---@param name string instance name for debugging
 function Group:init(name)
-    Group.super.init(self) --should always be at top of init func
-    
-    self.name = name
+    Group.super.init(self, name) --should always be at top of init func
+
     --- Optional behaviours for group selection/deselection
     self.selectedAction = function () end
     self.notSelectedAction = function() end

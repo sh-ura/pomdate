@@ -23,7 +23,8 @@ local logImg = gfx.image.new(W_SCREEN, H_SCREEN)     -- img containing log
 local illImg = gfx.image.new(W_SCREEN, H_SCREEN)     -- img containing illustrations
 local enabled = true                                 -- true by default. true if debugger is enabled
 
-
+--TODO distinguish logWarn from logDebug + allow dev to disable
+--      drawing one or the other log
 --- log adds text to the debug log.
 --- Messages are prepended by the message count at the time of logging.
 --- Returns current message count.
@@ -82,9 +83,9 @@ function illustrateBounds (sprite)
     gfx.popContext()
 end
 
+--TODO for some reason this makes log messages disappear
 -- clearIllustrations() clears the log image of all content.
 -- Avoid using if possible. Inconvenient special effects.
--- TODO could modify to clear message at a specific index
 function clearIllustrations ()
     gfx.pushContext(illImg)
         gfx.clear()

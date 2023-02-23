@@ -48,7 +48,7 @@ local notifSoundPath = "xylo-notif.wav"
 --- Sets up the app environment.
 --- If a state save file exists, it will be loaded here.
 local function init()
-    debugger.disable()
+    --debugger.disable()
     d.log("attempting to loadState")
     local loadedState = pd.datastore.read("durations")
     if loadedState then
@@ -64,6 +64,7 @@ local function init()
     timers.long = Timer("long")
     timers = utils.makeReadOnly(timers, "timers")
     timer.setNotifSound(pd.sound.sampleplayer.new(soundPathPrefix .. notifSoundPath))
+    for _, t in pairs(timers) do t:setZIndex(50) end
     currentTimer = timers.work
 
     ui = UIManager()
@@ -119,7 +120,7 @@ end
 function toRun(t)
     currentTimer = t
     d.log(currentTimer.name)
-    currentTimer:moveTo(50, 85)
+    currentTimer:moveTo(50, 70)
     currentTimer:add()
     currentTimer:start(workMinutes)
     pd.setAutoLockDisabled(true)

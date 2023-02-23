@@ -29,21 +29,14 @@ name = "textbox"
 
 --- Initializes a new Textbox UIElement instance.
 ---@param name string instance name for debugging
----@param width integer (optional) desired textbox width
----@param height integer (optional) desired textbox height
-function Textbox:init(name, width, height)
+---@param w integer (optional) desired textbox width
+---@param h integer (optional) desired textbox height
+function Textbox:init(name, w, h)
     Textbox.super.init(self, name) --should always be at top of init func
-    
-    if not width then
-        local width = configs.W_SCREEN
-    end
-    if not height then
-        local height = configs.H_SCREEN
-    end
 
     self._text = name
     self._font = gfx.getFont()
-    self._img = gfx.image.new(width, height)
+    self._img = gfx.image.new(w, h)
     self:setImage(self._img)
     self:setText(name, 'dontResize')
 

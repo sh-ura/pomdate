@@ -30,9 +30,21 @@ name = "uielement"
 
 --- Initializes a new uielement sprite.
 ---@param name string button name for debugging
-function UIElement:init(name)
+---@param w integer (optional) initial width, defaults to screen width
+---@param h integer (optional) initial height, defaults to screen height
+function UIElement:init(name, w, h)
+    if not w or w == 0 then
+        w = configs.W_SCREEN
+    end
+    if not h or h == 0 then
+        h = configs.H_SCREEN
+    end
     UIElement.super.init(self)
+    
     self.name = name
+
+    self._img = gfx.image.new(w, h)
+    self:setImage(self._img)
 
     --TODO config Z index using constant vals for a set of layers
     self:setZIndex(50)
@@ -102,6 +114,7 @@ end
 --- Parents another UIElement.
 ---@param element UIElement the child element
 ---@param keepGlobalPos boolean (option) keep the child's global position as is
+---SPEC EFFECT  overrides child's ZIndex, so that it sets 1 above its new parent
 function UIElement:addChild(element, keepGlobalPos)
     --TODO move this check into children metatable.__newindex
     --so that other class implementations can override this func safely
@@ -118,6 +131,7 @@ function UIElement:addChild(element, keepGlobalPos)
     if not keepGlobalPos then
         element:moveTo(self.x + element.x, self.y + element.y)
     end
+    element:setZIndex(self:getZIndex() + 1)
 end
 
 --- Moves the UIElement and its children
@@ -138,6 +152,18 @@ function UIElement:moveTo(x, y, dontMoveChildren)
     end
 
     return x, y, x + self.width, y + self.height
+end
+
+--- Set the Z index for the UIElement and its children. 
+--- By default, children will always sit 1 above the parent's Z index.
+---@param z integer the value to set Z to
+function UIElement:setZIndex(z)
+    UIElement.super.setZIndex(self, z)
+    if self.children then
+        for _, child in ipairs(self.children) do
+            child:setZIndex(z + 1)
+        end
+    end
 end
 
 -- pkg footer: pack and export the namespace.
