@@ -38,7 +38,8 @@ name = "dial"
 function Dial:init(coreProps, step, lowerLimit, upperLimit)
     Dial.super.init(self, coreProps) --should always be at top of init func
     
-    self.step = step    -- step to inc/decrement value by
+    self._unit = nil
+    self._step = step    -- step to inc/decrement value by
     self._lowLimit = lowerLimit
     self._uppLimit = upperLimit
     self.value = self:setValue(0)
@@ -80,7 +81,7 @@ function Dial:update()
         end
 
         self._prevValue = val
-        self.value = val + self.getDialChange() * self.step
+        self.value = val + self.getDialChange() * self._step
         if low and self.value <= low then
             self.value = low
         elseif upp and self.value >= upp then

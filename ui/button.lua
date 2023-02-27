@@ -32,7 +32,6 @@ function Button:init(coreProps)
     Button.super.init(self, coreProps)
 
     self:setLabel(self.name)
-    self:setZIndex(80)
 
     -- declare button behaviours, to be configured elsewhere, prob by UI Manager
     self.isPressed = function ()

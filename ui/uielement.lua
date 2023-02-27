@@ -80,8 +80,8 @@ function UIElement:init(coreProps)
     end
 
     self._parent = "nil" -- this backref should only be used in debugging
-    self.children = {} -- list of UIElements this panel parents
-    self.i_selectChild = 1 -- index of currently selected child
+    self._children = {} -- list of UIElements this panel parents
+    self._i_selectChild = 1 -- index of currently selected child
 
     --- Determines if this UIElement is selected, ie. "focused on".
     ---@return boolean true if the element's selection criteria are met
@@ -113,7 +113,7 @@ end
 --- Likely to be overridden by extending class
 function UIElement:transitionIn()
     --d.log("uielement '" .. self.name .. "' transition-in anim not set")
-    for _, child in ipairs(self.children) do
+    for _, child in ipairs(self._children) do
         child:transitionIn()
     end
     self:add()
@@ -123,7 +123,7 @@ end
 --- Likely to be overridden by extending class
 function UIElement:transitionOut()
     --d.log("uielement '" .. self.name .. "' transition-out anim not set")
-    for _, child in ipairs(self.children) do
+    for _, child in ipairs(self._children) do
         child:transitionOut()
     end
     self:remove()
@@ -146,7 +146,7 @@ function UIElement:addChild(element, keepGlobalPos)
     end
 
     element._parent = self
-    insert(self.children, element)
+    insert(self._children, element)
     if not keepGlobalPos then
         element:moveTo(self.x + element.x, self.y + element.y)
     end
@@ -163,8 +163,8 @@ function UIElement:moveTo(x, y, dontMoveChildren)
     local x_o = self.x; local y_o = self.y
     UIElement.super.moveTo(self, x, y)
 
-    if not dontMoveChildren and self.children then
-        for _, child in ipairs(self.children) do
+    if not dontMoveChildren and self._children then
+        for _, child in ipairs(self._children) do
             -- globally reposition child, keeping local posn (ie. distance from parent's prev locn)
             child:moveTo(self.x + child.x - x_o, self.y + child.y - y_o)
         end
@@ -178,8 +178,8 @@ end
 ---@param z integer the value to set Z to
 function UIElement:setZIndex(z)
     UIElement.super.setZIndex(self, z)
-    if self.children then
-        for _, child in ipairs(self.children) do
+    if self._children then
+        for _, child in ipairs(self._children) do
             child:setZIndex(z + 1)
         end
     end

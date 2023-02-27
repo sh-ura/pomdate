@@ -35,7 +35,7 @@ name = "textbox"
 function Textbox:init(coreProps)
     Textbox.super.init(self, coreProps) --should always be at top of init func
 
-    self._font = gfx.getFont()
+    self._font = gfx.getFont() --TODO make font config'able
     self:setText(self.name .. " no text set", 'dontResize')
 
     self = utils.makeReadOnly(self, "Textbox instance")
@@ -68,6 +68,7 @@ function Textbox:setText(text, dontResize)
     if not dontResize then self:resize() end
 end
 
+--TODO just a func skeleton; make this actually work
 --- Trim the textbox sprite size to the minimum required
 ---     for the text it contains.
 --- Min textbox size is 1x1 pixels.
@@ -75,7 +76,6 @@ end
 ---@return integer new width
 ---@return integer new height
 function Textbox:resize()
-    --TODO
     return self._img:getSize()
 end
 

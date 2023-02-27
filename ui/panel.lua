@@ -1,10 +1,10 @@
---- pkg 'panel' provides a panel UIElement.
---TODO rename panel to "list"?
+--- pkg 'list' provides a list UIElement, which can list other UIElements within it,
+---     and may enable the user to select between items in the list.
 
 import 'ui/uielement'
 
 local P = {}; local _G = _G
-panel = {}
+list = {}
 
 local pd <const> = playdate
 local gfx <const> = pd.graphics
@@ -18,35 +18,34 @@ local DOWN <const> = pd.kButtonDown
 local LEFT <const> = pd.kButtonLeft
 local RIGHT <const> = pd.kButtonRight
 
---- Panel is a UI element that arranges its children in a
+--- List is a UI element that arranges its children in a
 --- sequence that can be navigated with directional buttons.
-class('Panel').extends(UIElement)
-local Panel <const> = Panel
+class('List').extends(UIElement)
+local List <const> = List
 
 -- local consts go here
 
 local _ENV = P
-name = "panel"
+name = "list"
 
 --TODO NEED TO SET DIMENSIONS.
---      bug in current app is caused by the text not fitting in the panel
---- Initializes a panel UIElement.
+--      bug in current app is caused by the text not fitting in the list
+--- Initializes a list UIElement.
 ---@param coreProps table containing the following core properties, named or array-indexed:
 ---         'name' or 1: (string) button name for debugging
 ---         'w' or 2: (integer; optional) initial width, defaults to screen width
 ---         'h' or 3: (integer; optional) initial height, defaults to screen height
----@param spacing integer (optional) number of pixels between UIElements (this panel & its children)
----@param horizontal boolean (optional) lay the panel's children out
+---@param spacing integer (optional) number of pixels between UIElements (this list & its children)
+---@param horizontal boolean (optional) lay the list's children out
 ---    next to each other in the x dimension.
 ---    Defaults to vertical layout.
-function Panel:init(coreProps, spacing, horizontal)
+function List:init(coreProps, spacing, horizontal)
     if not spacing then spacing = 0 end
-    Panel.super.init(self, coreProps)
+    List.super.init(self, coreProps)
 
     self._spacing = spacing
     self._isHorizontal = false
-    self._lastChild = nil -- latest child added to panel
-    self:setZIndex(10)
+    self._lastChild = nil -- latest child added to list
 
     -- orientation-based layouts
     -- could be split into orientation-specific subclasses,
@@ -61,8 +60,8 @@ function Panel:init(coreProps, spacing, horizontal)
         ---@return x,y the coordinate to place the next child at
         self._layout = function()
             local x = 0 ; local y = 0
-            local nPrevChildren = #self.children - 1
-            local prevChild = self.children[nPrevChildren]
+            local nPrevChildren = #self._children - 1
+            local prevChild = self._children[nPrevChildren]
             if nPrevChildren == 0 then
                 x = self.x + spacing
             else
@@ -79,8 +78,8 @@ function Panel:init(coreProps, spacing, horizontal)
         ---@return x,y the coordinate to place the next child at
         self._layout = function()
             local x = 0 ; local y = 0
-            local nPrevChildren = #self.children - 1
-            local prevChild = self.children[nPrevChildren]
+            local nPrevChildren = #self._children - 1
+            local prevChild = self._children[nPrevChildren]
             x = self.x + spacing
             if nPrevChildren == 0 then
                 y = self.y + spacing
@@ -92,37 +91,37 @@ function Panel:init(coreProps, spacing, horizontal)
     end
 
     self._isConfigured = true
-    self = utils.makeReadOnly(self, "panel instance")
+    self = utils.makeReadOnly(self, "list instance")
 end
 
---- Updates the panel sprite.
+--- Updates the list sprite.
 --- Cycles through its children on button-press.
---- Not all panels/panel-children make use of this functionality.
+--- Not all lists/list-children make use of this functionality.
 --- Depends on what the children's isSelected criteria are configured to.
-function Panel:update()
+function List:update()
     if self.isSelected() then
         if pd.buttonJustPressed(self._inputPrev) then
-            self.i_selectChild = (self.i_selectChild - 2) % #self.children + 1
-            --d.log(self.name .. " prev button pressed. i: " .. self.i_selectChild)
+            self._i_selectChild = (self._i_selectChild - 2) % #self._children + 1
+            --d.log(self.name .. " prev button pressed. i: " .. self._i_selectChild)
         elseif pd.buttonJustPressed(self._inputNext) then
-            self.i_selectChild = self.i_selectChild % #self.children + 1
-            --d.log(self.name .. " next button pressed. i: " .. self.i_selectChild)
+            self._i_selectChild = self._i_selectChild % #self._children + 1
+            --d.log(self.name .. " next button pressed. i: " .. self._i_selectChild)
         end
     end
-    Panel.super.update(self)
+    List.super.update(self)
     --d.illustrateBounds(self)
 end
 
 --- Parents another UIElement, .
 --- No option to keep child's global posn,
----     since the panel *must* control child layout.
+---     since the list *must* control child layout.
 ---@param element UIElement the child element
-function Panel:addChild(element)
-    Panel.super.addChild(self, element)
+function List:addChild(element)
+    List.super.addChild(self, element)
     --d.log("adding child " .. element.name)
 
     element.isSelected = function ()
-        return element == self.children[self.i_selectChild]
+        return element == self._children[self._i_selectChild]
     end
     local x1, y1, x, y = element:moveTo(self._layout())
     d.log("x " .. x1 .. " y " .. y1)
@@ -137,15 +136,15 @@ end
 
 --TODO this returns floats, want int pixels
 --- Get the maximum dimensions of an element that would fit 
----     in this panel without triggering the 'out-of-bounds'
+---     in this list without triggering the 'out-of-bounds'
 ---     debug warning.
---- Accounts for space occupied by elements presently in the panel.
+--- Accounts for space occupied by elements presently in the list.
 --- These dimensions are not enforced anywhere; using them is suggested, 
 ---     but voluntary.
 ---@param nNewElements integer (optional) the number of identically-sized new children to 'slice' for
 ---@return integer maximum width
 ---@return integer maximum height
-function Panel:getMaxContentDim(nNewElements)
+function List:getMaxContentDim(nNewElements)
     if not nNewElements or nNewElements == 0 then
         nNewElements = 1
     end
@@ -153,7 +152,7 @@ function Panel:getMaxContentDim(nNewElements)
     local spacing = self._spacing
     local lastChild = self._lastChild
 
-    --- Return empty space remaining after accounting for existing children in the panel
+    --- Return empty space remaining after accounting for existing children in the list
     ---@param dim string target dimension, ie. 'x' or 'y'
     ---@return integer remaining pixels
     local function spaceAfterChildren(dim)
@@ -189,5 +188,5 @@ function Panel:getMaxContentDim(nNewElements)
 end
 
 local _ENV = _G
-panel = utils.makeReadOnly(P)
-return panel
+list = utils.makeReadOnly(P)
+return list

@@ -42,16 +42,6 @@ local function notify()
     if notifSound then notifSound:play(0) end
 end
 
---- Set the sound to be played when a timer finishes
----@param sound pd.sound.sampleplayer or pd.sound.fileplayer
-function setNotifSound(sound)
-    if not sound.play or not sound.stop then
-        d.log("attempting to set unplayable notif sound", sound)
-        return
-    end
-    notifSound = sound
-end
-
 --- Initializes, but does not start, a Timer.
 ---@param name string timer's name for graybox and debugging
 function Timer:init(name)
@@ -64,7 +54,7 @@ function Timer:init(name)
     self._img = gfx.image.new(200,150)
     self:setImage(self.img)
     
-    self.timer = nil
+    self._timer = nil
 
     self:setCenter(0, 0) --anchor top-left
 end
@@ -78,11 +68,11 @@ end
 --]]
 -- Timer:update() draws the current time in the timer countdown
 function Timer:update()
-    if self.timer then
-        local msec = self.timer.value
+    if self._timer then
+        local msec = self._timer.value
         local min, sec = convertTime(msec)
         -- debugger.log("min: " .. min .. " sec: " .. sec)
-        -- debugger.log(self.timer.value)
+        -- debugger.log(self._timer.value)
 
         local timeString = ""
         if min < 10 then timeString = "0" end
@@ -101,7 +91,7 @@ function Timer:update()
                 gfx.clear()
                 gfx.drawText("*DONE*", 0, 0)
             gfx.popContext()
-            self.timer = nil
+            self._timer = nil
             notify()
         end
 
@@ -120,11 +110,21 @@ function Timer:remove()
 end
 
 function Timer:start()
-    self.timer = pd.timer.new(self._duration, self._duration, 0) -- "value-based" timer w linear interpolation
+    self._timer = pd.timer.new(self._duration, self._duration, 0) -- "value-based" timer w linear interpolation
 end
 
 function Timer:stop()
-    self.timer = nil
+    self._timer = nil
+end
+
+--- Set the sound to be played when a timer finishes
+---@param sound pd.sound.sampleplayer or pd.sound.fileplayer
+function setNotifSound(sound)
+    if not sound.play or not sound.stop then
+        d.log("attempting to set unplayable notif sound", sound)
+        return
+    end
+    notifSound = sound
 end
 
 --- Set the duration the timer should run for (in minutes).
