@@ -128,7 +128,7 @@ function Panel:addChild(element)
     d.log("x " .. x1 .. " y " .. y1)
     self._lastChild = element
 
-    if (x >= self.x + self.width) or (y >= self.y + self.height) then
+    if (x > self.x + self.width - self._spacing) or (y > self.y + self.height - self._spacing) then
         d.log("UIElement '" .. element.name .. "' out-of-bounds in layout. Illustrating bounds.")
         d.illustrateBounds(self)
         d.illustrateBounds(element)
@@ -146,9 +146,12 @@ end
 ---@return integer maximum width
 ---@return integer maximum height
 function Panel:getMaxContentDim(nNewElements)
+    if not nNewElements or nNewElements == 0 then
+        nNewElements = 1
+    end
+
     local spacing = self._spacing
     local lastChild = self._lastChild
-    if not nNewElements then nNewElements = 1 end
 
     --- Return empty space remaining after accounting for existing children in the panel
     ---@param dim string target dimension, ie. 'x' or 'y'

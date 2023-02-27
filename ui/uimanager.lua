@@ -51,18 +51,25 @@ local timerSelectButtons = {} -- select timer to run
 local menuInst = nil -- instructions shown in MENU state
 local timerInst = nil -- instructions shown in TIMER state
 
--- TODO I want to position these buttons within timerInstPanel
---      using getMaxContentDim
 --- Add all of the timer-selecting/-configuring UIElements that are
 ---     displayed on the MENU screen.
-local function populateTimersMenu ()
+---@param panel Panel the panel to contain the timer-selecting buttons
+---@param timers table all Timers to make selectors for
+local function populateTimersMenu (panel, timers)
     if not timersMenu then
         d.log("timersMenu nil; can't config")
         return
     end
 
+    d.log("timers", timers)
+    local n = 0
+    for _, _ in pairs(timers) do d.log("timer counted") n = n + 1 end
+    n = n + #timers
+    d.log("n: " .. n)
+    local wButton, hButton = timersMenu:getMaxContentDim(n)
+
     local function makeTimerSelector(name, t)
-        local button = Button({name .. "Button", 100, 40})
+        local button = Button({name .. "Button", wButton, hButton})
         timerSelectButtons[name] = button
         button.isPressed = isApressed
 
@@ -88,7 +95,7 @@ local function populateTimersMenu ()
         group.notSelectedAction = function() dial:remove() end
         -- TODO move func def below to be local func more visible at root of this file
         button.pressedAction = function ()
-            timersMenu:transitionOut()
+            panel:transitionOut()
             menuInst:transitionOut()
             t:setDuration(dial.value) --TODO move this to toRun in main?
             toRun(t)
@@ -97,12 +104,9 @@ local function populateTimersMenu ()
         return group
     end
 
-    local workGroup = makeTimerSelector("work", timers.work)
-    timersMenu:addChild(workGroup)
-    local shortGroup = makeTimerSelector("short", timers.short)
-    timersMenu:addChild(shortGroup)
-    local longGroup = makeTimerSelector("long", timers.long)
-    timersMenu:addChild(longGroup)
+    for name, timer in pairs(timers) do
+        panel:addChild(makeTimerSelector(name, timer))
+    end
 end
 
 --- Populate a panel containing instructions for the user.
@@ -116,7 +120,6 @@ local function writeInstructions(panel, instructions)
     for _, _ in pairs(instructions) do n = n + 1 end
     n = n + #instructions
     local w, h = panel:getMaxContentDim(n)
-    d.log("w: " .. w .. " h: " .. h)
 
     for name, text in pairs(instructions) do
         local inst = Textbox({name, w, h})
@@ -127,22 +130,25 @@ end
 
 --- Initializes and returns new UIManager singleton instance.
 --- If instance already exists, this func does nothing but returns that instance.
-function UIManager:init()
+---@param timers table all Timers that the UI should support selecting
+function UIManager:init(timers)
     if instance then 
         d.log("UIManager instance exists; not reinstantiating; returning instance")
         return instance
     end
+
+    ---TODO actually use UIManager as panel for laying out its elements along the margins?
     UIManager.super.init(self, {"uimanager"})
     self.isSelected = function () return true end
 
-    timersMenu = Panel({"timersMenu", 70, 140})
+    timersMenu = Panel({"timersMenu", 120, 140})
     self:addChild(timersMenu)
     -- TODO when configmenu + menuPanel, remove the following line
-    timersMenu.isSelected= function()
+    timersMenu.isSelected = function()
         return state == STATES.MENU
     end
     d.log("timersMenu w: " .. timersMenu.width .. " timersMenu h: " .. timersMenu.height)
-    populateTimersMenu()
+    populateTimersMenu(timersMenu, timers)
     timersMenu:moveTo(250, 60)
 
     timerSelectButtons.work:setLabel("work")

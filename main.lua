@@ -34,7 +34,7 @@ local ui = nil
 local workMinutes = 0.1
 local splashSprite = nil
 local currentTimer = nil
-timers = {
+local timers = {
     work = 'nil',
     short = 'nil',
     long = 'nil'
@@ -67,7 +67,9 @@ local function init()
     for _, t in pairs(timers) do t:setZIndex(50) end
     currentTimer = timers.work
 
-    ui = UIManager()
+    d.log("timers in main", timers)
+
+    ui = UIManager(timers)
 end
 
 --TODO replace with a launchImage, configurable in pdxinfo

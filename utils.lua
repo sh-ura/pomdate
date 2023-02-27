@@ -1,6 +1,7 @@
 local getmetatable = getmetatable
 local setmetatable = setmetatable
 local error = error
+local next = next
 
 -- pkgs decorators such as access control
 local P = {}; local _G = _G
@@ -26,14 +27,28 @@ end
 --- Not true readonly, as k-v reassignment is unfortunately still permitted.
 ---@param t table to make read-only
 ---@param name string (optional) table name to use
----  SPECIAL EFFECT     Overrides metatable's \_\_newindex
 function makeReadOnly(t, name)
     if not enabled then
         return t
     end
 
     local proxy = {}
-    local mt = { __index = t }
+    local mt = {
+        __index = t,
+        __len = function()
+            return #t
+        end,
+        __pairs = function()
+            return next, t, nil
+        end,
+        __ipairs = function()
+            return function(t, i)
+                i = i + 1
+                local v = t[i]
+                if v ~= nil then return i, v end
+            end, t, 0
+        end
+    }
     setmetatable(proxy, mt)
 
     if not name then 
