@@ -13,6 +13,7 @@ local gfx <const> = pd.graphics
 local utils <const> = utils
 local configs <const> = configs
 local d <const> = debugger
+local type = type
 local ipairs <const> = ipairs
 local insert <const> = table.insert
 
@@ -29,20 +30,38 @@ name = "uielement"
 --local function localfunc() end --TODO local funcs go here
 
 --- Initializes a new uielement sprite.
----@param name string button name for debugging
----@param w integer (optional) initial width, defaults to screen width
----@param h integer (optional) initial height, defaults to screen height
-function UIElement:init(name, w, h)
-    if not w or w == 0 then
+---@param coreProps table containing the following core properties, named or array-indexed:
+---         'name' or 1: (string) button name for debugging
+---         'w' or 2: (integer; optional) initial width, defaults to screen width
+---         'h' or 3: (integer; optional) initial height, defaults to screen height
+function UIElement:init(coreProps)
+    UIElement.super.init(self)
+
+    -- unpack coreProps
+    local name, w, h
+    if coreProps then
+        if coreProps.name then name = coreProps.name
+        elseif coreProps[1] then name = coreProps[1] end
+
+        if coreProps.w then w = coreProps.w
+        elseif coreProps[2] then w = coreProps[2] end
+
+        if coreProps.h then h = coreProps.h
+        elseif coreProps[3] then h = coreProps[3] end
+    end
+    if not name or name == "" or type(name) ~= 'string'  then
+        name = "unnamed-UIElement"
+    end
+    if not w or w == 0 or type(w) ~= 'number' then
         w = configs.W_SCREEN
     end
-    if not h or h == 0 then
+    if not h or h == 0 or type(h) ~= 'number' then
         h = configs.H_SCREEN
     end
-    UIElement.super.init(self)
+    w = w // 1 -- ensure int
+    h = h // 1
     
     self.name = name
-
     self._img = gfx.image.new(w, h)
     self:setImage(self._img)
 

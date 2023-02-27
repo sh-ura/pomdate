@@ -28,17 +28,15 @@ name = "textbox"
 --local function localfunc() end --TODO local funcs go here
 
 --- Initializes a new Textbox UIElement instance.
----@param name string instance name for debugging
----@param w integer (optional) desired textbox width
----@param h integer (optional) desired textbox height
-function Textbox:init(name, w, h)
-    Textbox.super.init(self, name) --should always be at top of init func
+---@param coreProps table containing the following core properties, named or array-indexed:
+---         'name' or 1: (string) button name for debugging
+---         'w' or 2: (integer; optional) initial width, defaults to screen width
+---         'h' or 3: (integer; optional) initial height, defaults to screen height
+function Textbox:init(coreProps)
+    Textbox.super.init(self, coreProps) --should always be at top of init func
 
-    self._text = name
     self._font = gfx.getFont()
-    self._img = gfx.image.new(w, h)
-    self:setImage(self._img)
-    self:setText(name, 'dontResize')
+    self:setText(self.name .. " no text set", 'dontResize')
 
     self = utils.makeReadOnly(self, "Textbox instance")
 end

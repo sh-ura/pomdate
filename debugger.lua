@@ -6,7 +6,8 @@ local pd <const> = playdate -- _G.playdate etc
 local gfx <const> = pd.graphics
 local printTable = printTable
 local print = print
-local type = type; local pairs = pairs
+local type = type
+local pairs = pairs
 local fmod = math.fmod -- TODO may be able to replace this w % modulo lua operator?
 
 local W_SCREEN <const> = configs.W_SCREEN

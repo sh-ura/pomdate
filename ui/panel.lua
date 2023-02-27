@@ -31,16 +31,17 @@ name = "panel"
 --TODO NEED TO SET DIMENSIONS.
 --      bug in current app is caused by the text not fitting in the panel
 --- Initializes a panel UIElement.
----@param name string panel name for debugging
----@param w integer initial width, 0 defaults to screen width
----@param h integer initial height, 0 defaults to screen height
+---@param coreProps table containing the following core properties, named or array-indexed:
+---         'name' or 1: (string) button name for debugging
+---         'w' or 2: (integer; optional) initial width, defaults to screen width
+---         'h' or 3: (integer; optional) initial height, defaults to screen height
 ---@param spacing integer (optional) number of pixels between UIElements (this panel & its children)
 ---@param horizontal boolean (optional) lay the panel's children out
 ---    next to each other in the x dimension.
 ---    Defaults to vertical layout.
-function Panel:init(name, w, h, spacing, horizontal)
+function Panel:init(coreProps, spacing, horizontal)
     if not spacing then spacing = 0 end
-    Panel.super.init(self, name, w, h)
+    Panel.super.init(self, coreProps)
 
     self._spacing = spacing
     self._isHorizontal = false
@@ -52,13 +53,13 @@ function Panel:init(name, w, h, spacing, horizontal)
     --      but atm I don't want to spare the extra __index lookup
     if horizontal then
         self._isHorizontal = true
-        self.prevButton = LEFT
-        self.nextButton = RIGHT
+        self._inputPrev = LEFT
+        self._inputNext = RIGHT
 
         --TODO refactor layout functions to use _lastChild
         --- Compute a new child's global position
         ---@return x,y the coordinate to place the next child at
-        self.layout = function()
+        self._layout = function()
             local x = 0 ; local y = 0
             local nPrevChildren = #self.children - 1
             local prevChild = self.children[nPrevChildren]
@@ -71,12 +72,12 @@ function Panel:init(name, w, h, spacing, horizontal)
             return x, y
         end
     else
-        self.prevButton = UP
-        self.nextButton = DOWN
+        self._inputPrev = UP
+        self._inputNext = DOWN
 
         --- Compute a new child's global position
         ---@return x,y the coordinate to place the next child at
-        self.layout = function()
+        self._layout = function()
             local x = 0 ; local y = 0
             local nPrevChildren = #self.children - 1
             local prevChild = self.children[nPrevChildren]
@@ -100,10 +101,10 @@ end
 --- Depends on what the children's isSelected criteria are configured to.
 function Panel:update()
     if self.isSelected() then
-        if pd.buttonJustPressed(self.prevButton) then
+        if pd.buttonJustPressed(self._inputPrev) then
             self.i_selectChild = (self.i_selectChild - 2) % #self.children + 1
             --d.log(self.name .. " prev button pressed. i: " .. self.i_selectChild)
-        elseif pd.buttonJustPressed(self.nextButton) then
+        elseif pd.buttonJustPressed(self._inputNext) then
             self.i_selectChild = self.i_selectChild % #self.children + 1
             --d.log(self.name .. " next button pressed. i: " .. self.i_selectChild)
         end
@@ -123,7 +124,7 @@ function Panel:addChild(element)
     element.isSelected = function ()
         return element == self.children[self.i_selectChild]
     end
-    local x1, y1, x, y = element:moveTo(self.layout())
+    local x1, y1, x, y = element:moveTo(self._layout())
     d.log("x " .. x1 .. " y " .. y1)
     self._lastChild = element
 

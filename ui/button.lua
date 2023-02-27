@@ -23,14 +23,15 @@ local _ENV = P
 name = "button"
 
 --- Initializes a button UIElement.
----@param name string button name for 
----@param w integer (optional) initial width, defaults to screen width
----@param h integer (optional) initial height, defaults to screen height
-function Button:init(name, w, h)
+---@param coreProps table containing the following core properties, named or array-indexed:
+---         'name' or 1: (string) button name for debugging
+---         'w' or 2: (integer; optional) initial width, defaults to screen width
+---         'h' or 3: (integer; optional) initial height, defaults to screen height
+function Button:init(coreProps)
     -- TODO give each timer a name
-    Button.super.init(self, name, w, h)
+    Button.super.init(self, coreProps)
 
-    self:setLabel(name)
+    self:setLabel(self.name)
     self:setZIndex(80)
 
     -- declare button behaviours, to be configured elsewhere, prob by UI Manager

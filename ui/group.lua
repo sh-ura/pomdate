@@ -25,9 +25,12 @@ local _ENV = P      -- enter pkg namespace
 name = "group"
 
 --- Initializes a new Group instance.
----@param name string instance name for debugging
-function Group:init(name)
-    Group.super.init(self, name) --should always be at top of init func
+---@param coreProps table containing the following core properties, named or array-indexed:
+---         'name' or 1: (string) button name for debugging
+---         'w' or 2: (integer; optional) initial width, defaults to screen width
+---         'h' or 3: (integer; optional) initial height, defaults to screen height
+function Group:init(coreProps)
+    Group.super.init(self, coreProps) --should always be at top of init func
 
     --- Optional behaviours for group selection/deselection
     self.selectedAction = function () end

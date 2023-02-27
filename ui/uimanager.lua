@@ -40,7 +40,7 @@ local isBpressed = function() return pd.buttonJustPressed(B) end
 --- UIManager is the singleton root of all UIElements in the program.
 --- It is in charge of defining the specific behaviours and layouts
 ---     of all UIElements, as well as configuring the UI object heirarchy.
-class('UIManager').extends(UIElement)
+class('UIManager').extends(Panel)
 --local localstatic <const> = val --TODO non-imported statics go here
 
 local instance = nil
@@ -62,20 +62,21 @@ local function populateTimersMenu ()
     end
 
     local function makeTimerSelector(name, t)
-        local button = Button(name .. "Button", 100, 40)
+        local button = Button({name .. "Button", 100, 40})
         timerSelectButtons[name] = button
         button.isPressed = isApressed
 
-        local dial = Dial(name .. "Dial", 80, 40, "min", 1, 1, 60) --TODO this is.... long..............
+        local dial = Dial({name .. "Dial", 80, 40}, 1, 1, 60)
         timerDials[name] = dial
         local ticks = 60 / CRANK_ROTS_PER_HOUR
         dial.getDialChange = function ()
             return pd.getCrankTicks(ticks)
         end
-        dial:set(duration_defaults[name])
+        dial:setUnit("min")
+        dial:setValue(duration_defaults[name])
         dial:moveTo(20, 60)
 
-        local group = Group(name .. "Group")
+        local group = Group({name .. "Group"})
         group:addChild(button)
         group:addChild(dial)
         group:configRect(button.x, button.y, button.width, button.height)
@@ -105,7 +106,7 @@ local function populateTimersMenu ()
 end
 
 --- Populate a panel containing instructions for the user.
----@param panel the panel UIElement to use as a container
+---@param panel Panel to use as a container
 ---@param instructions table containing name:text pairs
 local function writeInstructions(panel, instructions)
     panel.isSelected = function() return false end -- no reason for user to select instructions
@@ -118,7 +119,7 @@ local function writeInstructions(panel, instructions)
     d.log("w: " .. w .. " h: " .. h)
 
     for name, text in pairs(instructions) do
-        local inst = Textbox(name, w, h)
+        local inst = Textbox({name, w, h})
         inst:setText("_"..text.."_", "dontResize")
         panel:addChild(inst)
     end
@@ -131,15 +132,16 @@ function UIManager:init()
         d.log("UIManager instance exists; not reinstantiating; returning instance")
         return instance
     end
-    UIManager.super.init(self, "uimanager", 0, 0)
+    UIManager.super.init(self, {"uimanager"})
     self.isSelected = function () return true end
 
-    timersMenu = Panel("timersMenu", 70, 140)
+    timersMenu = Panel({"timersMenu", 70, 140})
     self:addChild(timersMenu)
     -- TODO when configmenu + menuPanel, remove the following line
     timersMenu.isSelected= function()
         return state == STATES.MENU
     end
+    d.log("timersMenu w: " .. timersMenu.width .. " timersMenu h: " .. timersMenu.height)
     populateTimersMenu()
     timersMenu:moveTo(250, 60)
 
@@ -152,20 +154,15 @@ function UIManager:init()
         dial:setZIndex(20)
     end
 
-    menuInst = Panel("menuInstPanel", 200, 60)
+    menuInst = Panel({"menuInstPanel", 200, 60})
     writeInstructions(menuInst, {
         runTimerInst = "A starts selected timer",
         setTimerInst = "Crank sets pom duration"
     })
     menuInst:moveTo(20, 140)
     menuInst:setZIndex(90)
-    d.clearIllustrations()
-    d.illustrateBounds(menuInst)
-    for _, button in ipairs(menuInst) do
-        d.illustrateBounds(button)
-    end
 
-    timerInst = Panel("timerInstPanel", 300, 30)
+    timerInst = Panel({"timerInstPanel", 300, 30})
     writeInstructions(timerInst, {
         toMenuInst = "B returns to menu"
     })

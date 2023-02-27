@@ -28,26 +28,24 @@ name = "dial"
 --local function localfunc() end --TODO local funcs go here
 
 --- Initializes a new Dial instance.
----@param name string instance name for debugging
----@param w integer initial width, defaults to screen width
----@param h integer initial height, defaults to screen height
----@param unit string unit being enumerated, singular, ex. "min"
+---@param coreProps table containing the following core properties, named or array-indexed:
+---         'name' or 1: (string) button name for debugging
+---         'w' or 2: (integer; optional) initial width, defaults to screen width
+---         'h' or 3: (integer; optional) initial height, defaults to screen height
 ---@param step integer step to inc/decrement the value on the dial by
 ---@param lowerLimit integer (optional) cease dialing back past this value
 ---@param upperLimit integer (optional) cease dialing forward past this value
-function Dial:init(name, w, h, unit, step, lowerLimit, upperLimit)
-    Dial.super.init(self, name, w, h) --should always be at top of init func
+function Dial:init(coreProps, step, lowerLimit, upperLimit)
+    Dial.super.init(self, coreProps) --should always be at top of init func
     
     self.step = step    -- step to inc/decrement value by
-    self.lowerLimit = lowerLimit
-    self.upperLimit = upperLimit
+    self._lowLimit = lowerLimit
+    self._uppLimit = upperLimit
+    self.value = self:setValue(0)
     if lowerLimit and upperLimit then
         self.value = (lowerLimit + upperLimit) // 2
-    else
-        self.value = 0
-    end
-    self.unit = unit    -- unit being enumerated
-
+    elseif lowerLimit then self.value = lowerLimit
+    elseif upperLimit then self.value = upperLimit end
     self._prevValue = 0
 
     --- Declare dial behaviour, to be configured elsewhere, prob by UI Manager
@@ -66,12 +64,13 @@ function Dial:update()
     if self.isSelected() then
         local val = self.value
         local prev = self._prevValue
-        local low = self.lowerLimit
-        local upp = self.upperLimit
+        local low = self._lowLimit
+        local upp = self._uppLimit
 
         -- only redraw if val has changed
         if val ~= prev then
-            local unit = self.unit
+            local unit = self._unit
+            if not unit then unit = "unit" end
             if val ~= 1 then unit = unit .. "s" end
             gfx.pushContext(self._img)
                 gfx.clear()
@@ -93,11 +92,17 @@ function Dial:update()
     --d.illustrateBounds(self)
 end
 
+--- Set the unit on the dial
+---@param unit string unit being enumerated, singular, ex. "min"
+function Dial:setUnit(unit)
+    self._unit = unit
+end
+
 --- Set the value on the dial.
 ---@param value integer
-function Dial:set(value)
-    local low = self.lowerLimit
-    local upp = self.upperLimit
+function Dial:setValue(value)
+    local low = self._lowLimit
+    local upp = self._uppLimit
     if low and value < low then
         self.value = low
     elseif upp and value > upp then
