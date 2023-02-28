@@ -9,9 +9,9 @@ import "CoreLibs/graphics"
 import "CoreLibs/sprites"
 import "CoreLibs/ui"
 
-import "utils"; --utils.disableReadOnly()
+import "utils/utils";
 import "configs"
-import "debugger"
+import "utils/debugger"
 import "timer"
 import "ui/uimanager"
 
@@ -48,6 +48,7 @@ local notifSoundPath = "xylo-notif.wav"
 --- Sets up the app environment.
 --- If a state save file exists, it will be loaded here.
 local function init()
+    --utils.disableReadOnly()
     --debugger.disable()
     d.log("attempting to loadState")
     local loadedState = pd.datastore.read("durations")
