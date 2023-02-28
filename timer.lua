@@ -4,12 +4,14 @@ timer = {}
 
 import "CoreLibs/sprites"
 import "CoreLibs/timer"
+import "CoreLibs/easing" --TODO rm
 
 local pd <const> = playdate
+local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
-local debugger <const> = debugger
-local floor <const> = math.floor
+local floor <const> = math.floor -- TODO may be able to replace this w // floor division lua operator?
+local linease = pd.easingFunctions.linear --TODO rm
 
 -- Timer packs a timer with its UI.
 class('Timer').extends(gfx.sprite)
@@ -18,10 +20,15 @@ local Timer <const> = Timer
 local MSEC_PER_SEC <const> = 1000
 local SEC_PER_MIN <const> = 60
 
+local notifSound = nil
+
 local _ENV = P
 name = "timer"
 
--- convertTime(msec) returns a (min, sec) conversion of the argument, rounded down
+--- Converts the msec argument into the clock time, rounded down
+---@param msec integer milliseconds
+---@return integer minutes
+---@return integer seconds remaining after msec is converted to min 
 local function convertTime(msec)
     local sec = msec / MSEC_PER_SEC
     local min = floor(sec / SEC_PER_MIN)
@@ -29,19 +36,27 @@ local function convertTime(msec)
     return min, sec
 end
 
--- TODO decide where I want to set timer posn; amend img size and init params accordingly
--- Timer:init(xpos, ypos) initializes, but does not start, a Timer.
-function Timer:init(x, y)
+--- Notifies user that timer is complete
+local function notify()
+    --d.log("notification pushed")
+    if notifSound then notifSound:play(0) end
+end
+
+--- Initializes, but does not start, a Timer.
+---@param name string timer's name for graybox and debugging
+function Timer:init(name)
     -- TODO give each timer a name
     Timer.super.init(self)
+    self.name = name
 
-    self:setCenter(0, 0)
-    self:moveTo(x, y)
-
-    self.timer = nil
-    self.img = gfx.image.new(100, 50)
+    self._duration = 0.0 -- float timer duration in msec
+    self._minsDuration = 0 -- cache int duration in min, saves some computation in getDuration()
+    self._img = gfx.image.new(200,150)
     self:setImage(self.img)
-    self = utils.makeReadOnly(self, "timer instance")
+    
+    self._timer = nil
+
+    self:setCenter(0, 0) --anchor top-left
 end
 
 --[[
@@ -53,11 +68,11 @@ end
 --]]
 -- Timer:update() draws the current time in the timer countdown
 function Timer:update()
-    if self.timer then
-        local msec = self.timer.value
+    if self._timer then
+        local msec = self._timer.value
         local min, sec = convertTime(msec)
         -- debugger.log("min: " .. min .. " sec: " .. sec)
-        -- debugger.log(self.timer.value)
+        -- debugger.log(self._timer.value)
 
         local timeString = ""
         if min < 10 then timeString = "0" end
@@ -65,67 +80,64 @@ function Timer:update()
         if sec < 10 then timeString = timeString .. "0" end
         timeString = timeString .. sec
 
-        gfx.lockFocus(self.img)
+        gfx.pushContext(self._img)
             gfx.clear()
-            gfx.drawText(timeString, 0, 0)
-        gfx.unlockFocus()
+            gfx.drawText("*"..timeString.."*", 0, 0)
+        gfx.popContext()
 
         -- if timer has completed
         if msec <= 0 then
-            self.timer = nil
-            gfx.lockFocus(self.img)
+            gfx.pushContext(self._img)
                 gfx.clear()
-                gfx.drawText("DONE", 0, 0)
-            gfx.unlockFocus()
+                gfx.drawText("*DONE*", 0, 0)
+            gfx.popContext()
+            self._timer = nil
+            notify()
         end
+
+        --DEBUG doing this prevents the sprite from auto-refreshing when self._img changes
+        --TODO set a larger font instead of upscaling default text
+        self:setImage(self._img:scaledImage(4))
     end
 
     Timer.super.update(self)
-    debugger.bounds(self)
+    --debugger.illustrateBounds(self)
 end
 
-function Timer:start(minsDuration)
-    if not self.timer then -- TODO do  completed timers pass this? if not, test for playdate.timer.timeLeft instead
-        -- Returns a new playdate.timer that will run for duration milliseconds. 
-        -- callback is a function closure that will be called when the timer is complete.
-        -- TODO see playdate.timer.timerEndedCallback
-        local msecDuration = minsDuration * SEC_PER_MIN * MSEC_PER_SEC
-        debugger.log(msecDuration)
-        _G.rawset(self, "timer", pd.timer.new(msecDuration, msecDuration, 0)) -- "value-based" timer w linear interpolation
-
-        if self.timer then debugger.log("timer was nil - now created") end
-    else
-        self.timer:start() -- TODO check that this autostarts the timer
-        debugger.log("timer not nil - started")
-    end
+function Timer:remove()
+    notifSound:stop()
+    Timer.super.remove(self)
 end
 
---[[ not needed yet
-function Timer:pause()
-    if self:timerIsNil("pause()") then return end
-    self.timer:pause()
+function Timer:start()
+    self._timer = pd.timer.new(self._duration, self._duration, 0) -- "value-based" timer w linear interpolation
 end
---]]
 
-function Timer:reset()
-    if not self.timer then
-        debugger.log("self.timer is nil. Can't call Timer:reset().")
+function Timer:stop()
+    self._timer = nil
+end
+
+--- Set the sound to be played when a timer finishes
+---@param sound pd.sound.sampleplayer or pd.sound.fileplayer
+function setNotifSound(sound)
+    if not sound.play or not sound.stop then
+        d.log("attempting to set unplayable notif sound", sound)
         return
     end
-    self.timer:reset()
-    debugger.log("timer reset")
+    notifSound = sound
 end
 
---[[ not needed yet
--- this function may not need to be named here
--- define it in the pd.timer.new closure?
-function notify(t)
-    -- call when countdown ends
+--- Set the duration the timer should run for (in minutes).
+---@param mins integer duration
+function Timer:setDuration(mins)
+    self._minsDuration = mins
+    self._duration = (mins + 0.0) * SEC_PER_MIN * MSEC_PER_SEC
 end
---]]
 
-function new(x, y)
-    return Timer(x, y)
+--- Get the duration the timer will run for (in minutes).
+---@return integer mins duration
+function Timer:getDuration()
+    return self._minsDuration
 end
 
 local _ENV = _G
