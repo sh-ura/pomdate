@@ -102,7 +102,7 @@ function Timer:update()
     end
 
     Timer.super.update(self)
-    d.illustrateBounds(self)
+    --d.illustrateBounds(self)
 end
 
 function Timer:start()

@@ -33,21 +33,24 @@ local ipairs = ipairs
 
 local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
 
--- TODO UIManager should be a panel and we should use addChild to position its elements on a nice margin
---      later, can parent menuList for stacking timersMenu next to configMenu
 --- UIManager is the singleton root of all UIElements in the program.
 --- It is in charge of defining the specific behaviours and layouts
 ---     of all UIElements, as well as configuring the UI object heirarchy.
-class('UIManager').extends(List)
+class('UIManager').extends(UIElement)
 --local localstatic <const> = val --TODO non-imported statics go here
 
 local instance = nil
--- TODO all below should be 'private' instance vars
+
+local menuPanel = nil -- group containing all UI elements shown in MENU state
 local timersMenu = nil  -- contains the buttons for selecting timers
 local durationDials = {} -- visualize/manipulate timer durations
 local timerSelectButtons = {} -- select timer to run
 local menuInst = nil -- instructions shown in MENU 
+
+local runTimerPanel = nil -- group containing all UI elements shown in RUN_TIMER state
 local runTimerInst = nil -- instructions shown in RUN_TIMER state
+
+local doneTimerPanel = nil -- group containing all UI elements shown in DONE_TIMER state
 local snoozeButton = nil -- invisible snooze button
 local doneTimerInst = nil -- instructions shown in DONE_TIMER state
 
@@ -91,7 +94,7 @@ function UIManager:init(timers)
             end
             dial:setUnit("min")
             dial:setValue(duration_defaults[name])
-            dial:moveTo(20, 60)
+            dial:setZIndex(60)
 
             local group = Group({name .. "Group"})
             group:addChild(button, 'linkSelection')
@@ -138,9 +141,16 @@ function UIManager:init(timers)
         end
     end
 
-    ---TODO actually use UIManager as panel for laying out its elements along the margins?
     UIManager.super.init(self, {"uimanager"})
     self.isSelected = function () return true end
+
+    -- Groups of UIElements that pertain to different app states
+    menuPanel = UIElement({"menuPanel"})
+    menuPanel:forceConfigured()
+    runTimerPanel = UIElement({"runTimerPanel"})
+    runTimerPanel:forceConfigured()
+    doneTimerPanel = UIElement({"doneTimerPanel"})
+    doneTimerPanel:forceConfigured()
 
     timersMenu = List({"timersMenu", 120, 140})
     self:addChild(timersMenu)
@@ -155,8 +165,9 @@ function UIManager:init(timers)
 
     for _, dial in pairs(durationDials) do
         dial:moveTo(20, 60)
-        dial:setZIndex(20)
     end
+
+    --TODO i wanna make timersMenu just the list of buttons again, add the dials seperately
 
     menuInst = List({"menuInstList", 200, 60})
     writeInstructions(menuInst, {
@@ -164,14 +175,14 @@ function UIManager:init(timers)
         setTimerInst = "Crank sets pom duration"
     })
     menuInst:moveTo(20, 140)
-    menuInst:setZIndex(90)
+    menuInst:setZIndex(60)
 
     runTimerInst = List({"runTimerInstList", 300, 30})
     writeInstructions(runTimerInst, {
         toMenuInst = "B returns to menu"
     })
     runTimerInst:moveTo(20, 140)
-    runTimerInst:setZIndex(90)
+    runTimerInst:setZIndex(60)
 
     snoozeButton = Button({"snooze"}, 'invisible')
     snoozeButton.isSelected = function() return state == STATES.DONE_TIMER end --TODO should only be active when timer ends
@@ -188,10 +199,17 @@ function UIManager:init(timers)
         toMenuInst = "B returns to menu"
     })
     doneTimerInst:moveTo(20, 140)
-    doneTimerInst:setZIndex(90)
+    doneTimerInst:setZIndex(60)
 
-    self._isConfigured = true
+    menuPanel:addChild(timersMenu)
+    menuPanel:addChild(menuInst)
+    runTimerPanel:addChild(runTimerInst)
+    doneTimerPanel:addChild(snoozeButton)
+    doneTimerPanel:addChild(doneTimerInst)
+
+    self:setZIndex(50)
     instance = self
+    self._isConfigured = true
     self = utils.makeReadOnly(self, "UIManager instance")
 end
 
@@ -202,24 +220,17 @@ function UIManager:update()
         --TODO once config menu exists, set up L/R selection b/w config menu and timers menu
 
         --TODO this should all be handled by the back-to-menu invisibutton
-        runTimerInst:transitionOut()
-        snoozeButton:transitionOut()
-        doneTimerInst:transitionOut()
-
-        timersMenu:transitionIn()
-        menuInst:transitionIn()
+        runTimerPanel:transitionOut()
+        doneTimerPanel:transitionOut()
+        menuPanel:transitionIn()
     elseif state == STATES.RUN_TIMER then
         --TODO this should be handled by the runtimer and snoozetimer buttons
-        snoozeButton:transitionOut()
-        doneTimerInst:transitionOut()
-        timersMenu:transitionOut()
-        menuInst:transitionOut()
-
-        runTimerInst:transitionIn()
+        doneTimerPanel:transitionOut()
+        menuPanel:transitionOut()
+        runTimerPanel:transitionIn()
     elseif state == STATES.DONE_TIMER then
-        runTimerInst:transitionOut()
-        doneTimerInst:transitionIn()
-        snoozeButton:transitionIn()
+        runTimerPanel:transitionOut()
+        doneTimerPanel:transitionIn()
     end
 
     UIManager.super.update(self)

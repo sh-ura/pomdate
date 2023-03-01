@@ -90,7 +90,7 @@ function Dial:update()
     end
 
     Dial.super.update(self)
-    --d.illustrateBounds(self)
+    d.illustrateBounds(self)
 end
 
 --- Set the unit on the dial

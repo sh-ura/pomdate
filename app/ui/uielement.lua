@@ -18,6 +18,8 @@ local ipairs <const> = ipairs
 local insert <const> = table.insert
 
 --- UIElement is an interactive sprite that can parent other UIElements.
+--- It can be an abstract class for more specialized UI components, or
+---     be the template for simple UIElement objects such as groups/"folders".
 class('UIElement').extends(gfx.sprite)
 local UIElement <const> = UIElement
 local _ENV = P      -- enter pkg namespace
@@ -65,9 +67,6 @@ function UIElement:init(coreProps)
     self._img = gfx.image.new(w, h)
     self:setImage(self._img)
 
-    --TODO config Z index using constant vals for a set of layers
-    self:setZIndex(50)
-
     self._isConfigured = false
     local configWarningComplete = false
     --- Log, once, that the UIElement not had been configured.
@@ -86,7 +85,7 @@ function UIElement:init(coreProps)
     --- Determines if this UIElement is selected, ie. "focused on".
     ---@return boolean true if the element's selection criteria are met
     self.isSelected = function ()
-        d.log("uielement '" .. self.name .. "' select criteria not set")
+        if not self._isConfigured then d.log("uielement '" .. self.name .. "' select criteria not set") end
         return false
     end
     
@@ -112,7 +111,7 @@ end
 --- Transitions the element into visibility/x-position.
 --- Likely to be overridden by extending class
 function UIElement:transitionIn()
-    --d.log("uielement '" .. self.name .. "' transition-in anim not set")
+    --if not self._isConfigured then d.log("uielement '" .. self.name .. "' transition-in anim not set") end
     for _, child in ipairs(self._children) do
         child:transitionIn()
     end
@@ -122,7 +121,7 @@ end
 --- Transitions the element out of visibility.
 --- Likely to be overridden by extending class
 function UIElement:transitionOut()
-    --d.log("uielement '" .. self.name .. "' transition-out anim not set")
+    --if not self._isConfigured then d.log("uielement '" .. self.name .. "' transition-out anim not set") end
     for _, child in ipairs(self._children) do
         child:transitionOut()
     end
@@ -173,16 +172,23 @@ function UIElement:moveTo(x, y, dontMoveChildren)
     return x, y, x + self.width, y + self.height
 end
 
---- Set the Z index for the UIElement and its children. 
---- By default, children will always sit 1 above the parent's Z index.
+--- Set the Z index for the UIElement.
+--- Its children will also be re-indexed,
+---     but they will retain their zIndex *relative to* this parent element
+---     and one another.
 ---@param z integer the value to set Z to
 function UIElement:setZIndex(z)
     UIElement.super.setZIndex(self, z)
     if self._children then
         for _, child in ipairs(self._children) do
-            child:setZIndex(z + 1)
+            child:setZIndex(child:getZIndex() + z)
         end
     end
+end
+
+--- Forcefully flag the UIElement as having been configured, supressing related warnings.
+function UIElement:forceConfigured()
+    self._isConfigured = true
 end
 
 -- pkg footer: pack and export the namespace.

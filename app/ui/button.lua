@@ -41,11 +41,11 @@ function Button:init(coreProps, invisible)
 
     -- declare button behaviours, to be configured elsewhere, prob by UI Manager
     self.isPressed = function ()
-        d.log("button '" .. self.name .. "' press criteria not set")
+        if not self._isConfigured then d.log("button '" .. self.name .. "' press criteria not set") end
         return false
     end
     self.pressedAction = function ()
-        d.log("button '" .. self.name .. "' pressedAction not set")
+        if not self._isConfigured then d.log("button '" .. self.name .. "' pressedAction not set") end
     end
 
     if self._isVisible then

@@ -2,6 +2,8 @@
 ---     visibility and selection criteria without parenting one another.
 ---TODO rename to layer, and ensure that it behaves like one!
 
+--TODO do I actually need this class, or can I just use UIElement?
+
 import 'ui/uielement'
 
 -- pkg header: define pkg namespace
@@ -32,10 +34,6 @@ name = "group"
 function Group:init(coreProps)
     Group.super.init(self, coreProps) --should always be at top of init func
 
-    --- Optional behaviours for group selection/deselection
-    self.selectedAction = function () end
-    self.notSelectedAction = function() end
-
     self = utils.makeReadOnly(self, "Group instance")
 end
 
@@ -44,13 +42,11 @@ end
 function Group:update()
     Group.super.update(self)
     self._checkConfig()
-    
-    if self.isSelected() then self.selectedAction()
-    else self.notSelectedAction() end
 
     --debugger.bounds(self)
 end
 
+--TODO do we need this?
 --- Set the group container's location and dimensions, for layout purposes.
 --- No effect on the locn or dims of its members.
 ---@param x integer global x-position
