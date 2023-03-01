@@ -70,12 +70,14 @@ end
 
 --- Add UIElement member to the Group.
 ---@param element UIElement the child element
----SPEC EFFECT  overrides the child's isSelected() criteria, to depend on group state
-function Group:addChild(element)
+---@param linkSelection boolean whether to make child's selection criteria depend upon group. Defaults to false
+function Group:addChild(element, linkSelection)
     Group.super.addChild(self, element)
 
-    element.isSelected = function()
-        return self.isSelected()
+    if linkSelection then
+        element.isSelected = function()
+            return self.isSelected()
+        end
     end
 end
 

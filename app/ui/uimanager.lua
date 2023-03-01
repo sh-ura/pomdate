@@ -32,8 +32,6 @@ local pairs = pairs
 local ipairs = ipairs
 
 local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
-local isApressed = function() return pd.buttonJustPressed(A) end
-local isBpressed = function() return pd.buttonJustPressed(B) end
 
 -- TODO UIManager should be a panel and we should use addChild to position its elements on a nice margin
 --      later, can parent menuList for stacking timersMenu next to configMenu
@@ -46,10 +44,13 @@ class('UIManager').extends(List)
 local instance = nil
 -- TODO all below should be 'private' instance vars
 local timersMenu = nil  -- contains the buttons for selecting timers
-local timerDials = {} -- visualize/manipulate timer durations
+local durationDials = {} -- visualize/manipulate timer durations
 local timerSelectButtons = {} -- select timer to run
-local menuInst = nil -- instructions shown in MENU state
-local timerInst = nil -- instructions shown in TIMER state
+local menuInst = nil -- instructions shown in MENU 
+local runTimerInst = nil -- instructions shown in RUN_TIMER state
+local snoozeButton = nil -- invisible snooze button
+local doneTimerInst = nil -- instructions shown in DONE_TIMER state
+
 
 --- Initializes and returns new UIManager singleton instance.
 --- If instance already exists, this func does nothing but returns that instance.
@@ -72,7 +73,7 @@ function UIManager:init(timers)
 
         d.log("timers", timers)
         local n = 0
-        for _, _ in pairs(timers) do d.log("timer counted") n = n + 1 end
+        for _, _ in pairs(timers) do n = n + 1 end
         n = n + #timers
         d.log("n: " .. n)
         local wButton, hButton = timersMenu:getMaxContentDim(n)
@@ -80,10 +81,10 @@ function UIManager:init(timers)
         local function makeTimerSelector(name, t)
             local button = Button({name .. "Button", wButton, hButton})
             timerSelectButtons[name] = button
-            button.isPressed = isApressed
+            button.isPressed = function() return pd.buttonJustPressed(A) end
 
             local dial = Dial({name .. "Dial", 80, 40}, 1, 1, 60)
-            timerDials[name] = dial
+            durationDials[name] = dial
             local ticks = 60 / CRANK_ROTS_PER_HOUR
             dial.getDialChange = function ()
                 return pd.getCrankTicks(ticks)
@@ -93,8 +94,8 @@ function UIManager:init(timers)
             dial:moveTo(20, 60)
 
             local group = Group({name .. "Group"})
-            group:addChild(button)
-            group:addChild(dial)
+            group:addChild(button, 'linkSelection')
+            group:addChild(dial, 'linkSelection')
             group:configRect(button.x, button.y, button.width, button.height)
 
             group.isSelected = function()
@@ -144,10 +145,7 @@ function UIManager:init(timers)
     timersMenu = List({"timersMenu", 120, 140})
     self:addChild(timersMenu)
     -- TODO when configmenu + menuList, remove the following line
-    timersMenu.isSelected = function()
-        return state == STATES.MENU
-    end
-    d.log("timersMenu w: " .. timersMenu.width .. " timersMenu h: " .. timersMenu.height)
+    timersMenu.isSelected = function() return state == STATES.MENU end
     populateTimersMenu(timersMenu, timers)
     timersMenu:moveTo(250, 60)
 
@@ -155,7 +153,7 @@ function UIManager:init(timers)
     timerSelectButtons.short:setLabel("short break")
     timerSelectButtons.long:setLabel("long break")
 
-    for _, dial in pairs(timerDials) do
+    for _, dial in pairs(durationDials) do
         dial:moveTo(20, 60)
         dial:setZIndex(20)
     end
@@ -168,12 +166,29 @@ function UIManager:init(timers)
     menuInst:moveTo(20, 140)
     menuInst:setZIndex(90)
 
-    timerInst = List({"timerInstList", 300, 30})
-    writeInstructions(timerInst, {
+    runTimerInst = List({"runTimerInstList", 300, 30})
+    writeInstructions(runTimerInst, {
         toMenuInst = "B returns to menu"
     })
-    timerInst:moveTo(20, 140)
-    timerInst:setZIndex(90)
+    runTimerInst:moveTo(20, 140)
+    runTimerInst:setZIndex(90)
+
+    snoozeButton = Button({"snooze"}, 'invisible')
+    snoozeButton.isSelected = function() return state == STATES.DONE_TIMER end --TODO should only be active when timer ends
+    snoozeButton.isPressed = function() return pd.buttonJustPressed(A) end
+    snoozeButton.pressedAction = function()
+        currentTimer:snooze()
+        state = STATES.RUN_TIMER
+        d.log("snooze pressed")
+    end
+
+    doneTimerInst = List({"doneTimerInstList", 300, 60})
+    writeInstructions(doneTimerInst, {
+        snoozeInst = "A snoozes timer",
+        toMenuInst = "B returns to menu"
+    })
+    doneTimerInst:moveTo(20, 140)
+    doneTimerInst:setZIndex(90)
 
     self._isConfigured = true
     instance = self
@@ -182,16 +197,29 @@ end
 
 ---TODO desc
 function UIManager:update()
+    --TODO group UIElements that appear together into a 'scene' using Groups?
     if state == STATES.MENU then
         --TODO once config menu exists, set up L/R selection b/w config menu and timers menu
 
-        timerInst:transitionOut()
+        --TODO this should all be handled by the back-to-menu invisibutton
+        runTimerInst:transitionOut()
+        snoozeButton:transitionOut()
+        doneTimerInst:transitionOut()
 
-        --TODO this should probs be done by pause button once set up
         timersMenu:transitionIn()
         menuInst:transitionIn()
-    elseif state == STATES.TIMER then
-        timerInst:transitionIn()
+    elseif state == STATES.RUN_TIMER then
+        --TODO this should be handled by the runtimer and snoozetimer buttons
+        snoozeButton:transitionOut()
+        doneTimerInst:transitionOut()
+        timersMenu:transitionOut()
+        menuInst:transitionOut()
+
+        runTimerInst:transitionIn()
+    elseif state == STATES.DONE_TIMER then
+        runTimerInst:transitionOut()
+        doneTimerInst:transitionIn()
+        snoozeButton:transitionIn()
     end
 
     UIManager.super.update(self)
@@ -201,7 +229,7 @@ end
 --- Get the value currently set on a specified dial
 ---@return integer minutes value on this dial, or -1 if dial is not found
 function UIManager:getDialValue(name)
-    local dial = timerDials[name]
+    local dial = durationDials[name]
     if not dial then
         d.log("dial '" .. name .. "' not known to uimanager")
         return -1

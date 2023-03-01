@@ -19,7 +19,8 @@ STATES = {
     LOADING     = 1,
     CONFIG      = 2,
     MENU        = 3,
-    TIMER       = 4
+    RUN_TIMER   = 4,
+    DONE_TIMER  = 5
 }
 
 -- prepare package for export, in the global env --

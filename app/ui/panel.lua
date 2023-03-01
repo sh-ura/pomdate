@@ -124,7 +124,6 @@ function List:addChild(element)
         return element == self._children[self._i_selectChild]
     end
     local x1, y1, x, y = element:moveTo(self._layout())
-    d.log("x " .. x1 .. " y " .. y1)
     self._lastChild = element
 
     if (x > self.x + self.width - self._spacing) or (y > self.y + self.height - self._spacing) then

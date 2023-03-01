@@ -27,13 +27,14 @@ state = STATES.LOADING
 duration_defaults = {
     work = 25,
     short = 5,
-    long = 20
+    long = 20,
+    snooze = 2
 }
+currentTimer = nil
 
 local ui = nil
 local workMinutes = 0.1
 local splashSprite = nil
-local currentTimer = nil
 local timers = {
     work = 'nil',
     short = 'nil',
@@ -64,6 +65,7 @@ local function init()
     timers.short = Timer("short")
     timers.long = Timer("long")
     timers = utils.makeReadOnly(timers, "timers")
+    timer.setSnooze(2)
     timer.setNotifSound(pd.sound.sampleplayer.new(soundPathPrefix .. notifSoundPath))
     for _, t in pairs(timers) do t:setZIndex(50) end
     currentTimer = timers.work
@@ -120,14 +122,14 @@ function toMenu()
     state = STATES.MENU
 end
 
-function toRun(t)
+function toRun(t)   
     currentTimer = t
-    d.log(currentTimer.name)
+    d.log("preparing to run " .. currentTimer.name, currentTimer)
     currentTimer:moveTo(50, 70)
     currentTimer:add()
     currentTimer:start(workMinutes)
     pd.setAutoLockDisabled(true)
-    state = STATES.TIMER
+    state = STATES.RUN_TIMER
 end
 
 -- pd.update() is called right before every frame is drawn onscreen.
@@ -139,7 +141,8 @@ function pd.update()
             ui:add()
             toMenu()
         end
-    elseif state == STATES.TIMER then --TODO we are doing way too many STATES lookups
+    --TODO logic below needs to be replaced with an invisible button in UI
+    elseif state == STATES.RUN_TIMER or state == STATES.DONE_TIMER then --TODO we are doing way too many STATES lookups
         if pd.buttonJustPressed(B) then
             toMenu()
         end
