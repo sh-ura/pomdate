@@ -13,7 +13,7 @@ import "utils/utils";
 import "configs"
 import "utils/debugger"
 import "timer"
-import "ui/uimanager"
+import "uimanager"
 
 local pd <const> = playdate
 local d <const> = debugger
@@ -134,6 +134,7 @@ function toRun(t, duration)
     state = STATES.RUN_TIMER
 end
 
+--- Runs generic snooze timer
 function snooze()
     currentTimer:remove()
     toRun(timers.snooze, snoozeMins)
@@ -146,11 +147,11 @@ function pd.update()
         pd.ui.crankIndicator:update() --TODO why isnt this working??
         if pd.buttonJustPressed(A) then
             splashSprite:remove()
-            ui:add()
             toMenu()
         end
     end
 
+    ui:update()
     pd.timer.updateTimers()
     gfx.sprite.update()
 end

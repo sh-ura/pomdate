@@ -35,7 +35,7 @@ local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
 --- UIManager is the singleton root of all UIElements in the program.
 --- It is in charge of defining the specific behaviours and layouts
 ---     of all UIElements, as well as configuring the UI object heirarchy.
-class('UIManager').extends(UIElement)
+class('UIManager').extends()
 local instance = nil
 
 --TODO most of these are not needed outside of specific funcs
@@ -84,12 +84,12 @@ function UIManager:init(timers)
 
             local button = Button({name .. "Button", wButton, hButton})
             timerSelectButtons[name] = button
-            button:enableWhen(function() return container:isEnabled() end)
+            button:setEnablingCriteria(function() return container:isEnabled() end)
             button.isPressed = function() return pd.buttonJustPressed(A) end
 
             local dial = Dial({name .. "Dial", 80, 40}, 1, 1, 60)
             durationDials[name] = dial
-            dial:enableWhen(function() return
+            dial:setEnablingCriteria(function() return
                 button:isEnabled() and
                 button.isSelected() end)
             dial.isSelected = function () return button.isSelected() end
@@ -128,7 +128,7 @@ function UIManager:init(timers)
 
         for name, text in pairs(instructions) do
             local inst = Textbox({name .. "Inst", w, h})
-            inst:enableWhen(function() return container:isEnabled() end)
+            inst:setEnablingCriteria(function() return container:isEnabled() end)
             inst:setText("_"..text.."_", "dontResize")
             container:addChildren(inst)
         end
@@ -138,7 +138,7 @@ function UIManager:init(timers)
     self.isSelected = function () return true end
 
     timersMenu = List({"timersMenu", 120, 140})
-    timersMenu:enableWhen(function () return state == STATES.MENU end)
+    timersMenu:setEnablingCriteria(function () return state == STATES.MENU end)
     -- TODO when configmenu + menuList, remove the following line
     timersMenu.isSelected = function() return state == STATES.MENU end
     populateTimersMenu(timersMenu, timers)
@@ -157,7 +157,7 @@ function UIManager:init(timers)
     --TODO i wanna make timersMenu just the list of buttons again, add the dials seperately
 
     menuInst = List({"menuInstList", 200, 60})
-    menuInst:enableWhen(function() return state == STATES.MENU end)
+    menuInst:setEnablingCriteria(function() return state == STATES.MENU end)
     writeInstructions(menuInst, {
         runTimer = "A starts selected timer",
         setTimer = "Crank sets pom duration"
@@ -166,15 +166,15 @@ function UIManager:init(timers)
     menuInst:setZIndex(60)
 
     toMenuButton = Button({"toMenuButton"}, 'invisible')
-    toMenuButton:enableWhen(function() return
+    toMenuButton:setEnablingCriteria(function() return
         state == STATES.RUN_TIMER or
         state == STATES.DONE_TIMER end)
-    toMenuButton.isSelected = function() return true end
     toMenuButton.isPressed = function() return pd.buttonJustPressed(B) end
     toMenuButton.pressedAction = function() toMenu() end
+    toMenuButton:forceConfigured()
 
     runTimerInst = List({"runTimerInstList", 300, 30})
-    runTimerInst:enableWhen(function() return state == STATES.RUN_TIMER end)
+    runTimerInst:setEnablingCriteria(function() return state == STATES.RUN_TIMER end)
     writeInstructions(runTimerInst, {
         toMenu = "B returns to menu"
     })
@@ -182,15 +182,15 @@ function UIManager:init(timers)
     runTimerInst:setZIndex(60)
 
     snoozeButton = Button({"snoozeButton"}, 'invisible')
-    snoozeButton:enableWhen(function() return state == STATES.DONE_TIMER end)
-    snoozeButton.isSelected = function() return state == STATES.DONE_TIMER end --TODO should only be active when timer ends
+    snoozeButton:setEnablingCriteria(function() return state == STATES.DONE_TIMER end)
     snoozeButton.isPressed = function() return pd.buttonJustPressed(A) end
     snoozeButton.pressedAction = function()
         snooze()
     end
+    snoozeButton:forceConfigured()
 
     doneTimerInst = List({"doneTimerInstList", 300, 60})
-    doneTimerInst:enableWhen(function() return state == STATES.DONE_TIMER end)
+    doneTimerInst:setEnablingCriteria(function() return state == STATES.DONE_TIMER end)
     writeInstructions(doneTimerInst, {
         snoozeInst = "A snoozes timer",
         toMenuInst = "B returns to menu"
@@ -198,18 +198,13 @@ function UIManager:init(timers)
     doneTimerInst:moveTo(20, 140)
     doneTimerInst:setZIndex(60)
 
-    self:enableWhen(function() return true end)
-    self:setZIndex(50)
     instance = self
-    self._isConfigured = true
     self = utils.makeReadOnly(self, "UIManager instance")
 end
 
----TODO desc
+--- Drives the UI. Call on pd.update().
 function UIManager:update()
     switch.update()
-    UIManager.super.update(self)
-    --d.illustrateBounds(self)
 end
 
 --- Get the value currently set on a specified dial

@@ -91,11 +91,11 @@ function UIElement:init(coreProps)
     ---@return boolean true if the element's selection criteria are met
     self.isSelected = function ()
         if not self._isConfigured then d.log("uielement '" .. self.name .. "' select criteria not set") end
-        return false
+        return true
     end
 
     --- Enables/disables this UIElement.
-    --- If enableWhen() is not called on this element, it will remain disabled by default.
+    --- If setEnablingCriteria() is not called on this element, it will remain disabled by default.
     self._switch = Switch(self)
     self._switch.shouldClose = function ()
         if not self._isConfigured then d.log("uielement '" .. self.name .. "' disabled! Set enabling conditions.") end
@@ -213,7 +213,7 @@ end
 
 --- Set the conditions under which this UIElement should be visible and enabled
 ---@param conditions function that returns a boolean if the conditions have been met
-function UIElement:enableWhen(conditions)
+function UIElement:setEnablingCriteria(conditions)
     if type(conditions) ~= 'function' then
         d.log(self.name .. "-enabling conditions must be func", conditions)
         return
