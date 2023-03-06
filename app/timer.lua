@@ -11,7 +11,6 @@ local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
 local floor <const> = math.floor -- TODO may be able to replace this w // floor division lua operator?
-local linease = pd.easingFunctions.linear --TODO rm
 
 -- Timer packs a timer with its UI.
 class('Timer').extends(gfx.sprite)
@@ -29,7 +28,7 @@ name = "timer"
 ---@param msec integer milliseconds
 ---@return integer minutes
 ---@return integer seconds remaining after msec is converted to min 
-local function convertTime(msec)
+local function convertToClock(msec)
     local sec = msec / MSEC_PER_SEC
     local min = floor(sec / SEC_PER_MIN)
     sec = floor(sec - min * SEC_PER_MIN)
@@ -40,6 +39,7 @@ end
 local function notify()
     --d.log("notification pushed")
     if notifSound then notifSound:play(0) end
+    _G.state = _G.STATES.DONE_TIMER
 end
 
 --- Initializes, but does not start, a Timer.
@@ -54,7 +54,7 @@ function Timer:init(name)
     self._img = gfx.image.new(200,150)
     self:setImage(self.img)
     
-    self._timer = nil
+    self._timer = nil -- "value-based" pd timer w linear interpolation
 
     self:setCenter(0, 0) --anchor top-left
 end
@@ -70,7 +70,7 @@ end
 function Timer:update()
     if self._timer then
         local msec = self._timer.value
-        local min, sec = convertTime(msec)
+        local min, sec = convertToClock(msec)
         -- debugger.log("min: " .. min .. " sec: " .. sec)
         -- debugger.log(self._timer.value)
 
@@ -101,20 +101,23 @@ function Timer:update()
     end
 
     Timer.super.update(self)
-    --debugger.illustrateBounds(self)
-end
-
-function Timer:remove()
-    notifSound:stop()
-    Timer.super.remove(self)
+    --d.illustrateBounds(self)
 end
 
 function Timer:start()
-    self._timer = pd.timer.new(self._duration, self._duration, 0) -- "value-based" timer w linear interpolation
+    self:stop()
+    self._timer = pd.timer.new(self._duration, self._duration, 0)
 end
 
 function Timer:stop()
+    notifSound:stop()
     self._timer = nil
+end
+
+function Timer:remove()
+    d.log("removing timer "..self.name)
+    self:stop()
+    Timer.super.remove(self)
 end
 
 --- Set the sound to be played when a timer finishes

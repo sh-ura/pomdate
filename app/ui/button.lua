@@ -27,19 +27,29 @@ name = "button"
 ---         'name' or 1: (string) button name for debugging
 ---         'w' or 2: (integer; optional) initial width, defaults to screen width
 ---         'h' or 3: (integer; optional) initial height, defaults to screen height
-function Button:init(coreProps)
+---@param invisible boolean whether to make the button invisible. Defaults to false, ie. visible
+function Button:init(coreProps, invisible)
     -- TODO give each timer a name
     Button.super.init(self, coreProps)
 
-    self:setLabel(self.name)
+    self._isVisible = true
+    if invisible then
+        self._isVisible = false
+        self._img = gfx.image.new(1,1)
+        self:setImage(self._img)
+    end
 
     -- declare button behaviours, to be configured elsewhere, prob by UI Manager
     self.isPressed = function ()
-        d.log("button '" .. self.name .. "' press criteria not set")
+        if not self._isConfigured then d.log("button '" .. self.name .. "' press criteria not set") end
         return false
     end
     self.pressedAction = function ()
-        d.log("button '" .. self.name .. "' pressedAction not set")
+        if not self._isConfigured then d.log("button '" .. self.name .. "' pressedAction not set") end
+    end
+
+    if self._isVisible then
+        self:setLabel(self.name)
     end
 
     self._isConfigured = true
@@ -49,13 +59,15 @@ end
 --- Updates the button UIElement.
 function Button:update()
     if self.isSelected() then
-        self:setImage(self._img:invertedImage())
+        if self._isVisible then
+            self:setImage(self._img:invertedImage()) --invert img when button is selected
+        end
         if self.isPressed() then
             --d.log(self.name .. " is pressed")
             self.pressedAction()
         end 
     else
-        self:setImage(self._img)
+        self:setImage(self._img) --revert img when button is not selected
     end
     Button.super.update(self)
     --debugger.bounds(self)

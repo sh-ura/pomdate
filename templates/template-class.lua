@@ -5,8 +5,6 @@
     Find+Replace 'classinstance' with the classname (lowercase)
     Find+Replace 'package' with the classname (lowercase)
 --]]
---TODO this file should not get compiled into main
---  make sure it doesn't go into the src folder
 
 ---TODO pkg 'package' DESC
 

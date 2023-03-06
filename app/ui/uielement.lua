@@ -3,6 +3,8 @@
 --- TODO may want to add justSelected and justDeselected to
 ---     improve efficiency and permit custom anims
 
+import 'ui/switch'
+
 -- pkg header: define pkg namespace
 local P = {}; local _G = _G
 uielement = {}
@@ -13,11 +15,15 @@ local gfx <const> = pd.graphics
 local utils <const> = utils
 local configs <const> = configs
 local d <const> = debugger
+local Switch = Switch
 local type = type
+local pairs <const> = pairs
 local ipairs <const> = ipairs
 local insert <const> = table.insert
 
 --- UIElement is an interactive sprite that can parent other UIElements.
+--- It can be an abstract class for more specialized UI components, or
+---     be the template for simple UIElement objects such as groups/"folders".
 class('UIElement').extends(gfx.sprite)
 local UIElement <const> = UIElement
 local _ENV = P      -- enter pkg namespace
@@ -29,7 +35,7 @@ name = "uielement"
 
 --local function localfunc() end --TODO local funcs go here
 
---- Initializes a new uielement sprite.
+--- Initializes a new UIElement sprite.
 ---@param coreProps table containing the following core properties, named or array-indexed:
 ---         'name' or 1: (string) button name for debugging
 ---         'w' or 2: (integer; optional) initial width, defaults to screen width
@@ -65,16 +71,14 @@ function UIElement:init(coreProps)
     self._img = gfx.image.new(w, h)
     self:setImage(self._img)
 
-    --TODO config Z index using constant vals for a set of layers
-    self:setZIndex(50)
-
+    --TODO _isConfigured should be a table of checks since many things need configuring
     self._isConfigured = false
     local configWarningComplete = false
     --- Log, once, that the UIElement not had been configured.
     --- Can optionally call in update(). Or ignore completely. 
     self._checkConfig = function()
         if not self._isConfigured and not configWarningComplete then
-            d.log("uielement " .. self.name .. " not configured")
+            d.log("uielement '" .. self.name .. "'' not configured")
             configWarningComplete = true
         end
     end
@@ -86,71 +90,86 @@ function UIElement:init(coreProps)
     --- Determines if this UIElement is selected, ie. "focused on".
     ---@return boolean true if the element's selection criteria are met
     self.isSelected = function ()
-        d.log("uielement '" .. self.name .. "' select criteria not set")
+        if not self._isConfigured then d.log("uielement '" .. self.name .. "' select criteria not set") end
+        return true
+    end
+
+    --- Enables/disables this UIElement.
+    --- If setEnablingCriteria() is not called on this element, it will remain disabled by default.
+    self._switch = Switch(self)
+    self._switch.shouldClose = function ()
+        if not self._isConfigured then d.log("uielement '" .. self.name .. "' disabled! Set enabling conditions.") end
         return false
     end
-    
-    --TODO do I actually need this?
-    --- (optional) Additional action to execute when this UIElement is selected.
-    --- Executes after other behaviours in the update loop.
-    self.addSelectedAction = function ()
-        return
-    end
+    self._switch:add()
 
     self:setCenter(0, 0) --anchor top-left
 end
 
 ---TODO desc
 function UIElement:update()
-    if self:isSelected() then
-        self.addSelectedAction()
-    end
     UIElement.super.update(self)
     --debugger.bounds(self)
 end
 
---- Transitions the element into visibility/x-position.
---- Likely to be overridden by extending class
+--- Transitions the element into visibility/position.
 function UIElement:transitionIn()
-    --d.log("uielement '" .. self.name .. "' transition-in anim not set")
+    --if not self._isConfigured then d.log("uielement '" .. self.name .. "' transition-in anim not set") end
     for _, child in ipairs(self._children) do
-        child:transitionIn()
+        -- add special additional child tranforms here
     end
     self:add()
 end
 
 --- Transitions the element out of visibility.
---- Likely to be overridden by extending class
 function UIElement:transitionOut()
-    --d.log("uielement '" .. self.name .. "' transition-out anim not set")
+    --if not self._isConfigured then d.log("uielement '" .. self.name .. "' transition-out anim not set") end
     for _, child in ipairs(self._children) do
-        child:transitionOut()
+        -- add special additional child tranforms here
     end
     self:remove()
 end
 
---TODO could be modified to addChildren(...)
 --- Parents another UIElement.
----@param element UIElement the child element
----@param keepGlobalPos boolean (option) keep the child's global position as is
----SPEC EFFECT  overrides child's ZIndex, so that it sets 1 above its new parent
-function UIElement:addChild(element, keepGlobalPos)
-    --TODO move this check into children metatable.__newindex
-    --so that other class implementations can override this func safely
-    if not element:isa(UIElement) then
-        local name = ""
-        if element.name then name = element.name
-        else name = "no_name" end
-        d.log("element " .. name .. " is not a UIElement; can't be child to " .. self.name)
+---@param e table of child UIElements, or a single UIElement
+---@param keepGlobalPos boolean (option) keep the children's global position as is
+---@return table of successfully added child UIElements
+---SPEC EFFECT  overrides each child's ZIndex to be relative to parent above its new parent
+function UIElement:addChildren(e, keepGlobalPos)
+    --TODO want to check e:isa(UIElement) but isa seems to be unstable in 1.12.3?
+    if not (e and type(e) == 'table') then
+        d.log("no children to add to " .. self.name)
         return
     end
 
-    element._parent = self
-    insert(self._children, element)
-    if not keepGlobalPos then
-        element:moveTo(self.x + element.x, self.y + element.y)
+    local newChildren = {}
+    local function addChild(element)
+        if not element:isa(UIElement) then
+            local name = element.name 
+            if not name then name = 'no_name' end
+            d.log("element " .. name .. " is not a UIElement; can't be child to " .. self.name)
+            return
+        end
+
+        element._parent = self
+        insert(self._children, element)
+        insert(newChildren, element)
+        if not keepGlobalPos then
+            element:moveTo(self.x + element.x, self.y + element.y)
+        end
+        element:setZIndex(element:getZIndex() + self:getZIndex())    
     end
-    element:setZIndex(self:getZIndex() + 1)
+
+    if e.isa then addChild(e)
+    else
+        for _, element in ipairs(e) do
+            addChild(element)
+        end
+        for _, element in pairs(e) do
+            addChild(element)
+        end
+    end
+    return newChildren
 end
 
 --- Moves the UIElement and its children
@@ -173,16 +192,43 @@ function UIElement:moveTo(x, y, dontMoveChildren)
     return x, y, x + self.width, y + self.height
 end
 
---- Set the Z index for the UIElement and its children. 
---- By default, children will always sit 1 above the parent's Z index.
+--- Set the Z index for the UIElement.
+--- Its children will also be re-indexed,
+---     but they will retain their zIndex *relative to* this parent element
+---     and one another.
 ---@param z integer the value to set Z to
 function UIElement:setZIndex(z)
     UIElement.super.setZIndex(self, z)
     if self._children then
         for _, child in ipairs(self._children) do
-            child:setZIndex(z + 1)
+            child:setZIndex(child:getZIndex() + z)
         end
     end
+end
+
+--- Forcefully flag the UIElement as having been configured, supressing related warnings.
+function UIElement:forceConfigured()
+    self._isConfigured = true
+end
+
+--- Set the conditions under which this UIElement should be visible and enabled
+---@param conditions function that returns a boolean if the conditions have been met
+function UIElement:setEnablingCriteria(conditions)
+    if type(conditions) ~= 'function' then
+        d.log(self.name .. "-enabling conditions must be func", conditions)
+        return
+    end
+
+    -- existing switch will be garbage-collected
+    if self._switch then self._switch:remove() end
+    self._switch = Switch(self)
+    self._switch.shouldClose = conditions
+    self._switch:add()
+end
+
+function UIElement:isEnabled()
+    --if self._switch.isClosed then d.log(self.name .. " is enabled.") end
+    return self._switch.isClosed
 end
 
 -- pkg footer: pack and export the namespace.
