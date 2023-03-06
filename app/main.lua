@@ -30,17 +30,19 @@ duration_defaults = {
     long = 20,
     snooze = 2
 }
-currentTimer = nil
 
 local ui = nil
-local workMinutes = 0.1
 local splashSprite = nil
 local timers = {
     work = 'nil',
     short = 'nil',
-    long = 'nil'
+    long = 'nil',
+    snooze = 'nil'
 }
+local currentTimer = nil
 local notifSound = nil
+
+local snoozeMins = 2 --TODO make configurable
 
 --TODO move below asset path info to config or smth
 local soundPathPrefix = "assets/sound/"
@@ -64,15 +66,15 @@ local function init()
     timers.work = Timer("work")
     timers.short = Timer("short")
     timers.long = Timer("long")
+    timers.snooze = Timer("snooze")
     timers = utils.makeReadOnly(timers, "timers")
-    timer.setSnooze(2)
     timer.setNotifSound(pd.sound.sampleplayer.new(soundPathPrefix .. notifSoundPath))
     for _, t in pairs(timers) do t:setZIndex(50) end
     currentTimer = timers.work
 
     d.log("timers in main", timers)
 
-    ui = UIManager(timers)
+    ui = UIManager({timers.work, timers.short, timers.long})
 end
 
 --TODO replace with a launchImage, configurable in pdxinfo
@@ -115,8 +117,7 @@ end
 -- TODO need to transition run -> select sometimes; refactor
 -- TODO align semantics of menu w pause
 function toMenu()
-    currentTimer:stop()
-    currentTimer:remove() -- DEBUG dont actually want to do exactly this
+    currentTimer:remove()
     pd.setAutoLockDisabled(false)
     pd.getCrankTicks(1) --TODO move this crank-data-dump to ui file
     state = STATES.MENU
@@ -128,9 +129,14 @@ function toRun(t, duration)
     currentTimer:setDuration(duration)
     currentTimer:moveTo(50, 70)
     currentTimer:add()
-    currentTimer:start(workMinutes)
+    currentTimer:start()
     pd.setAutoLockDisabled(true)
     state = STATES.RUN_TIMER
+end
+
+function snooze()
+    currentTimer:remove()
+    toRun(timers.snooze, snoozeMins)
 end
 
 -- pd.update() is called right before every frame is drawn onscreen.

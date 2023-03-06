@@ -20,7 +20,6 @@ local MSEC_PER_SEC <const> = 1000
 local SEC_PER_MIN <const> = 60
 
 local notifSound = nil
-local snooze = 0.0 -- float snooze duration in msec
 
 local _ENV = P
 name = "timer"
@@ -106,6 +105,7 @@ function Timer:update()
 end
 
 function Timer:start()
+    self:stop()
     self._timer = pd.timer.new(self._duration, self._duration, 0)
 end
 
@@ -115,19 +115,9 @@ function Timer:stop()
 end
 
 function Timer:remove()
+    d.log("removing timer "..self.name)
     self:stop()
     Timer.super.remove(self)
-end
-
-function Timer:snooze()
-    self:stop()
-    self._timer = pd.timer.new(snooze, snooze, 0)
-end
-
---- Set the duration the snooze on timers should run for (in minutes).
----@param mins integer duration
-function setSnooze(mins)
-    snooze = (mins + 0.0) * SEC_PER_MIN * MSEC_PER_SEC
 end
 
 --- Set the sound to be played when a timer finishes

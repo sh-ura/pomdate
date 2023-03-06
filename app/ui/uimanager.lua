@@ -1,10 +1,9 @@
 --- pkg 'ui' defines a singleton UIManager class
 --- For dev convenience, this package accesses the global namespace,
----     but is not intended to modify any global vars other than state
+---     but is not intended to modify any global vars
 --- TODO may be nice to encapsulate this env, pass ref to STATE on init
 
 import 'CoreLibs/crank'
-import 'ui/group'
 import 'ui/button'
 import 'ui/list'
 import 'ui/dial'
@@ -26,8 +25,8 @@ local d <const> = debugger
 local gfx <const> = pd.graphics
 local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
-local pairs = pairs
-local ipairs = ipairs
+local pairs <const> = pairs
+local ipairs <const> = ipairs
 
 local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
 
@@ -37,8 +36,6 @@ local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
 --- It is in charge of defining the specific behaviours and layouts
 ---     of all UIElements, as well as configuring the UI object heirarchy.
 class('UIManager').extends(UIElement)
---local localstatic <const> = val --TODO non-imported statics go here
-
 local instance = nil
 
 --TODO most of these are not needed outside of specific funcs
@@ -69,21 +66,22 @@ function UIManager:init(timers)
     --- Add all of the timer-selecting/-configuring UIElements that are
     ---     displayed on the MENU screen.
     ---@param container List to contain the timer-selecting buttons
-    ---@param timers table all Timers to make selectors for
+    ---@param timers table ARRAY all Timers to make selectors for
     local function populateTimersMenu (container, timers)
-        if not timersMenu then
-            d.log("timersMenu nil; can't config")
+        if not container then
+            d.log("timersMenu container nil; can't config")
             return
         end
 
         d.log("timers", timers)
         local n = 0
-        for _, _ in pairs(timers) do n = n + 1 end
-        n = n + #timers
+        n = #timers
         d.log("n: " .. n)
-        local wButton, hButton = timersMenu:getMaxContentDim(n)
+        local wButton, hButton = container:getMaxContentDim(n)
 
-        local function makeTimerSelector(name, t)
+        local function makeTimerSelector(t)
+            local name = t.name
+
             local button = Button({name .. "Button", wButton, hButton})
             timerSelectButtons[name] = button
             button:enableWhen(function() return container:isEnabled() end)
@@ -111,8 +109,8 @@ function UIManager:init(timers)
             return button
         end
 
-        for name, timer in pairs(timers) do
-            container:addChildren(makeTimerSelector(name, timer))
+        for _, timer in pairs(timers) do
+            container:addChildren(makeTimerSelector(timer))
         end
     end
 
@@ -188,8 +186,7 @@ function UIManager:init(timers)
     snoozeButton.isSelected = function() return state == STATES.DONE_TIMER end --TODO should only be active when timer ends
     snoozeButton.isPressed = function() return pd.buttonJustPressed(A) end
     snoozeButton.pressedAction = function()
-        currentTimer:snooze() -- should have snooze() func in main instead
-        state = STATES.RUN_TIMER
+        snooze()
     end
 
     doneTimerInst = List({"doneTimerInstList", 300, 60})
