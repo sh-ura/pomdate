@@ -122,9 +122,10 @@ function toMenu()
     state = STATES.MENU
 end
 
-function toRun(t)   
+---TODO desc
+function toRun(t, duration)   
     currentTimer = t
-    d.log("preparing to run " .. currentTimer.name, currentTimer)
+    currentTimer:setDuration(duration)
     currentTimer:moveTo(50, 70)
     currentTimer:add()
     currentTimer:start(workMinutes)

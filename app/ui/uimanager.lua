@@ -8,7 +8,7 @@
 import 'CoreLibs/crank'
 import 'ui/group'
 import 'ui/button'
-import 'ui/panel'
+import 'ui/list'
 import 'ui/dial'
 import 'ui/textbox'
 
@@ -33,6 +33,8 @@ local ipairs = ipairs
 
 local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
 
+--TODO does this actually need to be a UIElement, or can we just extend Object
+--   + call ui:update in the main loop?
 --- UIManager is the singleton root of all UIElements in the program.
 --- It is in charge of defining the specific behaviours and layouts
 ---     of all UIElements, as well as configuring the UI object heirarchy.
@@ -41,20 +43,21 @@ class('UIManager').extends(UIElement)
 
 local instance = nil
 
-local menuPanel = nil -- group containing all UI elements shown in MENU state
-local timersMenu = nil  -- contains the buttons for selecting timers
-local durationDials = {} -- visualize/manipulate timer durations
-local timerSelectButtons = {} -- select timer to run
-local menuInst = nil -- instructions shown in MENU 
+--TODO most of these are not needed outside of specific funcs
+local timersMenu = nil  -- contains the buttons for selecting timers --TODO move to init
+local durationDials = {} -- visualize/manipulate timer durations --TODO move to init
+-- TODO rm timerSelectButton when addTimerSelector() is implemented
+local timerSelectButtons = {} -- select timer to run --TODO move to init
+local menuInst = nil -- instructions shown in MENU --TODO move to init
 
-local runTimerPanel = nil -- group containing all UI elements shown in RUN_TIMER state
-local runTimerInst = nil -- instructions shown in RUN_TIMER state
+local runTimerInst = nil -- instructions shown in RUN_TIMER state --TODO move to init
 
-local doneTimerPanel = nil -- group containing all UI elements shown in DONE_TIMER state
-local snoozeButton = nil -- invisible snooze button
-local doneTimerInst = nil -- instructions shown in DONE_TIMER state
+local snoozeButton = nil -- invisible snooze button --TODO move to init
+local doneTimerInst = nil -- instructions shown in DONE_TIMER state --TODO move to init
 
-
+--TODO much of this no longer needs to be in init
+-- ex. a addTimerSelector() could be called by main to add each timer selector
+--      the timersMenu.
 --- Initializes and returns new UIManager singleton instance.
 --- If instance already exists, this func does nothing but returns that instance.
 ---@param timers table all Timers that the UI should support selecting
@@ -66,9 +69,9 @@ function UIManager:init(timers)
 
     --- Add all of the timer-selecting/-configuring UIElements that are
     ---     displayed on the MENU screen.
-    ---@param panel List the panel to contain the timer-selecting buttons
+    ---@param container List to contain the timer-selecting buttons
     ---@param timers table all Timers to make selectors for
-    local function populateTimersMenu (panel, timers)
+    local function populateTimersMenu (container, timers)
         if not timersMenu then
             d.log("timersMenu nil; can't config")
             return
@@ -84,10 +87,15 @@ function UIManager:init(timers)
         local function makeTimerSelector(name, t)
             local button = Button({name .. "Button", wButton, hButton})
             timerSelectButtons[name] = button
+            button:enableWhen(function() return container:isEnabled() end)
             button.isPressed = function() return pd.buttonJustPressed(A) end
 
             local dial = Dial({name .. "Dial", 80, 40}, 1, 1, 60)
             durationDials[name] = dial
+            dial:enableWhen(function() return
+                button:isEnabled()
+                and button.isSelected() end)
+            dial.isSelected = function () return button.isSelected() end
             local ticks = 60 / CRANK_ROTS_PER_HOUR
             dial.getDialChange = function ()
                 return pd.getCrankTicks(ticks)
@@ -96,73 +104,55 @@ function UIManager:init(timers)
             dial:setValue(duration_defaults[name])
             dial:setZIndex(60)
 
-            local group = Group({name .. "Group"})
-            group:addChild(button, 'linkSelection')
-            group:addChild(dial, 'linkSelection')
-            group:configRect(button.x, button.y, button.width, button.height)
-
-            group.isSelected = function()
-                return button.isSelected()
-            end
-            group.selectedAction = function() dial:add() end
-            group.notSelectedAction = function() dial:remove() end
             -- TODO move func def below to be local func more visible at root of this file
             button.pressedAction = function ()
-                panel:transitionOut()
-                menuInst:transitionOut()
-                t:setDuration(dial.value) --TODO move this to toRun in main?
-                toRun(t)
+                toRun(t, dial.value)
             end
             
-            return group
+            return button
         end
 
         for name, timer in pairs(timers) do
-            panel:addChild(makeTimerSelector(name, timer))
+            container:addChildren(makeTimerSelector(name, timer))
         end
     end
 
-    --- Populate a panel containing instructions for the user.
-    ---@param panel List to use as a container
+    --- Populate a container containing instructions for the user.
+    ---@param container List to use as a container
     ---@param instructions table containing name:text pairs
-    local function writeInstructions(panel, instructions)
-        panel.isSelected = function() return false end -- no reason for user to select instructions
+    local function writeInstructions(container, instructions)
+        container.isSelected = function() return false end -- no reason for user to select instructions
         
-        -- count all instructions to be stacked into panel
+        -- count all instructions to be stacked into container
         local n = 0
         for _, _ in pairs(instructions) do n = n + 1 end
         n = n + #instructions
-        local w, h = panel:getMaxContentDim(n)
+        local w, h = container:getMaxContentDim(n)
 
         for name, text in pairs(instructions) do
-            local inst = Textbox({name, w, h})
+            local inst = Textbox({name .. "Inst", w, h})
+            inst:enableWhen(function() return container:isEnabled() end)
             inst:setText("_"..text.."_", "dontResize")
-            panel:addChild(inst)
+            container:addChildren(inst)
         end
     end
 
     UIManager.super.init(self, {"uimanager"})
     self.isSelected = function () return true end
 
-    -- Groups of UIElements that pertain to different app states
-    menuPanel = UIElement({"menuPanel"})
-    menuPanel:forceConfigured()
-    runTimerPanel = UIElement({"runTimerPanel"})
-    runTimerPanel:forceConfigured()
-    doneTimerPanel = UIElement({"doneTimerPanel"})
-    doneTimerPanel:forceConfigured()
-
     timersMenu = List({"timersMenu", 120, 140})
-    self:addChild(timersMenu)
+    timersMenu:enableWhen(function () return state == STATES.MENU end)
     -- TODO when configmenu + menuList, remove the following line
     timersMenu.isSelected = function() return state == STATES.MENU end
     populateTimersMenu(timersMenu, timers)
     timersMenu:moveTo(250, 60)
 
+    -- TODO rm when addTimerSelector() is implemented
     timerSelectButtons.work:setLabel("work")
     timerSelectButtons.short:setLabel("short break")
     timerSelectButtons.long:setLabel("long break")
 
+    --TODO mv to populateTimersMenu
     for _, dial in pairs(durationDials) do
         dial:moveTo(20, 60)
     end
@@ -170,21 +160,24 @@ function UIManager:init(timers)
     --TODO i wanna make timersMenu just the list of buttons again, add the dials seperately
 
     menuInst = List({"menuInstList", 200, 60})
+    menuInst:enableWhen(function() return state == STATES.MENU end)
     writeInstructions(menuInst, {
-        runTimerInst = "A starts selected timer",
-        setTimerInst = "Crank sets pom duration"
+        runTimer = "A starts selected timer",
+        setTimer = "Crank sets pom duration"
     })
     menuInst:moveTo(20, 140)
     menuInst:setZIndex(60)
 
     runTimerInst = List({"runTimerInstList", 300, 30})
+    runTimerInst:enableWhen(function() return state == STATES.RUN_TIMER end)
     writeInstructions(runTimerInst, {
-        toMenuInst = "B returns to menu"
+        toMenu = "B returns to menu"
     })
     runTimerInst:moveTo(20, 140)
     runTimerInst:setZIndex(60)
 
     snoozeButton = Button({"snooze"}, 'invisible')
+    snoozeButton:enableWhen(function() return state == STATES.DONE_TIMER end)
     snoozeButton.isSelected = function() return state == STATES.DONE_TIMER end --TODO should only be active when timer ends
     snoozeButton.isPressed = function() return pd.buttonJustPressed(A) end
     snoozeButton.pressedAction = function()
@@ -194,6 +187,7 @@ function UIManager:init(timers)
     end
 
     doneTimerInst = List({"doneTimerInstList", 300, 60})
+    doneTimerInst:enableWhen(function() return state == STATES.DONE_TIMER end)
     writeInstructions(doneTimerInst, {
         snoozeInst = "A snoozes timer",
         toMenuInst = "B returns to menu"
@@ -201,12 +195,7 @@ function UIManager:init(timers)
     doneTimerInst:moveTo(20, 140)
     doneTimerInst:setZIndex(60)
 
-    menuPanel:addChild(timersMenu)
-    menuPanel:addChild(menuInst)
-    runTimerPanel:addChild(runTimerInst)
-    doneTimerPanel:addChild(snoozeButton)
-    doneTimerPanel:addChild(doneTimerInst)
-
+    self:enableWhen(function() return true end)
     self:setZIndex(50)
     instance = self
     self._isConfigured = true
@@ -215,24 +204,7 @@ end
 
 ---TODO desc
 function UIManager:update()
-    --TODO group UIElements that appear together into a 'scene' using Groups?
-    if state == STATES.MENU then
-        --TODO once config menu exists, set up L/R selection b/w config menu and timers menu
-
-        --TODO this should all be handled by the back-to-menu invisibutton
-        runTimerPanel:transitionOut()
-        doneTimerPanel:transitionOut()
-        menuPanel:transitionIn()
-    elseif state == STATES.RUN_TIMER then
-        --TODO this should be handled by the runtimer and snoozetimer buttons
-        doneTimerPanel:transitionOut()
-        menuPanel:transitionOut()
-        runTimerPanel:transitionIn()
-    elseif state == STATES.DONE_TIMER then
-        runTimerPanel:transitionOut()
-        doneTimerPanel:transitionIn()
-    end
-
+    switch.update()
     UIManager.super.update(self)
     --d.illustrateBounds(self)
 end

@@ -10,7 +10,7 @@ local pd <const> = playdate
 local gfx <const> = pd.graphics
 local utils <const> = utils
 local d <const> = debugger
-local UIElement <const> = UIElement
+local ipairs <const> = ipairs
 local abs = math.abs
 
 local UP <const> = pd.kButtonUp
@@ -109,27 +109,29 @@ function List:update()
         end
     end
     List.super.update(self)
-    --d.illustrateBounds(self)
+    d.illustrateBounds(self)
 end
 
 --- Parents another UIElement, .
 --- No option to keep child's global posn,
 ---     since the list *must* control child layout.
----@param element UIElement the child element
-function List:addChild(element)
-    List.super.addChild(self, element)
-    --d.log("adding child " .. element.name)
+---@param e table of child UIElements, or a single UIElement
+function List:addChildren(e)
+    local newChildren = List.super.addChildren(self, e)
+    --d.log("adding child " .. e.name)
+    
+    for _, child in ipairs(newChildren) do
+        child.isSelected = function ()
+            return child == self._children[self._i_selectChild]
+        end
+        local x1, y1, x, y = child:moveTo(self._layout())
+        self._lastChild = child
 
-    element.isSelected = function ()
-        return element == self._children[self._i_selectChild]
-    end
-    local x1, y1, x, y = element:moveTo(self._layout())
-    self._lastChild = element
-
-    if (x > self.x + self.width - self._spacing) or (y > self.y + self.height - self._spacing) then
-        d.log("UIElement '" .. element.name .. "' out-of-bounds in layout. Illustrating bounds.")
-        d.illustrateBounds(self)
-        d.illustrateBounds(element)
+        if (x > self.x + self.width - self._spacing) or (y > self.y + self.height - self._spacing) then
+            d.log("UIElement '" .. child.name .. "' out-of-bounds in layout. Illustrating bounds.")
+            d.illustrateBounds(self)
+            d.illustrateBounds(child)
+        end
     end
 end
 

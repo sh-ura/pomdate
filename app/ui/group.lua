@@ -16,6 +16,7 @@ local gfx <const> = pd.graphics
 local utils <const> = utils
 local configs <const> = configs
 local d <const> = debugger
+local ipairs <const> = ipairs
 --local externalfunc <const> = somepkg.func --TODO any other external vars go here
 
 --- Group is a container for packing UIElements together
@@ -65,14 +66,16 @@ function Group:configRect(x, y, width, height)
 end
 
 --- Add UIElement member to the Group.
----@param element UIElement the child element
+---@param e UIElement the child element
 ---@param linkSelection boolean whether to make child's selection criteria depend upon group. Defaults to false
-function Group:addChild(element, linkSelection)
-    Group.super.addChild(self, element)
-
+function Group:addChildren(e, linkSelection)
+    local newChildren = Group.super.addChildren(self, e)
+    
     if linkSelection then
-        element.isSelected = function()
-            return self.isSelected()
+        for _, child in ipairs(newChildren) do
+            child.isSelected = function()
+                return self.isSelected()
+            end
         end
     end
 end
