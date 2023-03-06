@@ -135,16 +135,12 @@ end
 
 -- pd.update() is called right before every frame is drawn onscreen.
 function pd.update()
+    --TODO replace this with playdate's builtin init screen system
     if state == STATES.LOADING then
         pd.ui.crankIndicator:update() --TODO why isnt this working??
         if pd.buttonJustPressed(A) then
             splashSprite:remove()
             ui:add()
-            toMenu()
-        end
-    --TODO logic below needs to be replaced with an invisible button in UI
-    elseif state == STATES.RUN_TIMER or state == STATES.DONE_TIMER then --TODO we are doing way too many STATES lookups
-        if pd.buttonJustPressed(B) then
             toMenu()
         end
     end

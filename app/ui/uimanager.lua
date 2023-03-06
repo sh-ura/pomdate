@@ -1,8 +1,6 @@
 --- pkg 'ui' defines a singleton UIManager class
 --- For dev convenience, this package accesses the global namespace,
----     but is not intended to modify any global vars other than:
----         - STATE
----         - currentTimer
+---     but is not intended to modify any global vars other than state
 --- TODO may be nice to encapsulate this env, pass ref to STATE on init
 
 import 'CoreLibs/crank'
@@ -50,6 +48,7 @@ local durationDials = {} -- visualize/manipulate timer durations --TODO move to 
 local timerSelectButtons = {} -- select timer to run --TODO move to init
 local menuInst = nil -- instructions shown in MENU --TODO move to init
 
+local toMenuButton = nil
 local runTimerInst = nil -- instructions shown in RUN_TIMER state --TODO move to init
 
 local snoozeButton = nil -- invisible snooze button --TODO move to init
@@ -93,8 +92,8 @@ function UIManager:init(timers)
             local dial = Dial({name .. "Dial", 80, 40}, 1, 1, 60)
             durationDials[name] = dial
             dial:enableWhen(function() return
-                button:isEnabled()
-                and button.isSelected() end)
+                button:isEnabled() and
+                button.isSelected() end)
             dial.isSelected = function () return button.isSelected() end
             local ticks = 60 / CRANK_ROTS_PER_HOUR
             dial.getDialChange = function ()
@@ -168,6 +167,14 @@ function UIManager:init(timers)
     menuInst:moveTo(20, 140)
     menuInst:setZIndex(60)
 
+    toMenuButton = Button({"toMenuButton"}, 'invisible')
+    toMenuButton:enableWhen(function() return
+        state == STATES.RUN_TIMER or
+        state == STATES.DONE_TIMER end)
+    toMenuButton.isSelected = function() return true end
+    toMenuButton.isPressed = function() return pd.buttonJustPressed(B) end
+    toMenuButton.pressedAction = function() toMenu() end
+
     runTimerInst = List({"runTimerInstList", 300, 30})
     runTimerInst:enableWhen(function() return state == STATES.RUN_TIMER end)
     writeInstructions(runTimerInst, {
@@ -176,14 +183,13 @@ function UIManager:init(timers)
     runTimerInst:moveTo(20, 140)
     runTimerInst:setZIndex(60)
 
-    snoozeButton = Button({"snooze"}, 'invisible')
+    snoozeButton = Button({"snoozeButton"}, 'invisible')
     snoozeButton:enableWhen(function() return state == STATES.DONE_TIMER end)
     snoozeButton.isSelected = function() return state == STATES.DONE_TIMER end --TODO should only be active when timer ends
     snoozeButton.isPressed = function() return pd.buttonJustPressed(A) end
     snoozeButton.pressedAction = function()
-        currentTimer:snooze()
+        currentTimer:snooze() -- should have snooze() func in main instead
         state = STATES.RUN_TIMER
-        d.log("snooze pressed")
     end
 
     doneTimerInst = List({"doneTimerInstList", 300, 60})
