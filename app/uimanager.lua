@@ -1,7 +1,6 @@
---- pkg 'ui' defines a singleton UIManager class
---- For dev convenience, this package accesses the global namespace,
+--- pkg 'uimanager' is responsible for setting up and driving the UI
+--- For dev convenience and runtime speed, this package accesses the global namespace,
 ---     but is not intended to modify any global vars
---- TODO may be nice to encapsulate this env, pass ref to STATE on init
 
 import 'CoreLibs/crank'
 import 'ui/button'
@@ -30,14 +29,6 @@ local ipairs <const> = ipairs
 
 local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
 
---TODO does this actually need to be a UIElement, or can we just extend Object
---   + call ui:update in the main loop?
---- UIManager is the singleton root of all UIElements in the program.
---- It is in charge of defining the specific behaviours and layouts
----     of all UIElements, as well as configuring the UI object heirarchy.
-class('UIManager').extends()
-local instance = nil
-
 --TODO most of these are not needed outside of specific funcs
 local timersMenu = nil  -- contains the buttons for selecting timers --TODO move to init
 local durationDials = {} -- visualize/manipulate timer durations --TODO move to init
@@ -59,12 +50,7 @@ local doneTimerInst = nil -- instructions shown in DONE_TIMER state --TODO move 
 --- Initializes and returns new UIManager singleton instance.
 --- If instance already exists, this func does nothing but returns that instance.
 ---@param timers table all Timers that the UI should support selecting
-function UIManager:init(timers)
-    if instance then 
-        d.log("UIManager instance exists; not reinstantiating; returning instance")
-        return instance
-    end
-
+local function init(timers)
     --- Add all of the timer-selecting/-configuring UIElements that are
     ---     displayed on the MENU screen.
     ---@param container List to contain the timer-selecting buttons
@@ -135,9 +121,6 @@ function UIManager:init(timers)
             container:addChildren(inst)
         end
     end
-
-    UIManager.super.init(self, {"uimanager"})
-    self.isSelected = function () return true end
 
     timersMenu = List({"timersMenu", 120, 140})
     timersMenu:setEnablingCriteria(function () return state == STATES.MENU end)
@@ -229,19 +212,16 @@ function UIManager:init(timers)
     })
     doneTimerInst:moveTo(20, 140)
     doneTimerInst:setZIndex(60)
-
-    instance = self
-    self = utils.makeReadOnly(self, "UIManager instance")
 end
 
 --- Drives the UI. Call on pd.update().
-function UIManager:update()
+local function update()
     switch.update()
 end
 
 --- Get the value currently set on a specified dial
 ---@return integer minutes value on this dial, or -1 if dial is not found
-function UIManager:getDialValue(name)
+local function getDialValue(name)
     local dial = durationDials[name]
     if not dial then
         d.log("dial '" .. name .. "' not known to uimanager")
@@ -250,8 +230,11 @@ function UIManager:getDialValue(name)
     return dial.value
 end
 
---TODO function get() end
-
-uimanager = {name = "uimanager"}
+uimanager = {
+    name = "manage_ui",
+    init = init,
+    update = update,
+    getDialValue = getDialValue
+}
 uimanager = utils.makeReadOnly(uimanager)
 return uimanager

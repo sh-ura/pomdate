@@ -31,7 +31,6 @@ duration_defaults = {
     snooze = 2
 }
 
-local ui = nil
 local splashSprite = nil
 local timers = {
     work = 'nil',
@@ -76,7 +75,7 @@ local function init()
 
     d.log("timers in main", timers)
 
-    ui = UIManager({timers.work, timers.short, timers.long})
+    uimanager.init({timers.work, timers.short, timers.long})
 end
 
 --TODO replace with a launchImage, configurable in pdxinfo
@@ -98,9 +97,9 @@ local function saveState()
     d.log("attempting to saveState")
 
     local durations = {
-        work = ui:getDialValue("work"),
-        short = ui:getDialValue("short"),
-        long = ui:getDialValue("long")
+        work = uimanager.getDialValue("work"),
+        short = uimanager.getDialValue("short"),
+        long = uimanager.getDialValue("long")
     }
     for name, duration in pairs(durations) do
         if duration <= -1 then
@@ -121,7 +120,7 @@ end
 function toMenu()
     currentTimer:remove()
     pd.setAutoLockDisabled(false)
-    pd.getCrankTicks(1) --TODO move this crank-data-dump to ui file
+    pd.getCrankTicks(1) --TODO move this crank-data-dump to uimanager file
     state = STATES.MENU
 end
 
@@ -176,7 +175,7 @@ function pd.update()
         end
     end
 
-    ui:update()
+    uimanager.update()
     pd.timer.updateTimers()
     gfx.sprite.update()
 end
