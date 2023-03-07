@@ -41,6 +41,8 @@ local timers = {
 }
 local currentTimer = nil
 local notifSound = nil
+local c_pauses = 0
+local c_snoozes = 0
 
 local snoozeMins = 2 --TODO make configurable
 
@@ -134,10 +136,33 @@ function toRun(t, duration)
     state = STATES.RUN_TIMER
 end
 
---- Runs generic snooze timer
+--- Runs generic snooze timer.
 function snooze()
-    currentTimer:remove()
-    toRun(timers.snooze, snoozeMins)
+    -- if/else below won't work while pd.timer:pause() is buggy
+    --if currentTimer:isStopped() then
+        --d.log("current timer " .. currentTimer.name .. " is not stopped; can't snooze yet")
+    --else
+        c_snoozes = c_snoozes + 1
+        currentTimer:remove()
+        toRun(timers.snooze, snoozeMins)
+    --end
+end
+
+--- Pauses currently running timer.
+function pause()
+    -- if should also check :isStopped() once pd.timer:pause() is fixed
+    if currentTimer:isPaused() then
+        d.log("current timer " .. currentTimer.name .. " is already paused")
+    else
+        c_pauses = c_pauses + 1
+        currentTimer:pause()
+    end
+end
+
+--- Unpause current timer.
+function unpause()
+    if not currentTimer:isPaused() then d.log("current timer " .. currentTimer.name .. " is not paused; can't unpause")
+    else currentTimer:start() end
 end
 
 -- pd.update() is called right before every frame is drawn onscreen.

@@ -46,6 +46,8 @@ local timerSelectButtons = {} -- select timer to run --TODO move to init
 local menuInst = nil -- instructions shown in MENU --TODO move to init
 
 local toMenuButton = nil
+local pauseButton = nil
+local unpauseButton = nil
 local runTimerInst = nil -- instructions shown in RUN_TIMER state --TODO move to init
 
 local snoozeButton = nil -- invisible snooze button --TODO move to init
@@ -165,17 +167,47 @@ function UIManager:init(timers)
     menuInst:moveTo(20, 140)
     menuInst:setZIndex(60)
 
+    local paused = false
+
     toMenuButton = Button({"toMenuButton"}, 'invisible')
     toMenuButton:setEnablingCriteria(function() return
         state == STATES.RUN_TIMER or
         state == STATES.DONE_TIMER end)
     toMenuButton.isPressed = function() return pd.buttonJustPressed(B) end
-    toMenuButton.pressedAction = function() toMenu() end
+    toMenuButton.pressedAction = function()
+        paused = false
+        toMenu()
+    end
     toMenuButton:forceConfigured()
 
-    runTimerInst = List({"runTimerInstList", 300, 30})
+    pauseButton = Button({"pauseButton"}, 'invisible')
+    pauseButton:setEnablingCriteria(function() return
+        state == STATES.RUN_TIMER and
+        not paused
+    end)
+    pauseButton.isPressed = function() return pd.buttonJustPressed(A) end
+    pauseButton.pressedAction = function()
+        pause()
+        paused = true
+    end
+    pauseButton:forceConfigured()
+
+    unpauseButton = Button({"unpauseButton"}, 'invisible')
+    unpauseButton:setEnablingCriteria(function() return
+        state == STATES.RUN_TIMER and
+        paused
+    end)
+    unpauseButton.isPressed = function() return pd.buttonJustPressed(A) end
+    unpauseButton.pressedAction = function()
+        unpause()
+        paused = false
+    end
+    unpauseButton:forceConfigured()
+
+    runTimerInst = List({"runTimerInstList", 300, 60})
     runTimerInst:setEnablingCriteria(function() return state == STATES.RUN_TIMER end)
     writeInstructions(runTimerInst, {
+        pauseInst = "A toggles timer pause",
         toMenu = "B returns to menu"
     })
     runTimerInst:moveTo(20, 140)
