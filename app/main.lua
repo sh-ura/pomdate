@@ -47,13 +47,13 @@ local snoozeMins = 2 --TODO make configurable
 
 --TODO move below asset path info to config or smth
 local soundPathPrefix = "assets/sound/"
-local notifSoundPath = "xylo-notif.wav"
+local notifSoundPath = "notif.wav"
 
 --- Sets up the app environment.
 --- If a state save file exists, it will be loaded here.
 local function init()
-    --utils.disableReadOnly()
-    --debugger.disable()
+    utils.disableReadOnly()
+    debugger.disable()
     d.log("attempting to loadState")
     local loadedState = pd.datastore.read("durations")
     if loadedState then

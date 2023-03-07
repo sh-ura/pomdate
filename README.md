@@ -17,7 +17,7 @@ Pomodoro timer for Playdate
 ## Status
 
 MVP complete in `main` branch. Useable.
-Lacks pausing and snoozing - to be added soon.
+Future work will be asset-related and not greatly effect functionality.
 
 ## Install
 
@@ -33,6 +33,14 @@ The app is now useable in the simulator, if you would like to use it as a deskto
 
 1. Plug your Playdate into your computer and press the lock button twice to unlock it.
 2. `Device` > `Upload Game to Device` will install `pomdate` on the Playdate.
+
+### Replace notification sound
+
+1. Create and export your sound according to [playdate specs for sound **samples**](https://sdk.play.date/1.13.1/Inside%20Playdate.html#M-sound).
+2. Name your sound 'notif.wav' and place it in 'pomdate/app/assets/sound'
+3. Compile and run the app as per the installation instructions above.
+
+Note that some samples may sound significantly different, even *bad*, on the playdate hardware.
 
 ## Develop
 
