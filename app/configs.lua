@@ -14,6 +14,11 @@ H_CENTRE = 120
 Z_MAX = 32767
 Z_MIN = -32768
 
+AXES = {
+    X = 1,
+    Y = 2
+}
+
 -- todo rm??
 STATES = {
     LOADING     = 1,

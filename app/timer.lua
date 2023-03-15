@@ -11,6 +11,7 @@ local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
 local floor <const> = math.floor -- TODO may be able to replace this w // floor division lua operator?
+local STATES <const> = configs.STATES
 
 -- Timer packs a timer with its UI.
 class('Timer').extends(gfx.sprite)
@@ -36,10 +37,9 @@ local function convertToClock(msec)
 end
 
 --- Notifies user that timer is complete
-local function notify()
+function Timer:notify()
     --d.log("notification pushed")
     if notifSound then notifSound:play(0) end
-    _G.state = _G.STATES.DONE_TIMER
 end
 
 --- Initializes, but does not start, a Timer.
@@ -68,33 +68,40 @@ end
 --]]
 -- Timer:update() draws the current time in the timer countdown
 function Timer:update()
-    local msec
-    if self._timer then msec = self._timer.value
-    else msec = self._duration end
+    --TODO refactor when pd.timer.pause() is fixed
+    if _G.state == STATES.RUN_TIMER then
+        local msec
+        if self._isPaused then msec = self._duration --TODO rm workaround
+        elseif self._timer then msec = self._timer.value
+        else
+            d.log(self.name .. "._timer is nil on RUN")
+            return
+        end
 
-    -- if timer has completed
-    if msec <= 0 then
+        -- if timer has completed
+        if msec <= 0 then
+            _G.toDone()
+        else
+            local min, sec = convertToClock(msec)
+            -- debugger.log("min: " .. min .. " sec: " .. sec)
+            -- debugger.log(self._timer.value)
+            local timeString = ""
+            if min < 10 then timeString = "0" end
+            timeString = timeString .. min .. ":"
+            if sec < 10 then timeString = timeString .. "0" end
+            timeString = timeString .. sec
+
+            gfx.pushContext(self._img)
+                gfx.clear()
+                gfx.drawText("*"..timeString.."*", 0, 0)
+            gfx.popContext()
+        end
+    elseif _G.state == STATES.DONE_TIMER then
         gfx.pushContext(self._img)
-            gfx.clear()
-            gfx.drawText("*DONE*", 0, 0)
-        gfx.popContext()
-        self._timer = nil
-        notify()
-    end
-
-    local min, sec = convertToClock(msec)
-    -- debugger.log("min: " .. min .. " sec: " .. sec)
-    -- debugger.log(self._timer.value)
-    local timeString = ""
-    if min < 10 then timeString = "0" end
-    timeString = timeString .. min .. ":"
-    if sec < 10 then timeString = timeString .. "0" end
-    timeString = timeString .. sec
-
-    gfx.pushContext(self._img)
         gfx.clear()
-        gfx.drawText("*"..timeString.."*", 0, 0)
-    gfx.popContext()
+        gfx.drawText("*DONE*", 0, 0)
+        gfx.popContext()
+    end
 
     --DEBUG doing this prevents the sprite from auto-refreshing when self._img changes
     --TODO set a larger font instead of upscaling default text
