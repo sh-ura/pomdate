@@ -11,8 +11,10 @@ local gfx <const> = pd.graphics
 local utils <const> = utils
 local d <const> = debugger
 local ipairs <const> = ipairs
-local abs = math.abs
+local abs <const> = math.abs
+local type <const> = type
 
+local AXES <const> = configs.AXES
 local UP <const> = pd.kButtonUp
 local DOWN <const> = pd.kButtonDown
 local LEFT <const> = pd.kButtonLeft
@@ -35,27 +37,25 @@ name = "list"
 ---         'name' or 1: (string) button name for debugging
 ---         'w' or 2: (integer; optional) initial width, defaults to screen width
 ---         'h' or 3: (integer; optional) initial height, defaults to screen height
+---@param axis enum (optional) member of AXES enum; determines list axis (X: hori, Y: vert). Defaults to vert.
 ---@param spacing integer (optional) number of pixels between UIElements (this list & its children)
----@param horizontal boolean (optional) lay the list's children out
----    next to each other in the x dimension.
----    Defaults to vertical layout.
-function List:init(coreProps, spacing, horizontal)
-    if not spacing then spacing = 0 end
+function List:init(coreProps, axis, spacing)
+    if not spacing or type(spacing) ~= 'number' then spacing = 0 end
     List.super.init(self, coreProps)
 
     self._spacing = spacing
-    self._isHorizontal = false
+    self._axis = axis
     self._lastChild = nil -- latest child added to list
 
-    -- orientation-based layouts
-    -- could be split into orientation-specific subclasses,
+    -- axis-based layouts
+    -- could be split into axis-specific subclasses,
     --      but atm I don't want to spare the extra __index lookup
-    if horizontal then
-        self._isHorizontal = true
+    if self._axis == AXES.X then
         self._inputPrev = LEFT
         self._inputNext = RIGHT
 
         --TODO refactor layout functions to use _lastChild
+        --TODO  deduplicate layout funcs as much as possible
         --- Compute a new child's global position
         ---@return x,y the coordinate to place the next child at
         self._layout = function()
@@ -71,6 +71,7 @@ function List:init(coreProps, spacing, horizontal)
             return x, y
         end
     else
+        self._axis = AXES.Y -- default vert orientation
         self._inputPrev = UP
         self._inputNext = DOWN
 
@@ -109,7 +110,7 @@ function List:update()
         end
     end
     List.super.update(self)
-    d.illustrateBounds(self)
+    --d.illustrateBounds(self)
 end
 
 --- Parents another UIElement, .
@@ -150,39 +151,44 @@ function List:getMaxContentDim(nNewElements)
         nNewElements = 1
     end
 
+    local axis = self._axis
     local spacing = self._spacing
     local lastChild = self._lastChild
 
     --- Return empty space remaining after accounting for existing children in the list
-    ---@param dim string target dimension, ie. 'x' or 'y'
     ---@return integer remaining pixels
-    local function spaceAfterChildren(dim)
+    local function spaceAfterChildren()
+
         local measure = nil
-        if dim == 'x' then
+        if axis == AXES.X then
             measure = "width"
-        elseif dim == 'y' then
+        elseif axis == AXES.Y then
             measure = "height"
         else
-            d.log("can't position along '" .. dim .. "' dimension")
+            d.log("can't position along '" .. axis .. "' dimension")
             return 0
         end
 
-        local available = 0
+        local remaining = 0
         if lastChild then
-            available = (self[dim] + self[measure]) - (lastChild[dim] + lastChild[measure])
+            remaining = (self[axis] + self[measure]) - (lastChild[axis] + lastChild[measure])
         else
-            available = self[measure]
+            remaining = self[measure]
         end
-        return (available - spacing * (nNewElements + 1))
+        return (remaining - spacing * (nNewElements + 1))
     end
 
+    local available = spaceAfterChildren()
+    local leftover = available % nNewElements
+    if leftover ~= 0 then d.log(leftover .. " pix will be left over within " .. self.name .. " list") end
+
     local w = 0 ; local h = 0
-    if self._isHorizontal then
-        w = spaceAfterChildren('x') // nNewElements
+    if self.axis == AXES.X then
+        w = available // nNewElements
         h = self.height - 2 * spacing
     else
         w = self.width - 2 * spacing
-        h = spaceAfterChildren('y') // nNewElements
+        h = available // nNewElements
     end
 
     return w , h 

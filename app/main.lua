@@ -24,14 +24,15 @@ local B <const> = pd.kButtonB
 -- TODO can states be a set of update funcs, or do we need the enum?
 STATES = configs.STATES
 state = STATES.LOADING
-duration_defaults = {
+
+AXES = configs.AXES
+
+initialDurations = {
     work = 25,
     short = 5,
     long = 20,
     snooze = 2
 }
-
-local ui = nil
 local splashSprite = nil
 local timers = {
     work = 'nil',
@@ -41,12 +42,14 @@ local timers = {
 }
 local currentTimer = nil
 local notifSound = nil
+local c_pauses = 0
+local c_snoozes = 0
 
 local snoozeMins = 2 --TODO make configurable
 
 --TODO move below asset path info to config or smth
 local soundPathPrefix = "assets/sound/"
-local notifSoundPath = "xylo-notif.wav"
+local notifSoundPath = "notif.wav"
 
 --- Sets up the app environment.
 --- If a state save file exists, it will be loaded here.
@@ -57,9 +60,9 @@ local function init()
     local loadedState = pd.datastore.read("durations")
     if loadedState then
         d.log("state file exists")
-        duration_defaults.work = loadedState.work
-        duration_defaults.short = loadedState.short
-        duration_defaults.long = loadedState.long
+        initialDurations.work = loadedState.work
+        initialDurations.short = loadedState.short
+        initialDurations.long = loadedState.long
     end
     d.log("loading attempt complete; dumping loadedState table", loadedState)
 
@@ -70,11 +73,9 @@ local function init()
     timers = utils.makeReadOnly(timers, "timers")
     timer.setNotifSound(pd.sound.sampleplayer.new(soundPathPrefix .. notifSoundPath))
     for _, t in pairs(timers) do t:setZIndex(50) end
-    currentTimer = timers.work
+    currentTimer = timers.work --TODO rm
 
-    d.log("timers in main", timers)
-
-    ui = UIManager({timers.work, timers.short, timers.long})
+    uimanager.init({timers.work, timers.short, timers.long})
 end
 
 --TODO replace with a launchImage, configurable in pdxinfo
@@ -96,13 +97,13 @@ local function saveState()
     d.log("attempting to saveState")
 
     local durations = {
-        work = ui:getDialValue("work"),
-        short = ui:getDialValue("short"),
-        long = ui:getDialValue("long")
+        work = uimanager.getDialValue("work"),
+        short = uimanager.getDialValue("short"),
+        long = uimanager.getDialValue("long")
     }
     for name, duration in pairs(durations) do
         if duration <= -1 then
-            durations[name] = duration_defaults[name]
+            durations[name] = initialDurations[name]
         end
     end
     d.log("dumping durations to be saved", durations)
@@ -116,10 +117,13 @@ end
 -- then switches update func
 -- TODO need to transition run -> select sometimes; refactor
 -- TODO align semantics of menu w pause
+-- TODO rename to toMENU
 function toMenu()
     currentTimer:remove()
+    c_pauses = 0
+    c_snoozes = 0
     pd.setAutoLockDisabled(false)
-    pd.getCrankTicks(1) --TODO move this crank-data-dump to ui file
+    pd.getCrankTicks(1) --TODO move this crank-data-dump to uimanager file
     state = STATES.MENU
 end
 
@@ -134,10 +138,51 @@ function toRun(t, duration)
     state = STATES.RUN_TIMER
 end
 
---- Runs generic snooze timer
+function toDone()
+    currentTimer:stop()
+    currentTimer:notify()
+    state = STATES.DONE_TIMER
+end
+
+--- Runs generic snooze timer.
 function snooze()
-    currentTimer:remove()
-    toRun(timers.snooze, snoozeMins)
+    -- if/else below won't work while pd.timer:pause() is buggy
+    --if currentTimer:isStopped() then
+        --d.log("current timer " .. currentTimer.name .. " is not stopped; can't snooze yet")
+    --else
+        c_snoozes = c_snoozes + 1
+        currentTimer:remove()
+        toRun(timers.snooze, snoozeMins)
+    --end
+end
+
+--- Pauses currently running timer.
+function pause()
+    -- if should also check :isStopped() once pd.timer:pause() is fixed
+    if currentTimer:isPaused() then
+        d.log("current timer " .. currentTimer.name .. " is already paused")
+    else
+        c_pauses = c_pauses + 1
+        currentTimer:pause()
+    end
+end
+
+--- Unpause current timer.
+function unpause()
+    if not currentTimer:isPaused() then d.log("current timer " .. currentTimer.name .. " is not paused; can't unpause")
+    else currentTimer:start() end
+end
+
+--- Get the number of times the current timer has been paused
+---@return integer
+function getPauseCount()
+    return c_pauses
+end
+
+--- Get the number of times the current timer has been snoozed
+---@return integer
+function getSnoozeCount()
+    return c_snoozes
 end
 
 -- pd.update() is called right before every frame is drawn onscreen.
@@ -151,7 +196,7 @@ function pd.update()
         end
     end
 
-    ui:update()
+    uimanager.update()
     pd.timer.updateTimers()
     gfx.sprite.update()
 end

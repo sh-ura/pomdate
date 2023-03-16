@@ -11,6 +11,7 @@ local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
 local floor <const> = math.floor -- TODO may be able to replace this w // floor division lua operator?
+local STATES <const> = configs.STATES
 
 -- Timer packs a timer with its UI.
 class('Timer').extends(gfx.sprite)
@@ -36,10 +37,9 @@ local function convertToClock(msec)
 end
 
 --- Notifies user that timer is complete
-local function notify()
+function Timer:notify()
     --d.log("notification pushed")
     if notifSound then notifSound:play(0) end
-    _G.state = _G.STATES.DONE_TIMER
 end
 
 --- Initializes, but does not start, a Timer.
@@ -50,11 +50,11 @@ function Timer:init(name)
     self.name = name
 
     self._duration = 0.0 -- float timer duration in msec
-    self._minsDuration = 0 -- cache int duration in min, saves some computation in getDuration()
     self._img = gfx.image.new(200,150)
     self:setImage(self.img)
     
     self._timer = nil -- "value-based" pd timer w linear interpolation
+    self._isPaused = false -- true iff the timer is paused
 
     self:setCenter(0, 0) --anchor top-left
 end
@@ -68,57 +68,108 @@ end
 --]]
 -- Timer:update() draws the current time in the timer countdown
 function Timer:update()
-    if self._timer then
-        local msec = self._timer.value
-        local min, sec = convertToClock(msec)
-        -- debugger.log("min: " .. min .. " sec: " .. sec)
-        -- debugger.log(self._timer.value)
-
-        local timeString = ""
-        if min < 10 then timeString = "0" end
-        timeString = timeString .. min .. ":"
-        if sec < 10 then timeString = timeString .. "0" end
-        timeString = timeString .. sec
-
-        gfx.pushContext(self._img)
-            gfx.clear()
-            gfx.drawText("*"..timeString.."*", 0, 0)
-        gfx.popContext()
+    --TODO refactor when pd.timer.pause() is fixed
+    if _G.state == STATES.RUN_TIMER then
+        local msec
+        if self._isPaused then msec = self._duration --TODO rm workaround
+        elseif self._timer then msec = self._timer.value
+        else
+            d.log(self.name .. "._timer is nil on RUN")
+            return
+        end
 
         -- if timer has completed
         if msec <= 0 then
+            _G.toDone()
+        else
+            local min, sec = convertToClock(msec)
+            -- debugger.log("min: " .. min .. " sec: " .. sec)
+            -- debugger.log(self._timer.value)
+            local timeString = ""
+            if min < 10 then timeString = "0" end
+            timeString = timeString .. min .. ":"
+            if sec < 10 then timeString = timeString .. "0" end
+            timeString = timeString .. sec
+
             gfx.pushContext(self._img)
                 gfx.clear()
-                gfx.drawText("*DONE*", 0, 0)
+                gfx.drawText("*"..timeString.."*", 0, 0)
             gfx.popContext()
-            self._timer = nil
-            notify()
         end
-
-        --DEBUG doing this prevents the sprite from auto-refreshing when self._img changes
-        --TODO set a larger font instead of upscaling default text
-        self:setImage(self._img:scaledImage(4))
+    elseif _G.state == STATES.DONE_TIMER then
+        gfx.pushContext(self._img)
+        gfx.clear()
+        gfx.drawText("*DONE*", 0, 0)
+        gfx.popContext()
     end
+
+    --DEBUG doing this prevents the sprite from auto-refreshing when self._img changes
+    --TODO set a larger font instead of upscaling default text
+    self:setImage(self._img:scaledImage(4))
 
     Timer.super.update(self)
     --d.illustrateBounds(self)
 end
 
-function Timer:start()
-    self:stop()
-    self._timer = pd.timer.new(self._duration, self._duration, 0)
-end
-
+--- Stop a Timer.
+--- Stopped timers can be restarted by calling start().
 function Timer:stop()
     notifSound:stop()
     self._timer = nil
+    self._isPaused = false
 end
 
+--- Stop a Timer and remove its sprite.
+--- Removed timers must be added back with add() before they can start().
 function Timer:remove()
     d.log("removing timer "..self.name)
     self:stop()
     Timer.super.remove(self)
 end
+
+--- Pause a Timer.
+--- Paused timers can be continued with start().
+function Timer:pause()
+    if self._timer then
+        -- self._timer:pause() -- doesn't work; when started the value 'fast-forwards' according to the current time
+        self._isPaused = true
+
+        --TODO below is workaround for pd.timer:pause() being broken.
+        -- Rm/refactor when bugfix
+        self._duration = self._timer.value -- cache time-at-pause as new duration
+        self._timer = nil
+    else d.log(self.name .. " timer is nil; can't pause") end
+end
+
+--- Start a timer from a paused *or* stopped state.
+--- Supports starting from both states to mimic pd.timer's docs.
+--- However running timers cannot be started. Call reset() instead.
+function Timer:start()
+    if self._timer then
+        d.log("forbidden to reset timer " .. self.name)
+    else
+        self._timer = pd.timer.new(self._duration, self._duration, 0)
+        self._isPaused = false
+    end
+end
+
+--- Returns true if this timer is paused.
+function Timer:isPaused()
+    return self._isPaused
+end
+
+--[[ Won't work while pd.timer:pause() is buggy
+--- (re)Starts a Timer that will run for its configured duration
+function Timer:reset()
+    self.timer:stop()
+    self.timer:start()
+end
+
+--- Returns true if the timer is stopped, ex. if it has completed.
+function Timer:isStopped()
+    return self._timer == nil
+end
+--]]
 
 --- Set the sound to be played when a timer finishes
 ---@param sound pd.sound.sampleplayer or pd.sound.fileplayer
@@ -133,14 +184,7 @@ end
 --- Set the duration the timer should run for (in minutes).
 ---@param mins integer duration
 function Timer:setDuration(mins)
-    self._minsDuration = mins
     self._duration = (mins + 0.0) * SEC_PER_MIN * MSEC_PER_SEC
-end
-
---- Get the duration the timer will run for (in minutes).
----@return integer mins duration
-function Timer:getDuration()
-    return self._minsDuration
 end
 
 local _ENV = _G
