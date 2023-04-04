@@ -120,12 +120,13 @@ local function saveState()
     d.log("save attempt complete. Dumping datastore contents", pd.datastore.read("durations"))
 end
 
-local function autoselectTimer()
-    if currentTimer.name == "short" then
+local function cycleTimers()
+    if currentTimer == timers.short then
         uimanager.selectNextTimer()
-    elseif currentTimer.name == "long" then
+    elseif currentTimer == timers.long then
         uimanager.selectPrevTimer()
-    elseif currentTimer.name == "work" then
+    elseif currentTimer == timers.work then
+        c_poms = c_poms + 1
         if c_poms == n_poms then
             uimanager.selectNextTimer()
         else
@@ -144,24 +145,29 @@ function toMenu()
     currentTimer:remove()
     c_pauses = 0
     c_snoozes = 0
-    pd.setAutoLockDisabled(false)
-    pd.getCrankTicks(1) --TODO move this crank-data-dump to uimanager file
 
     if timerCompleted then
-        autoselectTimer()
+        cycleTimers()
     end
     timerCompleted = false
 
+    pd.setAutoLockDisabled(false)
+    pd.getCrankTicks(1) --TODO move this crank-data-dump to uimanager file
     state = STATES.MENU
 end
 
 ---TODO desc
-function toRun(t, duration)   
+function toRun(t, duration)
+    if c_poms >= n_poms then
+        c_poms = 0
+    end
+
     currentTimer = t
     currentTimer:setDuration(duration)
     currentTimer:moveTo(50, 70)
     currentTimer:add()
     currentTimer:start()
+    
     pd.setAutoLockDisabled(true)
     state = STATES.RUN_TIMER
 end
@@ -212,6 +218,11 @@ end
 ---@return integer
 function getSnoozeCount()
     return c_snoozes
+end
+
+--- Get the number of completed pomodoros
+function getPomCount()
+    return c_poms
 end
 
 -- pd.update() is called right before every frame is drawn onscreen.

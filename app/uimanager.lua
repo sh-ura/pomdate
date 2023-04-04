@@ -34,6 +34,7 @@ local timersMenu = nil  -- contains the buttons for selecting timers --TODO move
 local durationDials = {} -- visualize/manipulate timer durations --TODO move to init
 -- TODO rm timerSelectButton when addTimerSelector() is implemented
 local timerSelectButtons = {} -- select timer to run --TODO move to init
+local pomCountDisplay = nil
 local menuInst = nil -- instructions shown in MENU --TODO move to init
 
 local toMenuButton = nil -- return to timer-select menu
@@ -201,6 +202,11 @@ local function init(timers)
     scoreboard:moveTo(300, 60)
     scoreboard:setZIndex(80)
 
+    pomCountDisplay = List({"pomCountDisplay", 100, 40})
+    pomCountDisplay:setEnablingCriteria(function() return state == STATES.MENU end)
+    makeScoreDisplays(pomCountDisplay, { pom = getPomCount })
+    pomCountDisplay:moveTo(100, 200)
+    pomCountDisplay:setZIndex(80)
 
     --- Populate a list containing instructions for the user.
     ---@param list List to use as a container
