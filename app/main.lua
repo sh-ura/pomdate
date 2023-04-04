@@ -42,10 +42,13 @@ local timers = {
 }
 local currentTimer = nil
 local notifSound = nil
+local timerCompleted = false
+local c_poms = 0
 local c_pauses = 0
 local c_snoozes = 0
 
 local snoozeMins = 2 --TODO make configurable
+local n_poms = 4 --TODO make configurable
 
 --TODO move below asset path info to config or smth
 local soundPathPrefix = "assets/sound/"
@@ -75,7 +78,8 @@ local function init()
     for _, t in pairs(timers) do t:setZIndex(50) end
     currentTimer = timers.work --TODO rm
 
-    uimanager.init({timers.work, timers.short, timers.long})
+    uimanager.init({timers.short, timers.work, timers.long})
+    uimanager.selectNextTimer() -- autoselects the 2nd timer, 'work'
 end
 
 --TODO replace with a launchImage, configurable in pdxinfo
@@ -112,6 +116,20 @@ local function saveState()
     d.log("save attempt complete. Dumping datastore contents", pd.datastore.read("durations"))
 end
 
+local function autoselectTimer()
+    if currentTimer.name == "short" then
+        uimanager.selectNextTimer()
+    elseif currentTimer.name == "long" then
+        uimanager.selectPrevTimer()
+    elseif currentTimer.name == "work" then
+        if c_poms == n_poms then
+            uimanager.selectNextTimer()
+        else
+            uimanager.selectPrevTimer()
+        end
+    end
+end
+
 -- performs done -> select transition
 -- then inits select
 -- then switches update func
@@ -124,6 +142,12 @@ function toMenu()
     c_snoozes = 0
     pd.setAutoLockDisabled(false)
     pd.getCrankTicks(1) --TODO move this crank-data-dump to uimanager file
+
+    if timerCompleted then
+        autoselectTimer()
+    end
+    timerCompleted = false
+
     state = STATES.MENU
 end
 
@@ -141,6 +165,7 @@ end
 function toDone()
     currentTimer:stop()
     currentTimer:notify()
+    timerCompleted = true
     state = STATES.DONE_TIMER
 end
 

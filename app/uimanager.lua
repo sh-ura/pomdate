@@ -29,21 +29,21 @@ local ipairs <const> = ipairs
 
 local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
 
---TODO most of these are not needed outside of specific funcs
+--TODO rm most of these - those that are not needed outside of specific funcs
 local timersMenu = nil  -- contains the buttons for selecting timers --TODO move to init
 local durationDials = {} -- visualize/manipulate timer durations --TODO move to init
 -- TODO rm timerSelectButton when addTimerSelector() is implemented
 local timerSelectButtons = {} -- select timer to run --TODO move to init
 local menuInst = nil -- instructions shown in MENU --TODO move to init
 
-local toMenuButton = nil
-local pauseButton = nil
-local unpauseButton = nil
+local toMenuButton = nil -- return to timer-select menu
+local pauseButton = nil -- pause active timer
+local unpauseButton = nil -- unpause active timer
 local runTimerInst = nil -- instructions shown in RUN_TIMER state --TODO move to init
 
 local snoozeButton = nil -- invisible snooze button --TODO move to init
 local doneTimerInst = nil -- instructions shown in DONE_TIMER state --TODO move to init
-local scoreboard = nil
+local scoreboard = nil -- visualizes pause and snooze scores for this timer session
 
 --TODO much of this no longer needs to be in init
 -- ex. a addTimerSelector() could be called by main to add each timer selector
@@ -106,6 +106,7 @@ local function init(timers)
     timersMenu:moveTo(250, 60)
     d.illustrateBounds(timersMenu)
 
+    --TODO these labels should be configured in main!
     timerSelectButtons.work:setLabel("work")
     timerSelectButtons.short:setLabel("short break")
     timerSelectButtons.long:setLabel("long break")
@@ -266,11 +267,23 @@ local function getDialValue(name)
     return dial.value
 end
 
+--- Force the selection of the next timer button
+local function selectPrevTimer()
+    timersMenu:prev()
+end
+
+--- Force the selection of the previous timer button
+local function selectNextTimer()
+    timersMenu:next()
+end
+
 uimanager = {
     name = "manage_ui",
     init = init,
     update = update,
-    getDialValue = getDialValue
+    getDialValue = getDialValue,
+    selectPrevTimer = selectPrevTimer,
+    selectNextTimer = selectNextTimer
 }
 uimanager = utils.makeReadOnly(uimanager)
 return uimanager

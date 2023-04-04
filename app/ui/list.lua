@@ -101,13 +101,8 @@ end
 --- Depends on what the children's isSelected criteria are configured to.
 function List:update()
     if self.isSelected() then
-        if pd.buttonJustPressed(self._inputPrev) then
-            self._i_selectChild = (self._i_selectChild - 2) % #self._children + 1
-            --d.log(self.name .. " prev button pressed. i: " .. self._i_selectChild)
-        elseif pd.buttonJustPressed(self._inputNext) then
-            self._i_selectChild = self._i_selectChild % #self._children + 1
-            --d.log(self.name .. " next button pressed. i: " .. self._i_selectChild)
-        end
+        if pd.buttonJustPressed(self._inputPrev) then self:prev()
+        elseif pd.buttonJustPressed(self._inputNext) then self:next() end
     end
     List.super.update(self)
     --d.illustrateBounds(self)
@@ -192,6 +187,16 @@ function List:getMaxContentDim(nNewElements)
     end
 
     return w , h 
+end
+
+--- Selects the next child in the list.
+function List:prev()
+    self._i_selectChild = (self._i_selectChild - 2) % #self._children + 1
+end
+
+--- Selects the next child in the list.
+function List:next()
+    self._i_selectChild = self._i_selectChild % #self._children + 1
 end
 
 local _ENV = _G
