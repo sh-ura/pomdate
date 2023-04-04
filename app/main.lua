@@ -78,7 +78,11 @@ local function init()
     for _, t in pairs(timers) do t:setZIndex(50) end
     currentTimer = timers.work --TODO rm
 
-    uimanager.init({timers.short, timers.work, timers.long})
+    uimanager.init({
+        {t = timers.short, label = "short break"},
+        {t = timers.work, label = "work"},
+        {t = timers.long, label = "long break"}
+    })
     uimanager.selectNextTimer() -- autoselects the 2nd timer, 'work'
 end
 

@@ -50,26 +50,29 @@ local scoreboard = nil -- visualizes pause and snooze scores for this timer sess
 --      the timersMenu.
 --- Initializes and returns new UIManager singleton instance.
 --- If instance already exists, this func does nothing but returns that instance.
----@param timers table all Timers that the UI should support selecting
+---@param timers table all Timers that the UI should support selecting,
+---                 in {t, label} k-v tuples,
+---                 in the sequence they should appear.
 local function init(timers)
-
-
     --- Add all of the timer-selecting/-configuring UIElements that are
     ---     displayed on the MENU screen.
     ---@param list List to contain the timer-selecting buttons
-    ---@param timers table ARRAY all Timers to make selectors for
+    ---@param timers table all Timers to make selectors for,
+    ---                 in {t, label} k-v tuples,
+    ---                 in the sequence they should appear.
     local function populateTimersMenu (list, timers)
         local n = 0
         n = #timers
         local wButton, hButton = list:getMaxContentDim(n)
 
-        local function makeTimerSelector(t)
+        local function makeTimerSelector(t, label)
             local name = t.name
 
             local button = Button({name .. "Button", wButton, hButton})
             timerSelectButtons[name] = button
             button:setEnablingCriteria(function() return list:isEnabled() end)
             button.isPressed = function() return pd.buttonJustPressed(A) end
+            button:setLabel(label)
 
             local dial = Dial({name .. "Dial", 80, 40}, 1, 1, 60)
             durationDials[name] = dial
@@ -94,7 +97,7 @@ local function init(timers)
         end
 
         for _, timer in pairs(timers) do
-            list:addChildren(makeTimerSelector(timer))
+            list:addChildren(makeTimerSelector(timer.t, timer.label))
         end
     end
 
@@ -105,11 +108,6 @@ local function init(timers)
     populateTimersMenu(timersMenu, timers)
     timersMenu:moveTo(250, 60)
     d.illustrateBounds(timersMenu)
-
-    --TODO these labels should be configured in main!
-    timerSelectButtons.work:setLabel("work")
-    timerSelectButtons.short:setLabel("short break")
-    timerSelectButtons.long:setLabel("long break")
 
     --TODO mv to populateTimersMenu
     for _, dial in pairs(durationDials) do
