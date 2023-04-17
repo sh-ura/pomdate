@@ -61,9 +61,9 @@ function Dial:init(coreProps, step, lowerLimit, upperLimit, initialVal)
     elseif not self.value then self:setValue(0) end
 
     self._unit = "unit"
-    self._counter = gfx.image.new(9, 9)
+    self._counter = gfx.image.new(20, 20)
     gfx.pushContext(self._counter)
-        gfx.fillCircleAtPoint(5, 5, 4)
+        gfx.fillCircleAtPoint(9, 9, 9)
     gfx.popContext(self._counter)
 
     --- Declare dial behaviour, to be configured elsewhere, prob by UI Manager

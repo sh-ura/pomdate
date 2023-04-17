@@ -212,7 +212,7 @@ local function init(timers)
     pomCountDisplay:setEnablingCriteria(function() return state == STATES.MENU end)
     makeScoreDisplays(pomCountDisplay, { pom = getPomCount })
         [1]:setMode(dial.visualizers.horiCounter) -- visualize poms as counters
-    pomCountDisplay:moveTo(100, 200)
+    pomCountDisplay:moveTo(20, 200)
     pomCountDisplay:setZIndex(80)
 
     --- Populate a list containing instructions for the user.
