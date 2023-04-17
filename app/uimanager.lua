@@ -165,6 +165,7 @@ local function init(timers)
     --- Populate a scoreboard.
     ---@param list List to use as a container
     ---@param instructions table containing unit:scoringFunction pairs
+    ---@return table array of the new score displays
     local function makeScoreDisplays(list, scoringFuncs)
         list.isSelected = function() return false end -- no reason for user to select instructions
         
@@ -173,6 +174,7 @@ local function init(timers)
         for _, _ in pairs(scoringFuncs) do n = n + 1 end
         local w, h = list:getMaxContentDim(n)
 
+        local displays = {}
         for unit, score in pairs(scoringFuncs) do
             local display = Dial({unit .. "Score", w, h}, 1)
             list:addChildren(display)
@@ -190,7 +192,11 @@ local function init(timers)
                 prevScore = currentScore
                 return scoreDiff
             end
+
+            table.insert(displays, display)
         end
+        
+        return displays
     end
 
     scoreboard = List({"scoreboard", 100, 80})
@@ -205,6 +211,7 @@ local function init(timers)
     pomCountDisplay = List({"pomCountDisplay", 100, 40})
     pomCountDisplay:setEnablingCriteria(function() return state == STATES.MENU end)
     makeScoreDisplays(pomCountDisplay, { pom = getPomCount })
+        [1]:setMode(dial.visualizers.horiCounter) -- visualize poms as counters
     pomCountDisplay:moveTo(100, 200)
     pomCountDisplay:setZIndex(80)
 

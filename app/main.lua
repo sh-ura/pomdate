@@ -126,8 +126,7 @@ local function cycleTimers()
     elseif currentTimer == timers.long then
         uimanager.selectPrevTimer()
     elseif currentTimer == timers.work then
-        c_poms = c_poms + 1
-        if c_poms == n_poms then
+        if c_poms >= n_poms then
             uimanager.selectNextTimer()
         else
             uimanager.selectPrevTimer()
@@ -142,14 +141,22 @@ end
 -- TODO align semantics of menu w pause
 -- TODO rename to toMENU
 function toMenu()
-    currentTimer:remove()
-    c_pauses = 0
-    c_snoozes = 0
-
     if timerCompleted then
+        if currentTimer == timers.long then
+            c_poms = 0
+        elseif currentTimer == timers.work then
+            c_poms = c_poms + 1
+        end
+        if c_poms >= n_poms then
+            --TODO alert user that the cycle pom count has been reached
+        end
         cycleTimers()
     end
     timerCompleted = false
+
+    currentTimer:remove()
+    c_pauses = 0
+    c_snoozes = 0
 
     pd.setAutoLockDisabled(false)
     pd.getCrankTicks(1) --TODO move this crank-data-dump to uimanager file
@@ -158,10 +165,6 @@ end
 
 ---TODO desc
 function toRun(t, duration)
-    if c_poms >= n_poms then
-        c_poms = 0
-    end
-
     currentTimer = t
     currentTimer:setDuration(duration)
     currentTimer:moveTo(50, 70)

@@ -30,7 +30,7 @@ local List <const> = List
 local _ENV = P
 name = "list"
 
---TODO NEED TO SET DIMENSIONS.
+--TODO instead of AXES enum, use list.orientations.horizontal and list.orientations.vertical enum, like the modes in dial
 --      bug in current app is caused by the text not fitting in the list
 --- Initializes a list UIElement.
 ---@param coreProps table containing the following core properties, named or array-indexed:
@@ -70,7 +70,7 @@ function List:init(coreProps, axis, spacing)
             y = self.y + spacing
             return x, y
         end
-    else
+    else -- default to vertical layout
         self._axis = AXES.Y -- default vert orientation
         self._inputPrev = UP
         self._inputNext = DOWN
