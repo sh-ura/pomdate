@@ -52,7 +52,9 @@ local n_poms = 4 --TODO make configurable
 
 --TODO move below asset path info to config or smth
 local soundPathPrefix = "assets/sound/"
-local notifSoundPath = "notif.wav"
+local toWorkSoundPath = "to-work.wav"
+local toBreakSoundPath = "to-break.wav"
+local snoozeSoundPath = "snooze.wav"
 
 --- Sets up the app environment.
 --- If a state save file exists, it will be loaded here.
@@ -74,7 +76,11 @@ local function init()
     timers.long = Timer("long")
     timers.snooze = Timer("snooze")
     timers = utils.makeReadOnly(timers, "timers")
-    timer.setNotifSound(pd.sound.sampleplayer.new(soundPathPrefix .. notifSoundPath))
+
+    timers.work:setNotifSound(pd.sound.sampleplayer.new(soundPathPrefix .. toBreakSoundPath))
+    timers.short:setNotifSound(pd.sound.sampleplayer.new(soundPathPrefix .. toWorkSoundPath))
+    timers.long:setNotifSound(pd.sound.sampleplayer.new(soundPathPrefix .. toWorkSoundPath))
+    timers.snooze:setNotifSound(pd.sound.sampleplayer.new(soundPathPrefix .. snoozeSoundPath))
     for _, t in pairs(timers) do t:setZIndex(50) end
     currentTimer = timers.work --TODO rm
 
