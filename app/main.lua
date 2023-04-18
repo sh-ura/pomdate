@@ -58,6 +58,9 @@ local snoozeSoundPath = "snooze.wav"
 local function init()
     --utils.disableReadOnly()
     --debugger.disable()
+
+    configs.init()
+
     d.log("attempting to loadState")
     local loadedState = pd.datastore.read("durations")
     if loadedState then
@@ -215,20 +218,17 @@ end
 
 --- Get the number of times the current timer has been paused
 ---@return integer
-function getPauseCount()
-    return c_pauses
-end
+function getPauseCount() return c_pauses end
 
 --- Get the number of times the current timer has been snoozed
 ---@return integer
-function getSnoozeCount()
-    return c_snoozes
-end
+function getSnoozeCount() return c_snoozes end
 
 --- Get the number of completed pomodoros
-function getPomCount()
-    return c_poms
-end
+function getPomCount() return c_poms end
+
+--- Reset the pom cycle by resetting the completed-pomodoro count
+function resetPomCount() c_poms = 0 end
 
 -- pd.update() is called right before every frame is drawn onscreen.
 function pd.update()

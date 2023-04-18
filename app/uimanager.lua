@@ -210,11 +210,11 @@ local function init(timers)
     scoreboard:moveTo(300, 60)
     scoreboard:setZIndex(80)
 
-    pomCountDisplay = List({"pomCountDisplay", 100, 40})
+    pomCountDisplay = List({"pomCountDisplay", 100, 25})
     pomCountDisplay:setEnablingCriteria(function() return state == STATES.MENU end)
     makeScoreDisplays(pomCountDisplay, { pom = getPomCount })
         [1]:setMode(dial.visualizers.horiCounter) -- visualize poms as counters
-    pomCountDisplay:moveTo(20, 200)
+    pomCountDisplay:moveTo(20, 20)
     pomCountDisplay:setZIndex(80)
 
     --- Populate a list containing instructions for the user.
@@ -236,11 +236,12 @@ local function init(timers)
         end
     end
 
-    menuInst = List({"menuInstList", 200, 60})
+    menuInst = List({"menuInstList", 230, 90})
     menuInst:setEnablingCriteria(function() return state == STATES.MENU end)
     writeInstructions(menuInst, {
         runTimer = "A starts selected timer", --TODO DEBUG not appearing onscreen
-        setTimer = "Held B + Crank sets duration"
+        setTimer = "Held B + Crank sets duration",
+        configApp = "System menu has config options"
     })
     menuInst:moveTo(20, 140)
     menuInst:setZIndex(60)
