@@ -29,54 +29,58 @@ local ipairs <const> = ipairs
 
 local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
 
---TODO most of these are not needed outside of specific funcs
+--TODO rm most of these - those that are not needed outside of specific funcs
 local timersMenu = nil  -- contains the buttons for selecting timers --TODO move to init
 local durationDials = {} -- visualize/manipulate timer durations --TODO move to init
 -- TODO rm timerSelectButton when addTimerSelector() is implemented
 local timerSelectButtons = {} -- select timer to run --TODO move to init
+local pomCountDisplay = nil
 local menuInst = nil -- instructions shown in MENU --TODO move to init
 
-local toMenuButton = nil
-local pauseButton = nil
-local unpauseButton = nil
+local toMenuButton = nil -- return to timer-select menu
+local pauseButton = nil -- pause active timer
+local unpauseButton = nil -- unpause active timer
 local runTimerInst = nil -- instructions shown in RUN_TIMER state --TODO move to init
 
 local snoozeButton = nil -- invisible snooze button --TODO move to init
 local doneTimerInst = nil -- instructions shown in DONE_TIMER state --TODO move to init
-local scoreboard = nil
+local scoreboard = nil -- visualizes pause and snooze scores for this timer session
 
 --TODO much of this no longer needs to be in init
 -- ex. a addTimerSelector() could be called by main to add each timer selector
 --      the timersMenu.
 --- Initializes and returns new UIManager singleton instance.
 --- If instance already exists, this func does nothing but returns that instance.
----@param timers table all Timers that the UI should support selecting
+---@param timers table all Timers that the UI should support selecting,
+---                 in {t, label} k-v tuples,
+---                 in the sequence they should appear.
 local function init(timers)
-
-
     --- Add all of the timer-selecting/-configuring UIElements that are
     ---     displayed on the MENU screen.
     ---@param list List to contain the timer-selecting buttons
-    ---@param timers table ARRAY all Timers to make selectors for
+    ---@param timers table all Timers to make selectors for,
+    ---                 in {t, label} k-v tuples,
+    ---                 in the sequence they should appear.
     local function populateTimersMenu (list, timers)
         local n = 0
         n = #timers
         local wButton, hButton = list:getMaxContentDim(n)
 
-        local function makeTimerSelector(t)
+        local function makeTimerSelector(t, label)
             local name = t.name
 
             local button = Button({name .. "Button", wButton, hButton})
             timerSelectButtons[name] = button
             button:setEnablingCriteria(function() return list:isEnabled() end)
             button.isPressed = function() return pd.buttonJustPressed(A) end
+            button:setLabel(label)
 
             local dial = Dial({name .. "Dial", 80, 40}, 1, 1, 60)
             durationDials[name] = dial
             dial:setEnablingCriteria(function() return
                 button:isEnabled() and
                 button.isSelected() end)
-            dial.isSelected = function () return true end
+            dial.isSelected = function () return pd.buttonIsPressed(B) end
             local ticks = 60 / CRANK_ROTS_PER_HOUR
             dial.getDialChange = function ()
                 return pd.getCrankTicks(ticks)
@@ -94,7 +98,7 @@ local function init(timers)
         end
 
         for _, timer in pairs(timers) do
-            list:addChildren(makeTimerSelector(timer))
+            list:addChildren(makeTimerSelector(timer.t, timer.label))
         end
     end
 
@@ -105,10 +109,6 @@ local function init(timers)
     populateTimersMenu(timersMenu, timers)
     timersMenu:moveTo(250, 60)
     d.illustrateBounds(timersMenu)
-
-    timerSelectButtons.work:setLabel("work")
-    timerSelectButtons.short:setLabel("short break")
-    timerSelectButtons.long:setLabel("long break")
 
     --TODO mv to populateTimersMenu
     for _, dial in pairs(durationDials) do
@@ -165,6 +165,7 @@ local function init(timers)
     --- Populate a scoreboard.
     ---@param list List to use as a container
     ---@param instructions table containing unit:scoringFunction pairs
+    ---@return table array of the new score displays
     local function makeScoreDisplays(list, scoringFuncs)
         list.isSelected = function() return false end -- no reason for user to select instructions
         
@@ -173,6 +174,7 @@ local function init(timers)
         for _, _ in pairs(scoringFuncs) do n = n + 1 end
         local w, h = list:getMaxContentDim(n)
 
+        local displays = {}
         for unit, score in pairs(scoringFuncs) do
             local display = Dial({unit .. "Score", w, h}, 1)
             list:addChildren(display)
@@ -190,9 +192,15 @@ local function init(timers)
                 prevScore = currentScore
                 return scoreDiff
             end
+
+            table.insert(displays, display)
         end
+        
+        return displays
     end
 
+    --TODO DEBUG sometimes this appears chopped in half.
+    --      I think it has to do with the image canvas being a bit too small for the text
     scoreboard = List({"scoreboard", 100, 80})
     scoreboard:setEnablingCriteria(function() return state == STATES.DONE_TIMER end)
     makeScoreDisplays(scoreboard, {
@@ -202,6 +210,12 @@ local function init(timers)
     scoreboard:moveTo(300, 60)
     scoreboard:setZIndex(80)
 
+    pomCountDisplay = List({"pomCountDisplay", 100, 40})
+    pomCountDisplay:setEnablingCriteria(function() return state == STATES.MENU end)
+    makeScoreDisplays(pomCountDisplay, { pom = getPomCount })
+        [1]:setMode(dial.visualizers.horiCounter) -- visualize poms as counters
+    pomCountDisplay:moveTo(20, 200)
+    pomCountDisplay:setZIndex(80)
 
     --- Populate a list containing instructions for the user.
     ---@param list List to use as a container
@@ -225,8 +239,8 @@ local function init(timers)
     menuInst = List({"menuInstList", 200, 60})
     menuInst:setEnablingCriteria(function() return state == STATES.MENU end)
     writeInstructions(menuInst, {
-        runTimer = "A starts selected timer",
-        setTimer = "Crank sets pom duration"
+        runTimer = "A starts selected timer", --TODO DEBUG not appearing onscreen
+        setTimer = "Held B + Crank sets duration"
     })
     menuInst:moveTo(20, 140)
     menuInst:setZIndex(60)
@@ -266,11 +280,23 @@ local function getDialValue(name)
     return dial.value
 end
 
+--- Force the selection of the next timer button
+local function selectPrevTimer()
+    timersMenu:prev()
+end
+
+--- Force the selection of the previous timer button
+local function selectNextTimer()
+    timersMenu:next()
+end
+
 uimanager = {
     name = "manage_ui",
     init = init,
     update = update,
-    getDialValue = getDialValue
+    getDialValue = getDialValue,
+    selectPrevTimer = selectPrevTimer,
+    selectNextTimer = selectNextTimer
 }
 uimanager = utils.makeReadOnly(uimanager)
 return uimanager

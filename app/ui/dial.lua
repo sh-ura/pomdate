@@ -21,11 +21,11 @@ local Dial <const> = Dial
 local _ENV = P      -- enter pkg namespace
 name = "dial"
 
---local localstatic <const> = val --TODO non-imported statics go here
-
---local localvar = val --TODO local vars go here
-
---local function localfunc() end --TODO local funcs go here
+visualizers = {
+    numeral = 1,
+    horiCounter = 2,
+    vertCounter = 3
+}
 
 --- Initializes a new Dial instance.
 ---@param coreProps table containing the following core properties, named or array-indexed:
@@ -35,19 +35,36 @@ name = "dial"
 ---@param step integer step to inc/decrement the value on the dial by
 ---@param lowerLimit integer (optional) cease dialing back past this value
 ---@param upperLimit integer (optional) cease dialing forward past this value
-function Dial:init(coreProps, step, lowerLimit, upperLimit)
+---@param initalVal integer (optional) initial value
+function Dial:init(coreProps, step, lowerLimit, upperLimit, initialVal)
     Dial.super.init(self, coreProps) --should always be at top of init func
-    
-    self._unit = nil
+
+    self._spacing = 2
     self._step = step    -- step to inc/decrement value by
-    self._lowLimit = lowerLimit
-    self._uppLimit = upperLimit
-    self:setValue(0)
+    self._lowLimit = nil
+    self._uppLimit = nil
+    self._prevValue = nil
+
+    -- set the initial value. use limits if provided, else set to 0.
     if lowerLimit and upperLimit then
+        self._lowLimit = lowerLimit
+        self._uppLimit = upperLimit
         self.value = (lowerLimit + upperLimit) // 2
-    elseif lowerLimit then self.value = lowerLimit
-    elseif upperLimit then self.value = upperLimit end
-    self._prevValue = 0
+    elseif lowerLimit then
+        self._lowLimit = lowerLimit
+        self.value = lowerLimit
+    elseif upperLimit then
+        self._uppLimit = upperLimit
+        self.value = upperLimit
+    end
+    if initialVal then self:setValue(initialVal)
+    elseif not self.value then self:setValue(0) end
+
+    self._unit = "unit"
+    self._counter = gfx.image.new(20, 20)
+    gfx.pushContext(self._counter)
+        gfx.fillCircleAtPoint(9, 9, 9)
+    gfx.popContext(self._counter)
 
     --- Declare dial behaviour, to be configured elsewhere, prob by UI Manager
     ---@return integer amount to dial. pos for forward, neg for backward, 0 for no change
@@ -55,6 +72,9 @@ function Dial:init(coreProps, step, lowerLimit, upperLimit)
         d.log("dial '" .. self.name .. "' dial-change measures not configured")
         return 0
     end
+    
+    --- Mode for visualizing value defaults to numeral.
+    self:setMode(visualizers.numeral)
 
     self._isConfigured = true
     self = utils.makeReadOnly(self, "Dial instance")
@@ -62,22 +82,13 @@ end
 
 ---TODO desc
 function Dial:update()
+    local val = self.value
+    -- only redraw if val has changed
+    if val ~= self._prevValue then self._drawValue() end
+
     if self.isSelected() then
-        local val = self.value
-        local prev = self._prevValue
         local low = self._lowLimit
         local upp = self._uppLimit
-
-        -- only redraw if val has changed
-        if val ~= prev then
-            local unit = self._unit
-            if not unit then unit = "unit" end
-            if val ~= 1 then unit = unit .. "s" end
-            gfx.pushContext(self._img)
-                gfx.clear()
-                gfx.drawText("*".. val .. " " .. unit .."*", 2, 2)
-            gfx.popContext()
-        end
 
         self._prevValue = val
         self.value = val + self.getDialChange() * self._step
@@ -89,13 +100,68 @@ function Dial:update()
     end
 
     Dial.super.update(self)
-    d.illustrateBounds(self)
+    --d.illustrateBounds(self)
 end
 
---- Set the unit on the dial
+--- Set the visualizer to use.
+---@param mode enum one of the dial.visualizers options
+function Dial:setMode(mode)
+    if mode == visualizers.horiCounter then
+        self._drawValue = function()
+            local counter = self._counter
+            local w_counter, _ = counter:getSize() --TODO can call width?
+            local spacing = self._spacing
+            local x = 0
+            gfx.pushContext(self._img)
+                gfx.clear()
+                for i = 0, self.value - 1 do
+                    counter:draw(x, 0)
+                    x = x + w_counter + spacing
+                end
+            gfx.popContext()
+        end
+    elseif mode == visualizers.vertCounter then
+        self._drawValue = function()
+            local counter = self._counter
+            local _, h_counter = counter:getSize()
+            local spacing = self._spacing
+            local y = 0
+            gfx.pushContext(self._img)
+                gfx.clear()
+                for i = 0, self.value - 1 do
+                    counter:draw(0, y)
+                    y = y + h_counter + spacing
+                end
+            gfx.popContext()
+        end
+    elseif mode == visualizers.numeral then
+        self._drawValue = function()
+            local val = self.value
+            local unit = self._unit
+            if val ~= 1 then unit = unit .. "s" end
+            gfx.pushContext(self._img)
+                gfx.clear()
+                gfx.drawText("*".. val .. " " .. unit .."*", 2, 2)
+            gfx.popContext()
+        end
+    end
+end
+
+--- Set the unit on the dial,
+---     visualized when in numeral mode.
 ---@param unit string unit being enumerated, singular, ex. "min"
 function Dial:setUnit(unit)
     self._unit = unit
+end
+
+--- Set the counter to represent each incrementing step,
+---     visualized when in counter mode.
+---@param img playdate.graphics.image image to use as counter.
+---@param spacing integer (optional) number of pixels between each counter.
+---         Defaults to 2.
+function Dial:setCounter(img, spacing)
+    self._counter = img
+    if spacing then self._spacing = spacing end
 end
 
 --- Set the value on the dial.

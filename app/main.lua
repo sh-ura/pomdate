@@ -42,14 +42,19 @@ local timers = {
 }
 local currentTimer = nil
 local notifSound = nil
+local timerCompleted = false
+local c_poms = 0
 local c_pauses = 0
 local c_snoozes = 0
 
 local snoozeMins = 2 --TODO make configurable
+local n_poms = 4 --TODO make configurable
 
 --TODO move below asset path info to config or smth
 local soundPathPrefix = "assets/sound/"
-local notifSoundPath = "notif.wav"
+local toWorkSoundPath = "to-work.wav"
+local toBreakSoundPath = "to-break.wav"
+local snoozeSoundPath = "snooze.wav"
 
 --- Sets up the app environment.
 --- If a state save file exists, it will be loaded here.
@@ -71,11 +76,20 @@ local function init()
     timers.long = Timer("long")
     timers.snooze = Timer("snooze")
     timers = utils.makeReadOnly(timers, "timers")
-    timer.setNotifSound(pd.sound.sampleplayer.new(soundPathPrefix .. notifSoundPath))
+
+    timers.work:setNotifSound(pd.sound.sampleplayer.new(soundPathPrefix .. toBreakSoundPath))
+    timers.short:setNotifSound(pd.sound.sampleplayer.new(soundPathPrefix .. toWorkSoundPath))
+    timers.long:setNotifSound(pd.sound.sampleplayer.new(soundPathPrefix .. toWorkSoundPath))
+    timers.snooze:setNotifSound(pd.sound.sampleplayer.new(soundPathPrefix .. snoozeSoundPath))
     for _, t in pairs(timers) do t:setZIndex(50) end
     currentTimer = timers.work --TODO rm
 
-    uimanager.init({timers.work, timers.short, timers.long})
+    uimanager.init({
+        {t = timers.short, label = "short break"},
+        {t = timers.work, label = "work"},
+        {t = timers.long, label = "long break"}
+    })
+    uimanager.selectNextTimer() -- autoselects the 2nd timer, 'work'
 end
 
 --TODO replace with a launchImage, configurable in pdxinfo
@@ -112,6 +126,20 @@ local function saveState()
     d.log("save attempt complete. Dumping datastore contents", pd.datastore.read("durations"))
 end
 
+local function cycleTimers()
+    if currentTimer == timers.short then
+        uimanager.selectNextTimer()
+    elseif currentTimer == timers.long then
+        uimanager.selectPrevTimer()
+    elseif currentTimer == timers.work then
+        if c_poms >= n_poms then
+            uimanager.selectNextTimer()
+        else
+            uimanager.selectPrevTimer()
+        end
+    end
+end
+
 -- performs done -> select transition
 -- then inits select
 -- then switches update func
@@ -119,21 +147,36 @@ end
 -- TODO align semantics of menu w pause
 -- TODO rename to toMENU
 function toMenu()
+    if timerCompleted then
+        if currentTimer == timers.long then
+            c_poms = 0
+        elseif currentTimer == timers.work then
+            c_poms = c_poms + 1
+        end
+        if c_poms >= n_poms then
+            --TODO alert user that the cycle pom count has been reached
+        end
+        cycleTimers()
+    end
+    timerCompleted = false
+
     currentTimer:remove()
     c_pauses = 0
     c_snoozes = 0
+
     pd.setAutoLockDisabled(false)
     pd.getCrankTicks(1) --TODO move this crank-data-dump to uimanager file
     state = STATES.MENU
 end
 
 ---TODO desc
-function toRun(t, duration)   
+function toRun(t, duration)
     currentTimer = t
     currentTimer:setDuration(duration)
     currentTimer:moveTo(50, 70)
     currentTimer:add()
     currentTimer:start()
+    
     pd.setAutoLockDisabled(true)
     state = STATES.RUN_TIMER
 end
@@ -141,6 +184,7 @@ end
 function toDone()
     currentTimer:stop()
     currentTimer:notify()
+    timerCompleted = true
     state = STATES.DONE_TIMER
 end
 
@@ -183,6 +227,11 @@ end
 ---@return integer
 function getSnoozeCount()
     return c_snoozes
+end
+
+--- Get the number of completed pomodoros
+function getPomCount()
+    return c_poms
 end
 
 -- pd.update() is called right before every frame is drawn onscreen.

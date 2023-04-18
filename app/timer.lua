@@ -39,7 +39,7 @@ end
 --- Notifies user that timer is complete
 function Timer:notify()
     --d.log("notification pushed")
-    if notifSound then notifSound:play(0) end
+    if self._notifSound then self._notifSound:play(0) end
 end
 
 --- Initializes, but does not start, a Timer.
@@ -55,6 +55,7 @@ function Timer:init(name)
     
     self._timer = nil -- "value-based" pd timer w linear interpolation
     self._isPaused = false -- true iff the timer is paused
+    self._notifSound = nil -- sound to play when notifying
 
     self:setCenter(0, 0) --anchor top-left
 end
@@ -114,7 +115,7 @@ end
 --- Stop a Timer.
 --- Stopped timers can be restarted by calling start().
 function Timer:stop()
-    notifSound:stop()
+    if self._notifSound then self._notifSound:stop() end
     self._timer = nil
     self._isPaused = false
 end
@@ -173,12 +174,12 @@ end
 
 --- Set the sound to be played when a timer finishes
 ---@param sound pd.sound.sampleplayer or pd.sound.fileplayer
-function setNotifSound(sound)
+function Timer:setNotifSound(sound)
     if not sound.play or not sound.stop then
         d.log("attempting to set unplayable notif sound", sound)
         return
     end
-    notifSound = sound
+    self._notifSound = sound
 end
 
 --- Set the duration the timer should run for (in minutes).
