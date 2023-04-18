@@ -10,7 +10,7 @@ import "CoreLibs/sprites"
 import "CoreLibs/ui"
 
 import "utils/utils";
-import "configs"
+import "confmanager"
 import "utils/debugger"
 import "timer"
 import "uimanager"
@@ -59,7 +59,7 @@ local function init()
     --utils.disableReadOnly()
     --debugger.disable()
 
-    configs.init()
+    confmanager.init()
 
     d.log("attempting to loadState")
     local loadedState = pd.datastore.read("durations")

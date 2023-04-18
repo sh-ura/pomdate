@@ -1,7 +1,9 @@
--- configs provides project-wide constants,
+-- confmanager provides project-wide constants,
 --      and it enables user configuration of some app functionality.
 
--- The constant below are published straight to the importing environment,
+local pd <const> = playdate
+
+-- The constants below are published straight to the importing environment,
 --      in this case, the global env.
 W_SCREEN = 400
 W_CENTRE = 200
@@ -21,19 +23,18 @@ STATES = {
     DONE_TIMER  = 5
 }
 
-local pd <const> = playdate
-
 local sysmenu = nil -- playdate system menu
 
 local function init()
-    sysmenu = pd.getSystemMenu()
-
+    local sysmenu = pd.getSystemMenu()
     sysmenu:addMenuItem("Reset poms", resetPomCount)
+
+    
 end
 
-configs = {
-    name = "configs",
+confmanager = {
+    name = "confmanager",
     init = init
 }
-configs = utils.makeReadOnly(configs)
-return configs
+confmanager = utils.makeReadOnly(confmanager)
+return confmanager
