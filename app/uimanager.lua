@@ -291,7 +291,7 @@ local function selectNextTimer()
 end
 
 uimanager = {
-    name = "manage_ui",
+    name = "uimanager",
     init = init,
     update = update,
     getDialValue = getDialValue,

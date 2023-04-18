@@ -22,17 +22,14 @@ local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
 
 -- TODO can states be a set of update funcs, or do we need the enum?
-STATES = configs.STATES
 state = STATES.LOADING
-
-AXES = configs.AXES
-
 initialDurations = {
     work = 25,
     short = 5,
     long = 20,
     snooze = 2
 }
+
 local splashSprite = nil
 local timers = {
     work = 'nil',
@@ -94,8 +91,7 @@ end
 
 --TODO replace with a launchImage, configurable in pdxinfo
 local function splash()
-    -- TODO maybe the configs really should just be globals in main. or in configs.lua w/o namespacing
-    local splashImg = gfx.image.new(configs.W_SCREEN, configs.H_SCREEN)
+    local splashImg = gfx.image.new(W_SCREEN, H_SCREEN)
     gfx.pushContext(splashImg)
         gfx.drawText("*POMDATE*", 50, 90)
         gfx.drawText("press A to continue", 50, 140)

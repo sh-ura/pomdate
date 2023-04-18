@@ -1,11 +1,5 @@
--- configs provides project-wide constants
--- todo probs should just have this export a bunch of namespace-unbound vars
-local P = {}; local _G = _G
-configs = {}
-
--- package contents and logic, within the package env --
-local _ENV = P
-name = "configs"
+-- configs provides project-wide constants,
+--      and it enables user configuration of some app functionality.
 
 W_SCREEN = 400
 W_CENTRE = 200
@@ -28,7 +22,9 @@ STATES = {
     DONE_TIMER  = 5
 }
 
--- prepare package for export, in the global env --
-local _ENV = _G
-configs = utils.makeReadOnly(P)
+configs = {
+    name = "configs",
+    
+}
+configs = utils.makeReadOnly(configs)
 return configs

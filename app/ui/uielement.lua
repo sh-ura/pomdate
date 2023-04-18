@@ -13,13 +13,15 @@ local pd <const> = playdate
 local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
-local configs <const> = configs
 local d <const> = debugger
-local Switch = Switch
-local type = type
+local Switch <const> = Switch
+local type <const> = type
 local pairs <const> = pairs
 local ipairs <const> = ipairs
 local insert <const> = table.insert
+
+local W_SCREEN <const> = W_SCREEN
+local H_SCREEN <const> = H_SCREEN
 
 --- UIElement is an interactive sprite that can parent other UIElements.
 --- It can be an abstract class for more specialized UI components, or
@@ -59,10 +61,10 @@ function UIElement:init(coreProps)
         name = "unnamed-UIElement"
     end
     if not w or w == 0 or type(w) ~= 'number' then
-        w = configs.W_SCREEN
+        w = W_SCREEN
     end
     if not h or h == 0 or type(h) ~= 'number' then
-        h = configs.H_SCREEN
+        h = H_SCREEN
     end
     w = w // 1 -- ensure int
     h = h // 1

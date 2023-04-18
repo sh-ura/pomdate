@@ -14,7 +14,7 @@ local ipairs <const> = ipairs
 local abs <const> = math.abs
 local type <const> = type
 
-local AXES <const> = configs.AXES
+local AXES <const> = AXES
 local UP <const> = pd.kButtonUp
 local DOWN <const> = pd.kButtonDown
 local LEFT <const> = pd.kButtonLeft

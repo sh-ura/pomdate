@@ -16,7 +16,6 @@ local pd <const> = playdate
 local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
-local configs <const> = configs
 local d <const> = debugger
 --local externalfunc <const> = somepkg.func --TODO any other external vars go here
 
