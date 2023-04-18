@@ -43,7 +43,7 @@ function Dial:init(coreProps, step, lowerLimit, upperLimit, initialVal)
     self._step = step    -- step to inc/decrement value by
     self._lowLimit = nil
     self._uppLimit = nil
-    self._prevValue = 0
+    self._prevValue = nil
 
     -- set the initial value. use limits if provided, else set to 0.
     if lowerLimit and upperLimit then
@@ -82,14 +82,13 @@ end
 
 ---TODO desc
 function Dial:update()
+    local val = self.value
+    -- only redraw if val has changed
+    if val ~= self._prevValue then self._drawValue() end
+
     if self.isSelected() then
-        local val = self.value
-        local prev = self._prevValue
         local low = self._lowLimit
         local upp = self._uppLimit
-
-        -- only redraw if val has changed
-        if val ~= prev then self._drawValue() end
 
         self._prevValue = val
         self.value = val + self.getDialChange() * self._step
@@ -101,7 +100,7 @@ function Dial:update()
     end
 
     Dial.super.update(self)
-    d.illustrateBounds(self)
+    --d.illustrateBounds(self)
 end
 
 --- Set the visualizer to use.

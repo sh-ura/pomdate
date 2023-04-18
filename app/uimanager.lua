@@ -80,7 +80,7 @@ local function init(timers)
             dial:setEnablingCriteria(function() return
                 button:isEnabled() and
                 button.isSelected() end)
-            dial.isSelected = function () return true end
+            dial.isSelected = function () return pd.buttonIsPressed(B) end
             local ticks = 60 / CRANK_ROTS_PER_HOUR
             dial.getDialChange = function ()
                 return pd.getCrankTicks(ticks)
@@ -199,6 +199,8 @@ local function init(timers)
         return displays
     end
 
+    --TODO DEBUG sometimes this appears chopped in half.
+    --      I think it has to do with the image canvas being a bit too small for the text
     scoreboard = List({"scoreboard", 100, 80})
     scoreboard:setEnablingCriteria(function() return state == STATES.DONE_TIMER end)
     makeScoreDisplays(scoreboard, {
@@ -237,8 +239,8 @@ local function init(timers)
     menuInst = List({"menuInstList", 200, 60})
     menuInst:setEnablingCriteria(function() return state == STATES.MENU end)
     writeInstructions(menuInst, {
-        runTimer = "A starts selected timer",
-        setTimer = "Crank sets pom duration"
+        runTimer = "A starts selected timer", --TODO DEBUG not appearing onscreen
+        setTimer = "Held B + Crank sets duration"
     })
     menuInst:moveTo(20, 140)
     menuInst:setZIndex(60)
