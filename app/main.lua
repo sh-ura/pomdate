@@ -9,6 +9,7 @@ import "CoreLibs/graphics"
 import "CoreLibs/sprites"
 import "CoreLibs/ui"
 
+import "gconsts"
 import "utils/utils";
 import "confmanager"
 import "utils/debugger"

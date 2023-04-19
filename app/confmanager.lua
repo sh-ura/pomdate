@@ -1,35 +1,19 @@
 -- confmanager provides project-wide constants,
 --      and it enables user configuration of some app functionality.
 
+import 'ui/list'
+import 'ui/textbox'
+
 local pd <const> = playdate
 local d <const> = debugger
 local gfx <const> = pd.graphics
 local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
 
--- The constants below are published straight to the importing environment,
---      in this case, the global env.
-W_SCREEN = 400
-W_CENTRE = 200
-H_SCREEN = 240
-H_CENTRE = 120
-Z_MAX = 32767
-Z_MIN = -32768
-AXES = {
-    X = 1,
-    Y = 2
-}
-STATES = {
-    LOADING     = 1,
-    CONF        = 2,
-    MENU        = 3,
-    RUN_TIMER   = 4,
-    DONE_TIMER  = 5
-}
-
 local sysmenu = nil -- playdate system menu
 local confMenuItem = nil
 local backMenuItem = nil
+
 local enter = function() d.log("conf enter func not set") end
 local back = function() d.log("conf back func not set") end
 
@@ -60,9 +44,27 @@ local function init()
     backButton.isPressed = function() return pd.buttonJustPressed(B) end
     backButton.pressedAction = back
     backButton:forceConfigured()
-    local inst = Textbox({"backFromConfInst", 300, 30})
+    local inst = Textbox({"backFromConfInst", 300, 30}, "_B returns to app_")
     inst:setEnablingCriteria(stateIsCONF)
-    inst:setText("_B returns to app_", "dontResize")
+
+    --[[
+    local margin = 20
+    local w_row = 360
+    local w_text = 240
+    local w_setting = nil
+    local w_boolChoice = nil
+    local h_row = 30 --TODO rm; this should depend on config list height
+
+    local pausingConf = List({"pausingConf", w_row, h_row}, list.orientations.horizontal)
+    pausingConf:setEnablingCriteria(stateIsCONF)
+    pausingConf:moveTo(20, 140)
+    local pausingText = pausingConf:addChildren(Textbox({"pausingText", w_text, h_row}), "Timer pausing enabled")[1]
+    --TODO addChildren should take an option to set the enabling criteria to depend on parent being enabled
+    pausingText:setEnablingCriteria(pausingConf:isEnabled())
+    w_setting = pausingConf:getMaxContentDim()
+    local pausingToggle = List({"pausingToggle", w_setting, h_row}, list.orientations.horizontal)
+    pausingToggle:setEnablingCriteria()
+    --]]
 end
 
 confmanager = {

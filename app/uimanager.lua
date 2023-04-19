@@ -229,9 +229,8 @@ local function init(timers)
         local w, h = list:getMaxContentDim(n)
 
         for name, text in pairs(instructions) do
-            local inst = Textbox({name .. "Inst", w, h})
+            local inst = Textbox({name .. "Inst", w, h}, "_"..text.."_")
             inst:setEnablingCriteria(function() return list:isEnabled() end)
-            inst:setText("_"..text.."_", "dontResize")
             list:addChildren(inst)
         end
     end
