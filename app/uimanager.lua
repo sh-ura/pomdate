@@ -241,7 +241,7 @@ local function init(timers)
     writeInstructions(menuInst, {
         runTimer = "A starts selected timer", --TODO DEBUG not appearing onscreen
         setTimer = "Held B + Crank sets duration",
-        configApp = "System menu has config options"
+        confApp = "System menu has config options"
     })
     menuInst:moveTo(20, 140)
     menuInst:setZIndex(60)

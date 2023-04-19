@@ -43,6 +43,7 @@ local timerCompleted = false
 local c_poms = 0
 local c_pauses = 0
 local c_snoozes = 0
+local cachedState = nil -- state prior to entering configuration mode
 
 local snoozeMins = 2 --TODO make configurable
 local n_poms = 4 --TODO make configurable
@@ -139,6 +140,20 @@ local function cycleTimers()
     end
 end
 
+function toConf()
+    pause()
+    currentTimer:setVisible(false)
+    cachedState = state
+    state = STATES.CONF
+end
+
+function fromConf()
+    unpause()
+    currentTimer:setVisible(true)
+    state = cachedState
+    cachedState = nil
+end
+
 -- performs done -> select transition
 -- then inits select
 -- then switches update func
@@ -163,7 +178,7 @@ function toMenu()
     c_pauses = 0
     c_snoozes = 0
 
-    pd.setAutoLockDisabled(false)
+    pd.setAutoLockDisabled(false) --TODO verify this is still needed
     pd.getCrankTicks(1) --TODO move this crank-data-dump to uimanager file
     state = STATES.MENU
 end
