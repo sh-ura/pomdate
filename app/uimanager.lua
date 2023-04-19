@@ -71,7 +71,6 @@ local function init(timers)
 
             local button = Button({name .. "Button", wButton, hButton})
             timerSelectButtons[name] = button
-            button:setEnablingCriteria(function() return list:isEnabled() end)
             button.isPressed = function() return pd.buttonJustPressed(A) end
             button:setLabel(label)
 
@@ -98,7 +97,7 @@ local function init(timers)
         end
 
         for _, timer in pairs(timers) do
-            list:addChildren(makeTimerSelector(timer.t, timer.label))
+            list:addChildren(makeTimerSelector(timer.t, timer.label), 'parentEnables')
         end
     end
 
@@ -230,8 +229,7 @@ local function init(timers)
 
         for name, text in pairs(instructions) do
             local inst = Textbox({name .. "Inst", w, h}, "_"..text.."_")
-            inst:setEnablingCriteria(function() return list:isEnabled() end)
-            list:addChildren(inst)
+            list:addChildren(inst, 'parentEnables')
         end
     end
 

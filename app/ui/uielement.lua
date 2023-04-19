@@ -134,10 +134,10 @@ end
 
 --- Parents another UIElement.
 ---@param e table of child UIElements, or a single UIElement
----@param keepGlobalPos boolean (option) keep the children's global position as is
+---@param parentEnables boolean (option) child is enabled/disabled when parent is enabled/disabled
 ---@return table of successfully added child UIElements
 ---SPEC EFFECT  overrides each child's ZIndex to be relative to parent above its new parent
-function UIElement:addChildren(e, keepGlobalPos)
+function UIElement:addChildren(e, parentEnables)
     --TODO want to check e:isa(UIElement) but isa seems to be unstable in 1.12.3?
     if not (e and type(e) == 'table') then
         d.log("no children to add to " .. self.name)
@@ -156,9 +156,10 @@ function UIElement:addChildren(e, keepGlobalPos)
         element._parent = self
         insert(self._children, element)
         insert(newChildren, element)
-        if not keepGlobalPos then
-            element:moveTo(self.x + element.x, self.y + element.y)
+        if parentEnables then
+            element:setEnablingCriteria(function() return self:isEnabled() end)
         end
+        element:moveTo(self.x + element.x, self.y + element.y)
         element:setZIndex(element:getZIndex() + self:getZIndex())    
     end
 

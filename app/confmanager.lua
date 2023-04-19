@@ -58,9 +58,7 @@ local function init()
     local pausingConf = List({"pausingConf", w_row, h_row}, list.orientations.horizontal)
     pausingConf:setEnablingCriteria(stateIsCONF)
     pausingConf:moveTo(20, 140)
-    local pausingText = pausingConf:addChildren(Textbox({"pausingText", w_text, h_row}), "Timer pausing enabled")[1]
-    --TODO addChildren should take an option to set the enabling criteria to depend on parent being enabled
-    pausingText:setEnablingCriteria(pausingConf:isEnabled())
+    local pausingText = pausingConf:addChildren(Textbox({"pausingText", w_text, h_row}, "Timer pausing enabled"), 'parentEnables')[1]
     w_setting = pausingConf:getMaxContentDim()
     local pausingToggle = List({"pausingToggle", w_setting, h_row}, list.orientations.horizontal)
     pausingToggle:setEnablingCriteria()

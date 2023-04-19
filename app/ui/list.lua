@@ -116,8 +116,9 @@ end
 --- No option to keep child's global posn,
 ---     since the list *must* control child layout.
 ---@param e table of child UIElements, or a single UIElement
-function List:addChildren(e)
-    local newChildren = List.super.addChildren(self, e)
+---@param parentEnables boolean (option) child is enabled/disabled when parent is enabled/disabled
+function List:addChildren(e, parentEnables)
+    local newChildren = List.super.addChildren(self, e, parentEnables)
     --d.log("adding child " .. e.name)
     
     for _, child in ipairs(newChildren) do
