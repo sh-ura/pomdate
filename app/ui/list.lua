@@ -30,27 +30,31 @@ local List <const> = List
 local _ENV = P
 name = "list"
 
---TODO instead of AXES enum, use list.orientations.horizontal and list.orientations.vertical enum, like the modes in dial
+orientations = {
+    horizontal = 1,
+    vertical = 2
+}
+
 --      bug in current app is caused by the text not fitting in the list
 --- Initializes a list UIElement.
 ---@param coreProps table containing the following core properties, named or array-indexed:
 ---         'name' or 1: (string) button name for debugging
 ---         'w' or 2: (integer; optional) initial width, defaults to screen width
 ---         'h' or 3: (integer; optional) initial height, defaults to screen height
----@param axis enum (optional) member of AXES enum; determines list axis (X: hori, Y: vert). Defaults to vert.
+---@param orientiation enum (optional) member of list.ol. Defaults to vert.
 ---@param spacing integer (optional) number of pixels between UIElements (this list & its children)
-function List:init(coreProps, axis, spacing)
+function List:init(coreProps, orientiation, spacing)
     if not spacing or type(spacing) ~= 'number' then spacing = 0 end
     List.super.init(self, coreProps)
 
     self._spacing = spacing
-    self._axis = axis
+    self._orientation = orientiation
     self._lastChild = nil -- latest child added to list
 
-    -- axis-based layouts
-    -- could be split into axis-specific subclasses,
+    -- orientation-based orientations
+    -- could be split into orientation-specific subclasses,
     --      but atm I don't want to spare the extra __index lookup
-    if self._axis == AXES.X then
+    if self._orientation == orientations.horizontal then
         self._inputPrev = LEFT
         self._inputNext = RIGHT
 
@@ -71,7 +75,7 @@ function List:init(coreProps, axis, spacing)
             return x, y
         end
     else -- default to vertical layout
-        self._axis = AXES.Y -- default vert orientation
+        self._orientation = orientations.vertical
         self._inputPrev = UP
         self._inputNext = DOWN
 
@@ -146,7 +150,7 @@ function List:getMaxContentDim(nNewElements)
         nNewElements = 1
     end
 
-    local axis = self._axis
+    local orientation = self._orientation
     local spacing = self._spacing
     local lastChild = self._lastChild
 
@@ -155,12 +159,15 @@ function List:getMaxContentDim(nNewElements)
     local function spaceAfterChildren()
 
         local measure = nil
-        if axis == AXES.X then
+        local axis = nil
+        if orientation == orientations.horizontal then
             measure = "width"
-        elseif axis == AXES.Y then
+            axis = "x"
+        elseif orientation == orientations.vertical then
             measure = "height"
+            axis = "y"
         else
-            d.log("can't position along '" .. axis .. "' dimension")
+            d.log("can't position along '" .. orientation .. "' dimension")
             return 0
         end
 
@@ -178,7 +185,7 @@ function List:getMaxContentDim(nNewElements)
     if leftover ~= 0 then d.log(leftover .. " pix will be left over within " .. self.name .. " list") end
 
     local w = 0 ; local h = 0
-    if self.axis == AXES.X then
+    if orientation == orientations.horizontal then
         w = available // nNewElements
         h = self.height - 2 * spacing
     else
