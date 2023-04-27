@@ -165,9 +165,6 @@ function UIElement:addChildren(e, parentEnables)
 
     if e.isa then addChild(e)
     else
-        for _, element in ipairs(e) do
-            addChild(element)
-        end
         for _, element in pairs(e) do
             addChild(element)
         end

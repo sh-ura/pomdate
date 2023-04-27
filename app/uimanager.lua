@@ -77,11 +77,14 @@ local function init(timers)
             local dial = Dial({name .. "Dial", 80, 40}, 1, 1, 60)
             durationDials[name] = dial
             dial:setEnablingCriteria(function() return
-                button:isEnabled() and
-                button.isSelected() end)
+                button:isEnabled()
+                and button.isSelected()
+            end)
             dial.isSelected = function () return pd.buttonIsPressed(B) end
             local ticks = 60 / CRANK_ROTS_PER_HOUR
             dial.getDialChange = function ()
+                --TODO BUG dial crank ticks continue getting counted while B
+                --  is not held down
                 return pd.getCrankTicks(ticks)
             end
             dial:setUnit("min")
@@ -107,7 +110,6 @@ local function init(timers)
     timersMenu.isSelected = function() return state == STATES.MENU end
     populateTimersMenu(timersMenu, timers)
     timersMenu:moveTo(250, 60)
-    d.illustrateBounds(timersMenu)
 
     --TODO mv to populateTimersMenu
     for _, dial in pairs(durationDials) do
@@ -119,8 +121,9 @@ local function init(timers)
     
     toMenuButton = Button({"toMenuButton"}, 'invisible')
     toMenuButton:setEnablingCriteria(function() return
-        state == STATES.RUN_TIMER or
-        state == STATES.DONE_TIMER end)
+        state == STATES.RUN_TIMER 
+        or state == STATES.DONE_TIMER
+    end)
     toMenuButton.isPressed = function() return pd.buttonJustPressed(B) end
     toMenuButton.pressedAction = function()
         paused = false
@@ -130,8 +133,8 @@ local function init(timers)
 
     pauseButton = Button({"pauseButton"}, 'invisible')
     pauseButton:setEnablingCriteria(function() return
-        state == STATES.RUN_TIMER and
-        not paused
+        state == STATES.RUN_TIMER
+        and not paused
     end)
     pauseButton.isPressed = function() return pd.buttonJustPressed(A) end
     pauseButton.pressedAction = function()
@@ -153,7 +156,10 @@ local function init(timers)
     unpauseButton:forceConfigured()
 
     snoozeButton = Button({"snoozeButton"}, 'invisible')
-    snoozeButton:setEnablingCriteria(function() return state == STATES.DONE_TIMER end)
+    snoozeButton:setEnablingCriteria(function()
+        return state == STATES.DONE_TIMER
+        and confs.snooze
+    end)
     snoozeButton.isPressed = function() return pd.buttonJustPressed(A) end
     snoozeButton.pressedAction = function()
         snooze()
@@ -164,7 +170,7 @@ local function init(timers)
     --- Populate a scoreboard.
     ---@param list List to use as a container
     ---@param instructions table containing unit:scoringFunction pairs
-    ---@return table array of the new score displays
+    ---@return table name:display pairs of the new score display objects
     local function makeScoreDisplays(list, scoringFuncs)
         list.isSelected = function() return false end -- no reason for user to select instructions
         
@@ -173,7 +179,7 @@ local function init(timers)
         for _, _ in pairs(scoringFuncs) do n = n + 1 end
         local w, h = list:getMaxContentDim(n)
 
-        local displays = {}
+        local created = {}
         for unit, score in pairs(scoringFuncs) do
             local display = Dial({unit .. "Score", w, h}, 1)
             list:addChildren(display)
@@ -192,10 +198,10 @@ local function init(timers)
                 return scoreDiff
             end
 
-            table.insert(displays, display)
+            --TODO can collide on units; use numbered or name indices instead
+            created[unit] = display
         end
-        
-        return displays
+        return created
     end
 
     --TODO DEBUG sometimes this appears chopped in half.
@@ -212,13 +218,14 @@ local function init(timers)
     pomCountDisplay = List({"pomCountDisplay", 100, 25})
     pomCountDisplay:setEnablingCriteria(function() return state == STATES.MENU end)
     makeScoreDisplays(pomCountDisplay, { pom = getPomCount })
-        [1]:setMode(dial.visualizers.horiCounter) -- visualize poms as counters
+        .pom:setMode(dial.visualizers.horiCounter) -- visualize poms as counters
     pomCountDisplay:moveTo(20, 20)
     pomCountDisplay:setZIndex(80)
 
     --- Populate a list containing instructions for the user.
     ---@param list List to use as a container
     ---@param instructions table containing name:text pairs
+    ---@return table name:instruction pairs of the new instruction objects
     local function writeInstructions(list, instructions)
         list.isSelected = function() return false end -- no reason for user to select instructions
         
@@ -227,10 +234,13 @@ local function init(timers)
         for _, _ in pairs(instructions) do n = n + 1 end
         local w, h = list:getMaxContentDim(n)
 
+        local created = {}
         for name, text in pairs(instructions) do
             local inst = Textbox({name .. "Inst", w, h}, "_"..text.."_")
             list:addChildren(inst, 'parentEnables')
+            created[name] = inst
         end
+        return created
     end
 
     menuInst = List({"menuInstList", 230, 90})
@@ -246,7 +256,7 @@ local function init(timers)
     runTimerInst = List({"runTimerInst", 300, 60})
     runTimerInst:setEnablingCriteria(function() return state == STATES.RUN_TIMER end)
     writeInstructions(runTimerInst, {
-        pauseInst = "A toggles timer pause",
+        pause = "A toggles timer pause",
         toMenu = "B returns to menu"
     })
     runTimerInst:moveTo(20, 140)
@@ -255,9 +265,13 @@ local function init(timers)
     doneTimerInst = List({"doneTimerInst", 300, 60})
     doneTimerInst:setEnablingCriteria(function() return state == STATES.DONE_TIMER end)
     writeInstructions(doneTimerInst, {
-        snoozeInst = "A snoozes timer",
-        toMenuInst = "B returns to menu"
+        snooze = "A snoozes timer", --TODO need this to not appear if snooze disabled
+        toMenu = "B returns to menu"
     })
+    .snooze:setEnablingCriteria(function() return
+        confs.snooze
+        and doneTimerInst:isEnabled() 
+    end)
     doneTimerInst:moveTo(20, 140)
     doneTimerInst:setZIndex(60)
 end

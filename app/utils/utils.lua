@@ -22,6 +22,7 @@ end
 
 ---TODO DEBUG
 ---     1. when no proxy is used (ie. setmetatable(t, mt)), class instances become readonly
+---     2. __newindex triggers for values present in the table
 ---TODO dont need to return a table if we dont use a proxy here; refactor in all files that use this func
 --- Prevents adding new keys.
 --- Not true readonly, as k-v reassignment is unfortunately still permitted.
@@ -55,10 +56,12 @@ function makeReadOnly(t, name)
         if t.name then name = t.name
         else name = "<unknown table name>" end
     end
-    local msg = name .. " read-only; forbidden to write to it directly. Rejected key: "
     
     mt.__newindex = function(t,k,v)
-        _G.error(msg .. k)
+        local msg = name .. " read-only; forbidden to write to it directly."
+        msg = msg .. " Rejected key " .. k
+        if v then msg = msg .. " has value " .. v end
+        _G.error(msg)
     end
 
     return proxy

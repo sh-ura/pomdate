@@ -49,7 +49,8 @@ function List:init(coreProps, orientiation, spacing)
 
     self._spacing = spacing
     self._orientation = orientiation
-    self._lastChild = nil -- latest child added to list
+    self._nextX = self.x + spacing
+    self._nextY = self.y + spacing
 
     -- orientation-based orientations
     -- could be split into orientation-specific subclasses,
@@ -57,41 +58,29 @@ function List:init(coreProps, orientiation, spacing)
     if self._orientation == orientations.horizontal then
         self._inputPrev = LEFT
         self._inputNext = RIGHT
-
-        --TODO refactor layout functions to use _lastChild
-        --TODO  deduplicate layout funcs as much as possible
-        --- Compute a new child's global position
-        ---@return x,y the coordinate to place the next child at
-        self._layout = function()
-            local x = 0 ; local y = 0
-            local nPrevChildren = #self._children - 1
-            local prevChild = self._children[nPrevChildren]
-            if nPrevChildren == 0 then
-                x = self.x + spacing
-            else
-                x = prevChild.x + prevChild.width + spacing
-            end
-            y = self.y + spacing
-            return x, y
+        
+        --- Move a child into position in the list
+        ---@param child UIElement to lay out
+        ---@return integer,integer new coordinates (x1,y1) of the top-left corner
+        ---@return integer,integer new coordinates (x2,y2) of the bottom-right corner
+        self._layout = function(child)
+            local x1, y1, x2, y2 = child:moveTo(self._nextX, self._nextY)
+            self._nextX = x2 + self._spacing
+            return x1, y1, x2, y2 
         end
     else -- default to vertical layout
         self._orientation = orientations.vertical
         self._inputPrev = UP
         self._inputNext = DOWN
 
-        --- Compute a new child's global position
-        ---@return x,y the coordinate to place the next child at
-        self._layout = function()
-            local x = 0 ; local y = 0
-            local nPrevChildren = #self._children - 1
-            local prevChild = self._children[nPrevChildren]
-            x = self.x + spacing
-            if nPrevChildren == 0 then
-                y = self.y + spacing
-            else
-                y = prevChild.y + prevChild.height + spacing
-            end
-            return x, y
+        --- Move a child into position in the list
+        ---@param child UIElement to lay out
+        ---@return integer,integer new coordinates (x1,y1) of the top-left corner
+        ---@return integer,integer new coordinates (x2,y2) of the bottom-right corner
+        self._layout = function(child)
+            local x1, y1, x2, y2 = child:moveTo(self._nextX, self._nextY)
+            self._nextY = y2 + self._spacing
+            return x1, y1, x2, y2 
         end
     end
 
@@ -115,25 +104,31 @@ end
 --- Parents another UIElement, .
 --- No option to keep child's global posn,
 ---     since the list *must* control child layout.
+---@specEffect overwrites children's isSelected method.
 ---@param e table of child UIElements, or a single UIElement
 ---@param parentEnables boolean (option) child is enabled/disabled when parent is enabled/disabled
+---@return table of successfully added child UIElements
 function List:addChildren(e, parentEnables)
     local newChildren = List.super.addChildren(self, e, parentEnables)
-    --d.log("adding child " .. e.name)
     
     for _, child in ipairs(newChildren) do
         child.isSelected = function ()
             return child == self._children[self._i_selectChild]
         end
-        local x1, y1, x, y = child:moveTo(self._layout())
-        self._lastChild = child
+        local x1, y1, x2, y2 = self._layout(child)
 
-        if (x > self.x + self.width - self._spacing) or (y > self.y + self.height - self._spacing) then
+        local px2 = self.x + self.width
+        local py2 = self.y + self.height
+        if (x2 > px2 - self._spacing) or (y2 > py2 - self._spacing) then
             d.log("UIElement '" .. child.name .. "' out-of-bounds in layout. Illustrating bounds.")
+            d.log("child: top-left ("..x1..", "..y1..") bottom-right ("..x2..", "..y2..")")
+            d.log("parent: top-left ("..self.x..", "..self.y..") bottom-right ("..px2..", "..py2..")")
             d.illustrateBounds(self)
             d.illustrateBounds(child)
         end
     end
+
+    return newChildren
 end
 
 --TODO this returns floats, want int pixels
@@ -195,6 +190,22 @@ function List:getMaxContentDim(nNewElements)
     end
 
     return w , h 
+end
+
+--- Moves the UIElement and its children
+---@param x integer x-position
+---@param y integer y-position
+---@param dontMoveChildren boolean (optional) false by default, set to true if children should be left in position
+---@return integer,integer new coordinates (x1,y1) of the top-left corner
+---@return integer,integer new coordinates (x2,y2) of the bottom-right corner
+function List:moveTo(x, y, dontMoveChildren)
+    local x_o = self.x; local y_o = self.y
+    local x, y, x2, y2 = List.super.moveTo(self, x, y)
+
+    if self._nextX then self._nextX = self._nextX + x - x_o end
+    if self._nextY then self._nextY = self._nextY + y - y_o end
+
+    return x, y, x2, y2
 end
 
 --- Selects the next child in the list.

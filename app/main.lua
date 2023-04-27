@@ -11,9 +11,9 @@ import "CoreLibs/ui"
 
 import "gconsts"
 import "utils/utils";
-import "confmanager"
 import "utils/debugger"
 import "timer"
+import "confmanager"
 import "uimanager"
 
 local pd <const> = playdate
@@ -23,7 +23,9 @@ local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
 
 -- TODO can states be a set of update funcs, or do we need the enum?
+STATES = STATES
 state = STATES.LOADING
+confs = confmanager.confs
 initialDurations = {
     work = 25,
     short = 5,
@@ -58,20 +60,26 @@ local snoozeSoundPath = "snooze.wav"
 --- Sets up the app environment.
 --- If a state save file exists, it will be loaded here.
 local function init()
-    --utils.disableReadOnly()
+    utils.disableReadOnly()
     --debugger.disable()
 
-    confmanager.init()
-
-    d.log("attempting to loadState")
-    local loadedState = pd.datastore.read("durations")
-    if loadedState then
-        d.log("state file exists")
-        initialDurations.work = loadedState.work
-        initialDurations.short = loadedState.short
-        initialDurations.long = loadedState.long
+    d.log("attempting to load state: durations")
+    local loadedDurations = pd.datastore.read("durations")
+    if loadedDurations then
+        d.log("duration state file exists")
+        for k,v in pairs(loadedDurations) do initialDurations[k] = v end
     end
-    d.log("loading attempt complete; dumping loadedState table", loadedState)
+    d.log("duration-loading attempt complete; dumping initialDurations", initialDurations)
+
+    d.log("attempting to load state: confs")
+    local loadedConfs = pd.datastore.read("confs")
+    if loadedConfs then
+        d.log("conf state file exists")
+        for k,v in pairs(loadedConfs) do confs[k] = v end
+    end
+    d.log("conf-loading attempt complete; dumping confs", confs)
+
+    confmanager.init()
 
     timers.work = Timer("work")
     timers.short = Timer("short")
@@ -116,15 +124,13 @@ local function saveState()
         short = uimanager.getDialValue("short"),
         long = uimanager.getDialValue("long")
     }
-    for name, duration in pairs(durations) do
-        if duration <= -1 then
-            durations[name] = initialDurations[name]
-        end
-    end
     d.log("dumping durations to be saved", durations)
-
     pd.datastore.write(durations, "durations")
-    d.log("save attempt complete. Dumping datastore contents", pd.datastore.read("durations"))
+    d.log("duration save attempt complete. Dumping datastore contents", pd.datastore.read("durations"))
+
+    d.log("dumping confs to be saved", confs)
+    pd.datastore.write(confs, "confs")
+    d.log("conf save attempt complete. Dumping datastore contents", pd.datastore.read("confs"))
 end
 
 local function cycleTimers()
