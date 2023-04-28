@@ -82,9 +82,8 @@ local function init(timers)
                 and button.isSelected()
             end)
             dial.isSelected = function () return pd.buttonIsPressed(B) end
-            local ticks = 60 / CRANK_ROTS_PER_HOUR
             dial.getDialChange = function ()
-                return crankhandler.getCrankTicks(ticks)
+                return crankhandler.getCrankTicks(60 / CRANK_ROTS_PER_HOUR)
             end
             dial:setUnit("min")
             dial:setValue(initialDurations[name])

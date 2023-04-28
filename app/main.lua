@@ -30,8 +30,7 @@ confs = confmanager.confs
 initialDurations = {
     work = 25,
     short = 5,
-    long = 20,
-    snooze = 2
+    long = 20
 }
 
 local splashSprite = nil
@@ -49,7 +48,6 @@ local c_pauses = 0
 local c_snoozes = 0
 local cachedState = nil -- state prior to entering configuration mode
 
-local snoozeMins = 2 --TODO make configurable
 local n_poms = 4 --TODO make configurable
 
 --TODO move below asset path info to config or smth
@@ -64,6 +62,7 @@ local function init()
     utils.disableReadOnly()
     --debugger.disable()
 
+    -- snooze duration is in the confs data file
     d.log("attempting to load state: durations")
     local loadedDurations = pd.datastore.read("durations")
     if loadedDurations then
@@ -124,7 +123,7 @@ local function saveState()
         work = uimanager.getDialValue("work"),
         short = uimanager.getDialValue("short"),
         long = uimanager.getDialValue("long")
-    }
+    } -- snooze duration is in the confs data file
     d.log("dumping durations to be saved", durations)
     pd.datastore.write(durations, "durations")
     d.log("duration save attempt complete. Dumping datastore contents", pd.datastore.read("durations"))
@@ -217,7 +216,7 @@ function snooze()
     --else
         c_snoozes = c_snoozes + 1
         currentTimer:remove()
-        toRun(timers.snooze, snoozeMins)
+        toRun(timers.snooze, confs.snoozeDuration)
     --end
 end
 

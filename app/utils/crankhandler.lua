@@ -14,7 +14,7 @@ local function getCrankTicks(ticksPerRevolution)
     return pd.getCrankTicks(ticksPerRevolution)
 end
 
---- Drive the crank-data-dumping utility. Call on every frame.
+--- Drive the crank-data-dumping utility.
 local function update()
     if not usingcrank then pd.getCrankTicks(1) end
     usingcrank = false
