@@ -26,6 +26,7 @@ local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
 local pairs <const> = pairs
 local ipairs <const> = ipairs
+local crankhandler <const> = crankhandler
 
 local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
 
@@ -83,9 +84,7 @@ local function init(timers)
             dial.isSelected = function () return pd.buttonIsPressed(B) end
             local ticks = 60 / CRANK_ROTS_PER_HOUR
             dial.getDialChange = function ()
-                --TODO BUG dial crank ticks continue getting counted while B
-                --  is not held down
-                return pd.getCrankTicks(ticks)
+                return crankhandler.getCrankTicks(ticks)
             end
             dial:setUnit("min")
             dial:setValue(initialDurations[name])
@@ -243,6 +242,7 @@ local function init(timers)
         return created
     end
 
+    --TODO DEBUG only 2/3 (or 1/2) instructions showing up per state
     menuInst = List({"menuInstList", 230, 90})
     menuInst:setEnablingCriteria(function() return state == STATES.MENU end)
     writeInstructions(menuInst, {

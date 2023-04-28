@@ -12,6 +12,7 @@ import "CoreLibs/ui"
 import "gconsts"
 import "utils/utils";
 import "utils/debugger"
+import "utils/crankhandler"
 import "timer"
 import "confmanager"
 import "uimanager"
@@ -186,7 +187,6 @@ function toMenu()
     c_snoozes = 0
 
     pd.setAutoLockDisabled(false) --TODO verify this is still needed
-    pd.getCrankTicks(1) --TODO move this crank-data-dump to uimanager file
     state = STATES.MENU
 end
 
@@ -264,6 +264,7 @@ function pd.update()
     end
 
     uimanager.update()
+    crankhandler.update()
     pd.timer.updateTimers()
     gfx.sprite.update()
 end
