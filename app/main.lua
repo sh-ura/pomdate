@@ -182,22 +182,14 @@ end
 -- TODO align semantics of menu w pause
 -- TODO rename to toMENU
 function toMenu()
-    if timerCompleted then
-        if currentTimer == timers.long then
-            c_poms = 0
-        elseif currentTimer == timers.work then
-            c_poms = c_poms + 1
-        end
-        if c_poms >= confs.pomsPerCycle then
-            --TODO alert user that the cycle pom count has been reached
-        end
-        cycleTimers()
-    end
-    timerCompleted = false
-
     currentTimer:remove()
     c_pauses = 0
     c_snoozes = 0
+
+    cycleTimers()
+    if c_poms >= confs.pomsPerCycle then
+        --TODO alert user that the cycle pom count has been reached
+    end
 
     pd.setAutoLockDisabled(false) --TODO verify this is still needed
     state = STATES.MENU
@@ -218,7 +210,13 @@ end
 function toDone()
     currentTimer:stop()
     currentTimer:notify()
-    timerCompleted = true
+    
+    if currentTimer == timers.long then
+        c_poms = 0
+    elseif currentTimer == timers.work then
+        c_poms = c_poms + 1
+    end
+
     state = STATES.DONE_TIMER
 end
 
