@@ -11,7 +11,6 @@ local pd <const> = playdate
 local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
-local configs <const> = configs
 local d <const> = debugger
 --local externalfunc <const> = somepkg.func --TODO any other external vars go here
 
@@ -32,11 +31,13 @@ name = "textbox"
 ---         'name' or 1: (string) button name for debugging
 ---         'w' or 2: (integer; optional) initial width, defaults to screen width
 ---         'h' or 3: (integer; optional) initial height, defaults to screen height
-function Textbox:init(coreProps)
+---@param text string (optional) text to set
+function Textbox:init(coreProps, text)
     Textbox.super.init(self, coreProps) --should always be at top of init func
 
     self._font = gfx.getFont() --TODO make font config'able
-    self:setText(self.name .. " no text set", 'dontResize')
+    if text then self:setText(text)
+    else self:setText(self.name .. " notext") end
 
     self = utils.makeReadOnly(self, "Textbox instance")
 end
@@ -55,28 +56,15 @@ function Textbox:setFont(font)
     self._font = font
 end
 
---TODO word wrapping
+--TODO word wrapping, resizing
 --- Set the label to show on the button
 ---@param text string
----@param dontResize boolean (optional) see resize(). Resizes unless this flag is set.
-function Textbox:setText(text, dontResize)
+function Textbox:setText(text)
     gfx.pushContext(self._img)
         --TODO set font to self._font prior to printing text
         gfx.clear()
-        gfx.drawText(text, 2, 2) -- TODO refactor
+        gfx.drawText(text, 0, 0)
     gfx.popContext()
-    if not dontResize then self:resize() end
-end
-
---TODO just a func skeleton; make this actually work
---- Trim the textbox sprite size to the minimum required
----     for the text it contains.
---- Min textbox size is 1x1 pixels.
---- Max textbox size is always the screen dimensions.
----@return integer new width
----@return integer new height
-function Textbox:resize()
-    return self._img:getSize()
 end
 
 -- pkg footer: pack and export the namespace.

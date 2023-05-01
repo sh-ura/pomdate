@@ -11,7 +11,6 @@ local pd <const> = playdate
 local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
-local configs <const> = configs
 local d <const> = debugger
 --local externalfunc <const> = somepkg.func --TODO any other external vars go here
 
@@ -32,11 +31,11 @@ visualizers = {
 ---         'name' or 1: (string) button name for debugging
 ---         'w' or 2: (integer; optional) initial width, defaults to screen width
 ---         'h' or 3: (integer; optional) initial height, defaults to screen height
----@param step integer step to inc/decrement the value on the dial by
 ---@param lowerLimit integer (optional) cease dialing back past this value
 ---@param upperLimit integer (optional) cease dialing forward past this value
----@param initalVal integer (optional) initial value
-function Dial:init(coreProps, step, lowerLimit, upperLimit, initialVal)
+---@param step integer (optional) step to inc/decrement the value on the dial by. Defaults to 1
+function Dial:init(coreProps, lowerLimit, upperLimit, step)
+    if not step then step = 1 end
     Dial.super.init(self, coreProps) --should always be at top of init func
 
     self._spacing = 2
@@ -57,8 +56,7 @@ function Dial:init(coreProps, step, lowerLimit, upperLimit, initialVal)
         self._uppLimit = upperLimit
         self.value = upperLimit
     end
-    if initialVal then self:setValue(initialVal)
-    elseif not self.value then self:setValue(0) end
+    if not self.value then self:setValue(0) end
 
     self._unit = "unit"
     self._counter = gfx.image.new(20, 20)

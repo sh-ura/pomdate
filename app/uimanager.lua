@@ -26,6 +26,7 @@ local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
 local pairs <const> = pairs
 local ipairs <const> = ipairs
+local crankhandler <const> = crankhandler
 
 local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
 
@@ -55,13 +56,13 @@ local scoreboard = nil -- visualizes pause and snooze scores for this timer sess
 ---                 in {t, label} k-v tuples,
 ---                 in the sequence they should appear.
 local function init(timers)
-    --- Add all of the timer-selecting/-configuring UIElements that are
-    ---     displayed on the MENU screen.
+    --- Populate timersMenu with the timer-selecting/-configuring UIElements that are
+    ---     to be displayed on the MENU screen.
     ---@param list List to contain the timer-selecting buttons
     ---@param timers table all Timers to make selectors for,
     ---                 in {t, label} k-v tuples,
     ---                 in the sequence they should appear.
-    local function populateTimersMenu (list, timers)
+    local function fillTimersMenu (list, timers)
         local n = 0
         n = #timers
         local wButton, hButton = list:getMaxContentDim(n)
@@ -71,19 +72,18 @@ local function init(timers)
 
             local button = Button({name .. "Button", wButton, hButton})
             timerSelectButtons[name] = button
-            button:setEnablingCriteria(function() return list:isEnabled() end)
             button.isPressed = function() return pd.buttonJustPressed(A) end
             button:setLabel(label)
 
-            local dial = Dial({name .. "Dial", 80, 40}, 1, 1, 60)
+            local dial = Dial({name .. "Dial", 80, 40}, 1, 60)
             durationDials[name] = dial
             dial:setEnablingCriteria(function() return
-                button:isEnabled() and
-                button.isSelected() end)
+                button:isEnabled()
+                and button.isSelected()
+            end)
             dial.isSelected = function () return pd.buttonIsPressed(B) end
-            local ticks = 60 / CRANK_ROTS_PER_HOUR
             dial.getDialChange = function ()
-                return pd.getCrankTicks(ticks)
+                return crankhandler.getCrankTicks(60 / CRANK_ROTS_PER_HOUR)
             end
             dial:setUnit("min")
             dial:setValue(initialDurations[name])
@@ -98,7 +98,7 @@ local function init(timers)
         end
 
         for _, timer in pairs(timers) do
-            list:addChildren(makeTimerSelector(timer.t, timer.label))
+            list:addChildren(makeTimerSelector(timer.t, timer.label), 'parentEnables')
         end
     end
 
@@ -106,11 +106,10 @@ local function init(timers)
     timersMenu:setEnablingCriteria(function () return state == STATES.MENU end)
     -- TODO when configmenu + menuList, remove the following line
     timersMenu.isSelected = function() return state == STATES.MENU end
-    populateTimersMenu(timersMenu, timers)
+    fillTimersMenu(timersMenu, timers)
     timersMenu:moveTo(250, 60)
-    d.illustrateBounds(timersMenu)
 
-    --TODO mv to populateTimersMenu
+    --TODO mv to fillTimersMenu
     for _, dial in pairs(durationDials) do
         dial:moveTo(20, 60)
     end
@@ -120,8 +119,9 @@ local function init(timers)
     
     toMenuButton = Button({"toMenuButton"}, 'invisible')
     toMenuButton:setEnablingCriteria(function() return
-        state == STATES.RUN_TIMER or
-        state == STATES.DONE_TIMER end)
+        state == STATES.RUN_TIMER 
+        or state == STATES.DONE_TIMER
+    end)
     toMenuButton.isPressed = function() return pd.buttonJustPressed(B) end
     toMenuButton.pressedAction = function()
         paused = false
@@ -131,8 +131,8 @@ local function init(timers)
 
     pauseButton = Button({"pauseButton"}, 'invisible')
     pauseButton:setEnablingCriteria(function() return
-        state == STATES.RUN_TIMER and
-        not paused
+        state == STATES.RUN_TIMER
+        and not paused
     end)
     pauseButton.isPressed = function() return pd.buttonJustPressed(A) end
     pauseButton.pressedAction = function()
@@ -154,7 +154,10 @@ local function init(timers)
     unpauseButton:forceConfigured()
 
     snoozeButton = Button({"snoozeButton"}, 'invisible')
-    snoozeButton:setEnablingCriteria(function() return state == STATES.DONE_TIMER end)
+    snoozeButton:setEnablingCriteria(function()
+        return state == STATES.DONE_TIMER
+        and confs.snoozeOn
+    end)
     snoozeButton.isPressed = function() return pd.buttonJustPressed(A) end
     snoozeButton.pressedAction = function()
         snooze()
@@ -165,7 +168,7 @@ local function init(timers)
     --- Populate a scoreboard.
     ---@param list List to use as a container
     ---@param instructions table containing unit:scoringFunction pairs
-    ---@return table array of the new score displays
+    ---@return table name:display pairs of the new score display objects
     local function makeScoreDisplays(list, scoringFuncs)
         list.isSelected = function() return false end -- no reason for user to select instructions
         
@@ -174,9 +177,9 @@ local function init(timers)
         for _, _ in pairs(scoringFuncs) do n = n + 1 end
         local w, h = list:getMaxContentDim(n)
 
-        local displays = {}
+        local created = {}
         for unit, score in pairs(scoringFuncs) do
-            local display = Dial({unit .. "Score", w, h}, 1)
+            local display = Dial({unit .. "Score", w, h})
             list:addChildren(display)
             display:setEnablingCriteria(function() return
                 list:isEnabled() 
@@ -193,10 +196,10 @@ local function init(timers)
                 return scoreDiff
             end
 
-            table.insert(displays, display)
+            --TODO can collide on units; use numbered or name indices instead
+            created[unit] = display
         end
-        
-        return displays
+        return created
     end
 
     --TODO DEBUG sometimes this appears chopped in half.
@@ -210,16 +213,17 @@ local function init(timers)
     scoreboard:moveTo(300, 60)
     scoreboard:setZIndex(80)
 
-    pomCountDisplay = List({"pomCountDisplay", 100, 40})
+    pomCountDisplay = List({"pomCountDisplay", 100, 25})
     pomCountDisplay:setEnablingCriteria(function() return state == STATES.MENU end)
     makeScoreDisplays(pomCountDisplay, { pom = getPomCount })
-        [1]:setMode(dial.visualizers.horiCounter) -- visualize poms as counters
-    pomCountDisplay:moveTo(20, 200)
+        .pom:setMode(dial.visualizers.horiCounter) -- visualize poms as counters
+    pomCountDisplay:moveTo(20, 20)
     pomCountDisplay:setZIndex(80)
 
     --- Populate a list containing instructions for the user.
     ---@param list List to use as a container
     ---@param instructions table containing name:text pairs
+    ---@return table name:instruction pairs of the new instruction objects
     local function writeInstructions(list, instructions)
         list.isSelected = function() return false end -- no reason for user to select instructions
         
@@ -228,19 +232,22 @@ local function init(timers)
         for _, _ in pairs(instructions) do n = n + 1 end
         local w, h = list:getMaxContentDim(n)
 
+        local created = {}
         for name, text in pairs(instructions) do
-            local inst = Textbox({name .. "Inst", w, h})
-            inst:setEnablingCriteria(function() return list:isEnabled() end)
-            inst:setText("_"..text.."_", "dontResize")
-            list:addChildren(inst)
+            local inst = Textbox({name .. "Inst", w, h}, "_"..text.."_")
+            list:addChildren(inst, 'parentEnables')
+            created[name] = inst
         end
+        return created
     end
 
-    menuInst = List({"menuInstList", 200, 60})
+    --TODO DEBUG only 2/3 (or 1/2) instructions showing up per state
+    menuInst = List({"menuInstList", 230, 90})
     menuInst:setEnablingCriteria(function() return state == STATES.MENU end)
     writeInstructions(menuInst, {
         runTimer = "A starts selected timer", --TODO DEBUG not appearing onscreen
-        setTimer = "Held B + Crank sets duration"
+        setTimer = "Held B + Crank sets duration",
+        confApp = "System menu has config options"
     })
     menuInst:moveTo(20, 140)
     menuInst:setZIndex(60)
@@ -248,7 +255,7 @@ local function init(timers)
     runTimerInst = List({"runTimerInst", 300, 60})
     runTimerInst:setEnablingCriteria(function() return state == STATES.RUN_TIMER end)
     writeInstructions(runTimerInst, {
-        pauseInst = "A toggles timer pause",
+        pause = "A toggles timer pause",
         toMenu = "B returns to menu"
     })
     runTimerInst:moveTo(20, 140)
@@ -257,9 +264,13 @@ local function init(timers)
     doneTimerInst = List({"doneTimerInst", 300, 60})
     doneTimerInst:setEnablingCriteria(function() return state == STATES.DONE_TIMER end)
     writeInstructions(doneTimerInst, {
-        snoozeInst = "A snoozes timer",
-        toMenuInst = "B returns to menu"
+        snooze = "A snoozes timer", --TODO need this to not appear if snooze disabled
+        toMenu = "B returns to menu"
     })
+    .snooze:setEnablingCriteria(function() return
+        confs.snoozeOn
+        and doneTimerInst:isEnabled() 
+    end)
     doneTimerInst:moveTo(20, 140)
     doneTimerInst:setZIndex(60)
 end
@@ -291,7 +302,7 @@ local function selectNextTimer()
 end
 
 uimanager = {
-    name = "manage_ui",
+    name = "uimanager",
     init = init,
     update = update,
     getDialValue = getDialValue,

@@ -11,8 +11,8 @@ local type = type
 local pairs = pairs
 local fmod = math.fmod -- TODO may be able to replace this w % modulo lua operator?
 
-local W_SCREEN <const> = configs.W_SCREEN
-local H_SCREEN <const> = configs.H_SCREEN
+local W_SCREEN <const> = W_SCREEN
+local H_SCREEN <const> = H_SCREEN
 local W_LEFT_MARGIN <const> = 2
 local H_LINE <const> = 16
 local NUM_LINES <const> = 15 -- 240/16 (screen height / line height)
@@ -78,7 +78,7 @@ function drawLog ()
 end
 
 --TODO need to rename this to draw..... despite naming clash..
--- bounds(sprite) visualizes the rectangular bounds of the sprite.
+-- Visualizes the rectangular bounds of the sprite.
 function illustrateBounds (sprite)
     gfx.pushContext(illImg)
         gfx.drawRect(sprite:getBounds())

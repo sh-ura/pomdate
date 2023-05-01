@@ -11,7 +11,7 @@ local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
 local floor <const> = math.floor -- TODO may be able to replace this w // floor division lua operator?
-local STATES <const> = configs.STATES
+local STATES <const> = STATES
 
 -- Timer packs a timer with its UI.
 class('Timer').extends(gfx.sprite)

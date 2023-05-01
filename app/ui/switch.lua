@@ -11,7 +11,6 @@ local pd <const> = playdate
 local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
-local configs <const> = configs
 local d <const> = debugger
 local insert <const> = table.insert
 local Object <const> = Object
