@@ -79,6 +79,13 @@ local function init()
 
     confmanager.init(sav_confs)
 
+    if confs.pomSavingOn then
+        d.log("attempting to load state: data")
+        c_poms = pd.datastore.read("data")["c_poms"]
+        d.log("conf-loading attempt complete; c_poms:", c_poms)
+        if not c_poms then c_poms = 0 end
+    end
+
     timers.work = Timer("work")
     timers.short = Timer("short")
     timers.long = Timer("long")
@@ -125,13 +132,18 @@ local function sav()
     } -- snooze duration is in the confs data file
     d.log("dumping durations to be saved", sav_durations)
     pd.datastore.write(sav_durations, "durations")
-    d.log("duration save attempt complete. Dumping datastore contents", pd.datastore.read("durations"))
+    d.log("duration save attempt complete. Dumping datafile", pd.datastore.read("durations"))
 
-    -- Seems we may want to let confmanager handle its own state saving
     local sav_confs = confmanager.sav()
     d.log("dumping confs to be saved", sav_confs)
     pd.datastore.write(sav_confs, "confs")
-    d.log("conf save attempt complete. Dumping datastore contents", pd.datastore.read("confs"))
+    d.log("conf save attempt complete. Dumping datafile", pd.datastore.read("confs"))
+
+    if confs.pomSavingOn then
+        d.log("Elapsed poms to be saved: ", c_poms)
+        pd.datastore.write({ c_poms = c_poms }, "data")
+        d.log("Elapsed poms save attempt complete. Dumping datafile", pd.datastore.read("data"))
+    end
 end
 
 local function cycleTimers()

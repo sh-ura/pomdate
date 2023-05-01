@@ -47,6 +47,13 @@ local metaconfs = {
             d.log("no confs.pomsPerCycle.get func set")
             return confs.pomsPerCycle
         end
+    },
+    pomSavingOn = {
+        default = false,
+        get = function()
+            d.log("no confs.pomSavingOn.get func set")
+            return confs.pomSavingOn
+        end
     }
 }
 local snooze_max = 10
@@ -99,7 +106,7 @@ local function init(savestate)
     for _ in pairs(confs) do c_confs = c_confs + 1 end
     local w_setting, h_setting
     local w_label, h_label
-    local w_labelBonus = 50
+    local w_labelBonus = 80
     local w_setter, h_setter
 
     local confList = List(
@@ -184,6 +191,10 @@ local function init(savestate)
         metaconfs.pomsPerCycle.min,
         metaconfs.pomsPerCycle.max,
         confs.pomsPerCycle
+    )
+    metaconfs.pomSavingOn.get = fillONFSetter(
+        initConfItem("pomSavingOn", "Save elapsed poms on quit"),
+        confs.pomSavingOn
     )
 end
 
