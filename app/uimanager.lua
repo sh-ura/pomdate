@@ -111,7 +111,7 @@ local function init(timers)
 
     --TODO mv to fillTimersMenu
     for _, dial in pairs(durationDials) do
-        dial:moveTo(20, 60)
+        dial:moveTo(MARGIN, 60)
     end
 
 
@@ -217,7 +217,7 @@ local function init(timers)
     pomCountDisplay:setEnablingCriteria(function() return state == STATES.MENU end)
     makeScoreDisplays(pomCountDisplay, { pom = getPomCount })
         .pom:setMode(dial.visualizers.horiCounter) -- visualize poms as counters
-    pomCountDisplay:moveTo(20, 20)
+    pomCountDisplay:moveTo(MARGIN, MARGIN)
     pomCountDisplay:setZIndex(80)
 
     --- Populate a list containing instructions for the user.
@@ -249,7 +249,7 @@ local function init(timers)
         setTimer = "Held B + Crank sets duration",
         confApp = "System menu has config options"
     })
-    menuInst:moveTo(20, 140)
+    menuInst:moveTo(MARGIN, 140)
     menuInst:setZIndex(60)
 
     runTimerInst = List({"runTimerInst", 300, 60})
@@ -258,7 +258,7 @@ local function init(timers)
         pause = "A toggles timer pause",
         toMenu = "B returns to menu"
     })
-    runTimerInst:moveTo(20, 140)
+    runTimerInst:moveTo(MARGIN, 140)
     runTimerInst:setZIndex(60)
 
     doneTimerInst = List({"doneTimerInst", 300, 60})
@@ -271,7 +271,7 @@ local function init(timers)
         confs.snoozeOn
         and doneTimerInst:isEnabled() 
     end)
-    doneTimerInst:moveTo(20, 140)
+    doneTimerInst:moveTo(MARGIN, 140)
     doneTimerInst:setZIndex(60)
 end
 

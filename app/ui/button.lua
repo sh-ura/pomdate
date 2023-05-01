@@ -76,12 +76,14 @@ end
 --- Set the label to show on the button
 ---@param label string
 function Button:setLabel(label)
+    local color_o = gfx.getColor()
     gfx.pushContext(self._img)
         gfx.clear()
-        gfx.setColor(gfx.kColorWhite)
+        gfx.setColor(gfx.getBackgroundColor())
         gfx.fillRect(self:getBounds())
-        gfx.setColor(gfx.kColorBlack)
+        gfx.setColor(gfx.kColorXOR)
         gfx.drawText("*"..label.."*", 2, 2) -- TODO refactor
+        gfx.setColor(color_o)    
     gfx.popContext()
 end
 

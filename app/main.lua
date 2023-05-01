@@ -62,7 +62,7 @@ function BPressed() return pd.buttonJustPressed(B) end
 --- If a state save file exists, it will be loaded here.
 local function init()
     utils.disableReadOnly()
-    --debugger.disable()
+    --debugger.disable() --TODO uncomment
 
     -- snooze duration is in the confs data file
     d.log("attempting to load state: durations")
@@ -291,7 +291,7 @@ end
 -- Only white pixels are drawn; black transparent
 function pd.debugDraw()
     gfx.pushContext()
-        gfx.setImageDrawMode(gfx.kDrawModeInverted)
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
         d.drawLog()
         d.drawIllustrations()
     gfx.popContext()
@@ -299,5 +299,8 @@ end
 
 ------- APP START -------
 
+gfx.setBackgroundColor(gfx.kColorBlack)
+gfx.setColor(gfx.kColorWhite)
+gfx.setImageDrawMode(gfx.kDrawModeInverted)
 splash()
 init()

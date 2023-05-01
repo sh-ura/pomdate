@@ -76,7 +76,6 @@ end
 --- Initializes the configuration manager and screen.
 ---@param state table containing any loaded configuration state
 local function init(savestate)
-    local margin_screen = 20
     local function stateIsCONF() return state == STATES.CONF end
 
     -- initialize confs using loaded savestate or the default values
@@ -100,7 +99,7 @@ local function init(savestate)
     backButton:forceConfigured()
     local inst = Textbox({"backFromConfInst", 300, 20}, "_B returns to app_")
     inst:setEnablingCriteria(function () return backButton:isEnabled() end)
-    inst:moveTo(margin_screen, H_SCREEN - margin_screen - inst.height) -- bottom of screen
+    inst:moveTo(MARGIN, H_SCREEN - MARGIN - inst.height) -- bottom of screen
 
     local c_confs = 0
     for _ in pairs(confs) do c_confs = c_confs + 1 end
@@ -110,10 +109,10 @@ local function init(savestate)
     local w_setter, h_setter
 
     local confList = List(
-        {"confList", W_SCREEN - margin_screen*2, inst.y - 10 - margin_screen},
+        {"confList", W_SCREEN - MARGIN*2, inst.y - 10 - MARGIN},
         vert, 2
     )
-    confList:moveTo(margin_screen, margin_screen)
+    confList:moveTo(MARGIN, MARGIN)
     w_setting, h_setting = confList:getMaxContentDim(c_confs)
     confList:setEnablingCriteria(stateIsCONF)
 
