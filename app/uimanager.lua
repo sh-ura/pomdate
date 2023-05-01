@@ -56,13 +56,13 @@ local scoreboard = nil -- visualizes pause and snooze scores for this timer sess
 ---                 in {t, label} k-v tuples,
 ---                 in the sequence they should appear.
 local function init(timers)
-    --- Add all of the timer-selecting/-configuring UIElements that are
-    ---     displayed on the MENU screen.
+    --- Populate timersMenu with the timer-selecting/-configuring UIElements that are
+    ---     to be displayed on the MENU screen.
     ---@param list List to contain the timer-selecting buttons
     ---@param timers table all Timers to make selectors for,
     ---                 in {t, label} k-v tuples,
     ---                 in the sequence they should appear.
-    local function populateTimersMenu (list, timers)
+    local function fillTimersMenu (list, timers)
         local n = 0
         n = #timers
         local wButton, hButton = list:getMaxContentDim(n)
@@ -75,7 +75,7 @@ local function init(timers)
             button.isPressed = function() return pd.buttonJustPressed(A) end
             button:setLabel(label)
 
-            local dial = Dial({name .. "Dial", 80, 40}, 1, 1, 60)
+            local dial = Dial({name .. "Dial", 80, 40}, 1, 60)
             durationDials[name] = dial
             dial:setEnablingCriteria(function() return
                 button:isEnabled()
@@ -106,10 +106,10 @@ local function init(timers)
     timersMenu:setEnablingCriteria(function () return state == STATES.MENU end)
     -- TODO when configmenu + menuList, remove the following line
     timersMenu.isSelected = function() return state == STATES.MENU end
-    populateTimersMenu(timersMenu, timers)
+    fillTimersMenu(timersMenu, timers)
     timersMenu:moveTo(250, 60)
 
-    --TODO mv to populateTimersMenu
+    --TODO mv to fillTimersMenu
     for _, dial in pairs(durationDials) do
         dial:moveTo(20, 60)
     end
@@ -179,7 +179,7 @@ local function init(timers)
 
         local created = {}
         for unit, score in pairs(scoringFuncs) do
-            local display = Dial({unit .. "Score", w, h}, 1)
+            local display = Dial({unit .. "Score", w, h})
             list:addChildren(display)
             display:setEnablingCriteria(function() return
                 list:isEnabled() 

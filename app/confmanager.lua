@@ -27,15 +27,25 @@ local metaconfs = {
         default = true,
         get = function()
             d.log("no confs.snoozeOn.get func set")
-            return confs.snoozeOn.current          
+            return confs.snoozeOn
         end
     },
     snoozeDuration = {
         default = 2,
+        min = 1,
         max = 10,
         get = function()
             d.log("no confs.snoozeDuration.get func set")
-            return confs.snoozeOn.current          
+            return confs.snoozeDuration
+        end
+    },
+    pomsPerCycle = {
+        default = 4,
+        min = 2,
+        max = 8,
+        get = function()
+            d.log("no confs.pomsPerCycle.get func set")
+            return confs.pomsPerCycle
         end
     }
 }
@@ -85,25 +95,8 @@ local function init(savestate)
     inst:setEnablingCriteria(function () return backButton:isEnabled() end)
     inst:moveTo(margin_screen, H_SCREEN - margin_screen - inst.height) -- bottom of screen
 
-    --is this table actually useful?
-    local settings = {
-        snoozeONF = {
-            name = "snoozeONF",
-            -- the keys below will be present in all setting tables
-            item = nil, -- ui.list: the container to represent the setting in the confs table
-            label = nil, -- ui.button: the setting description
-            setter = nil -- ui element: the interactable element
-        },
-        savePomCountONF = { name = "savePomCountONF" },
-        pomsPerLongBreak = { name = "pomsPerLongBreak" },
-        snoozeDuration = { name = "snoozeDuration" },
-        toWorkSound = { name = "toWorkSound" },
-        toBreakSound = { name ="toBreakSound" },
-        snoozeSound = { name ="snoozeSound" }
-    }
-    local c_settings = 0
-    for _ in pairs(settings) do c_settings = c_settings + 1 end
-
+    local c_confs = 0
+    for _ in pairs(confs) do c_confs = c_confs + 1 end
     local w_setting, h_setting
     local w_label, h_label
     local w_labelBonus = 50
@@ -114,17 +107,21 @@ local function init(savestate)
         vert, 2
     )
     confList:moveTo(margin_screen, margin_screen)
-    w_setting, h_setting = confList:getMaxContentDim(c_settings)
+    w_setting, h_setting = confList:getMaxContentDim(c_confs)
     confList:setEnablingCriteria(stateIsCONF)
 
-    local function initConfItem(setting, description)
-        local item = List({setting.name, w_setting, h_setting}, hori, 1)
+    --- Creates a list item, label, and setter for a configurable setting
+    ---@param name string setting name to be used in debugging
+    ---@param description string label to be shown to the user
+    ---@return List setter, to contain the interactable UIElements for this setting
+    local function initConfItem(name, description)
+        local item = List({name, w_setting, h_setting}, hori, 1)
         w_setter, h_setter = item:getMaxContentDim(2)
         h_label = h_setter
         w_label = w_setter + w_labelBonus -- give label a bit more room
         w_setter = w_setter - w_labelBonus
-        local label = Button({setting.name.."Desc", w_label, h_label})
-        local setter = List({setting.name.."Setter", w_setter, h_setter}, hori, 0)
+        local label = Button({name.."Desc", w_label, h_label})
+        local setter = List({name.."Setter", w_setter, h_setter}, hori, 0)
         item:addChildren({label, setter}, 'parentEnables')
         confList:addChildren(item, 'parentEnables')
 
@@ -132,41 +129,62 @@ local function init(savestate)
         label.isSelected = function() return item.isSelected() end
         label:forceConfigured() -- label only needs to hilight like a button
         setter.isSelected = function() return item.isSelected() end
+
+        return setter
+    end
+
+    --- Populate a On/Off toggle setter
+    ---@param setter List obtained from initConfItem (above)
+    ---@param init initial value, true or false
+    local function fillONFSetter(setter, init)
+        local w, h = setter:getMaxContentDim(2)
+        local switch = init
+        local OnBtn = Button({setter.name.."OnBtn", w, h})
+        OnBtn:setLabel("On")
+        OnBtn.isPressed = OnBtn.isSelected
+        OnBtn.pressedAction = function() switch = true end
+        local OffBtn = Button({setter.name.."OffBtn", w, h})
+        OffBtn:setLabel("Off")
+        OffBtn.isPressed = OffBtn.isSelected
+        OffBtn.pressedAction = function() switch = false end
+        setter:addChildren({OnBtn, OffBtn}, 'parentEnables')
+
+        if not init then setter:next() end
+        return function() return switch end
+    end
+
+    local function fillDialSetter(setter, unit, min, max, init)
+        local w, h = setter:getMaxContentDim()
+        local dial = Dial({setter.name.."Dial", w, h}, min, max)
+        dial.getDialChange = function ()
+            return crankhandler.getCrankTicks(max)
+        end
+        dial:setUnit(unit)
+        setter:addChildren(dial, 'parentEnables')
+        dial.isSelected = function () return setter.isSelected() end
         
-        setting.item = item
-        setting.label = label
-        setting.setter = setter
+        dial:setValue(init)
+        return function() return dial.value end
     end
 
-    initConfItem(settings.snoozeONF, "Timers can be snoozed")
-    local snoozeONFSetter = settings.snoozeONF.setter
-    local w_tmp, h_tmp = snoozeONFSetter:getMaxContentDim(2)
-    local snoozeOn = confs.snoozeOn
-    local snoozeOnBtn = Button({"snoozeOnButton", w_tmp, h_tmp})
-    snoozeOnBtn:setLabel("On")
-    snoozeOnBtn.isPressed = snoozeOnBtn.isSelected
-    snoozeOnBtn.pressedAction = function() snoozeOn = true end
-    local snoozeOffBtn = Button({"snoozeOffButton", w_tmp, h_tmp})
-    snoozeOffBtn:setLabel("Off")
-    snoozeOffBtn.isPressed = snoozeOffBtn.isSelected
-    snoozeOffBtn.pressedAction = function() snoozeOn = false end
-    snoozeONFSetter:addChildren({snoozeOnBtn, snoozeOffBtn}, 'parentEnables')
-    metaconfs.snoozeOn.get = function() return snoozeOn end
-    if not confs.snoozeOn then snoozeONFSetter:next() end -- toggle to loaded setting val
-
-    --TODO need to get the snooze duration off the dial value somehow
-    initConfItem(settings.snoozeDuration, "Snooze duration")
-    local snoozeDurationSetter = settings.snoozeDuration.setter
-    w_tmp, h_tmp = snoozeDurationSetter:getMaxContentDim()
-    local snoozeDial = Dial({"snoozeDial", w_tmp, h_tmp}, 1, 1, metaconfs.snoozeDuration.max)
-    snoozeDial.getDialChange = function ()
-        return crankhandler.getCrankTicks(metaconfs.snoozeDuration.max)
-    end
-    snoozeDial:setUnit("min")
-    snoozeDial:setValue(confs.snoozeDuration)
-    snoozeDurationSetter:addChildren(snoozeDial, 'parentEnables')
-    snoozeDial.isSelected = function () return snoozeDurationSetter.isSelected() end
-    metaconfs.snoozeDuration.get = function() return snoozeDial.value end
+    metaconfs.snoozeOn.get = fillONFSetter(
+        initConfItem("snoozeONF", "Timers can be snoozed"),
+        confs.snoozeOn
+    )
+    metaconfs.snoozeDuration.get = fillDialSetter(
+        initConfItem("snoozeDuration", "Snooze duration"),
+        "min",
+        metaconfs.snoozeDuration.min,
+        metaconfs.snoozeDuration.max,
+        confs.snoozeDuration
+    )
+    metaconfs.pomsPerCycle.get = fillDialSetter(
+        initConfItem("pomsPerCycle", "Poms per long break"),
+        "pom",
+        metaconfs.pomsPerCycle.min,
+        metaconfs.pomsPerCycle.max,
+        confs.pomsPerCycle
+    )
 end
 
 --- Call to update confs based on user selections.

@@ -48,8 +48,6 @@ local c_pauses = 0
 local c_snoozes = 0
 local cachedState = nil -- state prior to entering configuration mode
 
-local n_poms = 4 --TODO make configurable
-
 --TODO move below asset path info to config or smth
 local soundPathPrefix = "assets/sound/"
 local toWorkSoundPath = "to-work.wav"
@@ -142,7 +140,7 @@ local function cycleTimers()
     elseif currentTimer == timers.long then
         uimanager.selectPrevTimer()
     elseif currentTimer == timers.work then
-        if c_poms >= n_poms then
+        if c_poms >= confs.pomsPerCycle then
             uimanager.selectNextTimer()
         else
             uimanager.selectPrevTimer()
@@ -178,7 +176,7 @@ function toMenu()
         elseif currentTimer == timers.work then
             c_poms = c_poms + 1
         end
-        if c_poms >= n_poms then
+        if c_poms >= confs.pomsPerCycle then
             --TODO alert user that the cycle pom count has been reached
         end
         cycleTimers()
