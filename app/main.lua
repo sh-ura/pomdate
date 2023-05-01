@@ -56,6 +56,10 @@ local toWorkSoundPath = "to-work.wav"
 local toBreakSoundPath = "to-break.wav"
 local snoozeSoundPath = "snooze.wav"
 
+--TODO replace other calls to these functions
+function APressed() return pd.buttonJustPressed(A) end
+function BPressed() return pd.buttonJustPressed(B) end
+
 --- Sets up the app environment.
 --- If a state save file exists, it will be loaded here.
 local function init()
@@ -72,14 +76,10 @@ local function init()
     d.log("duration-loading attempt complete; dumping initialDurations", initialDurations)
 
     d.log("attempting to load state: confs")
-    local loadedConfs = pd.datastore.read("confs")
-    if loadedConfs then
-        d.log("conf state file exists")
-        for k,v in pairs(loadedConfs) do confs[k] = v end
-    end
-    d.log("conf-loading attempt complete; dumping confs", confs)
+    local sav_confs = pd.datastore.read("confs")
+    d.log("conf-loading attempt complete; dumping confs", sav_confs)
 
-    confmanager.init()
+    confmanager.init(sav_confs)
 
     timers.work = Timer("work")
     timers.short = Timer("short")
@@ -116,20 +116,23 @@ local function splash()
     pd.ui.crankIndicator:start()
 end
 
-local function saveState()
-    d.log("attempting to saveState")
+local function sav()
+    d.log("attempting to save state")
 
-    local durations = {
+    -- TODO implement sav func in UIManager
+    local sav_durations = {
         work = uimanager.getDialValue("work"),
         short = uimanager.getDialValue("short"),
         long = uimanager.getDialValue("long")
     } -- snooze duration is in the confs data file
-    d.log("dumping durations to be saved", durations)
-    pd.datastore.write(durations, "durations")
+    d.log("dumping durations to be saved", sav_durations)
+    pd.datastore.write(sav_durations, "durations")
     d.log("duration save attempt complete. Dumping datastore contents", pd.datastore.read("durations"))
 
-    d.log("dumping confs to be saved", confs)
-    pd.datastore.write(confs, "confs")
+    -- Seems we may want to let confmanager handle its own state saving
+    local sav_confs = confmanager.sav()
+    d.log("dumping confs to be saved", sav_confs)
+    pd.datastore.write(sav_confs, "confs")
     d.log("conf save attempt complete. Dumping datastore contents", pd.datastore.read("confs"))
 end
 
@@ -155,10 +158,11 @@ function toConf()
 end
 
 function fromConf()
-    unpause()
-    currentTimer:setVisible(true)
+    confmanager:update()
     state = cachedState
     cachedState = nil
+    currentTimer:setVisible(true)
+    unpause()
 end
 
 -- performs done -> select transition
@@ -269,10 +273,10 @@ function pd.update()
 end
 
 function pd.gameWillTerminate()
-    saveState()
+    sav()
 end
 function pd.deviceWillSleep()
-    saveState()
+    sav()
 end
 
 -- debugDraw() is called immediately after update()

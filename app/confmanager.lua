@@ -21,13 +21,23 @@ local confMenuItem = nil
 local backMenuItem = nil
 
 --- Published as the active set of confs
-local confs = {
-    snoozeOn = nil,
-    snoozeDuration = nil
-}
-local defaults = {
-    snoozeOn = true,
-    snoozeDuration = 2
+local confs = {}
+local metaconfs = {
+    snoozeOn = {
+        default = true,
+        get = function()
+            d.log("no confs.snoozeOn.get func set")
+            return confs.snoozeOn.current          
+        end
+    },
+    snoozeDuration = {
+        default = 2,
+        max = 10,
+        get = function()
+            d.log("no confs.snoozeDuration.get func set")
+            return confs.snoozeOn.current          
+        end
+    }
 }
 local snooze_max = 10
 
@@ -46,15 +56,18 @@ function back()
     fromConf()
 end
 
-local function init()
+--- Initializes the configuration manager and screen.
+---@param state table containing any loaded configuration state
+local function init(savestate)
     local margin_screen = 20
     local function stateIsCONF() return state == STATES.CONF end
 
-    -- main will load and initialize any saved settings at startup
-    -- here, we init any outstanding non-initialized settings
-    for k, v in pairs(defaults) do
-        if confs[k] == nil then d.log("no conf " ..k) confs[k] = v end
+    -- initialize confs using loaded savestate or the default values
+    for k, v in pairs(metaconfs) do
+        if savestate and savestate[k] ~= nil then confs[k] = savestate[k]
+        else confs[k] = v.default end
     end
+    d.log("confmanager state loaded, confs:", confs)
 
     sysmenu = pd.getSystemMenu()
     local resetPomsMenuItem = sysmenu:addMenuItem("Reset poms", resetPomCount)
@@ -128,35 +141,53 @@ local function init()
     initConfItem(settings.snoozeONF, "Timers can be snoozed")
     local snoozeONFSetter = settings.snoozeONF.setter
     local w_tmp, h_tmp = snoozeONFSetter:getMaxContentDim(2)
+    local snoozeOn = confs.snoozeOn
     local snoozeOnBtn = Button({"snoozeOnButton", w_tmp, h_tmp})
     snoozeOnBtn:setLabel("On")
-    snoozeOnBtn.isPressed = function() return snoozeOnBtn.isSelected() end
-    snoozeOnBtn.pressedAction = function() confs.snooze = true end
+    snoozeOnBtn.isPressed = snoozeOnBtn.isSelected
+    snoozeOnBtn.pressedAction = function() snoozeOn = true end
     local snoozeOffBtn = Button({"snoozeOffButton", w_tmp, h_tmp})
     snoozeOffBtn:setLabel("Off")
-    snoozeOffBtn.isPressed = function() return snoozeOffBtn.isSelected() end
-    snoozeOffBtn.pressedAction = function() confs.snooze = false end
+    snoozeOffBtn.isPressed = snoozeOffBtn.isSelected
+    snoozeOffBtn.pressedAction = function() snoozeOn = false end
     snoozeONFSetter:addChildren({snoozeOnBtn, snoozeOffBtn}, 'parentEnables')
+    metaconfs.snoozeOn.get = function() return snoozeOn end
     if not confs.snoozeOn then snoozeONFSetter:next() end -- toggle to loaded setting val
 
     --TODO need to get the snooze duration off the dial value somehow
     initConfItem(settings.snoozeDuration, "Snooze duration")
     local snoozeDurationSetter = settings.snoozeDuration.setter
     w_tmp, h_tmp = snoozeDurationSetter:getMaxContentDim()
-    local snoozeDial = Dial({"snoozeDial", w_tmp, h_tmp}, 1, 1, snooze_max)
+    local snoozeDial = Dial({"snoozeDial", w_tmp, h_tmp}, 1, 1, metaconfs.snoozeDuration.max)
     snoozeDial.getDialChange = function ()
-        return crankhandler.getCrankTicks(snooze_max)
+        return crankhandler.getCrankTicks(metaconfs.snoozeDuration.max)
     end
     snoozeDial:setUnit("min")
     snoozeDial:setValue(confs.snoozeDuration)
     snoozeDurationSetter:addChildren(snoozeDial, 'parentEnables')
     snoozeDial.isSelected = function () return snoozeDurationSetter.isSelected() end
+    metaconfs.snoozeDuration.get = function() return snoozeDial.value end
+end
+
+--- Call to update confs based on user selections.
+--- Can call every frame, or just when closing the config menu.
+local function update()
+    for k, _ in pairs(confs) do confs[k] = metaconfs[k].get() end
+end
+
+--- Prepares the conf state to be saved as app data.
+---@return table to save in data file
+local function sav()
+    update()
+    return confs
 end
 
 confmanager = {
     name = "confmanager",
     confs = confs,
-    init = init
+    init = init,
+    update = update,
+    sav = sav
 }
 confmanager = utils.makeReadOnly(confmanager)
 return confmanager

@@ -156,7 +156,7 @@ local function init(timers)
     snoozeButton = Button({"snoozeButton"}, 'invisible')
     snoozeButton:setEnablingCriteria(function()
         return state == STATES.DONE_TIMER
-        and confs.snooze
+        and confs.snoozeOn
     end)
     snoozeButton.isPressed = function() return pd.buttonJustPressed(A) end
     snoozeButton.pressedAction = function()
@@ -268,7 +268,7 @@ local function init(timers)
         toMenu = "B returns to menu"
     })
     .snooze:setEnablingCriteria(function() return
-        confs.snooze
+        confs.snoozeOn
         and doneTimerInst:isEnabled() 
     end)
     doneTimerInst:moveTo(20, 140)
