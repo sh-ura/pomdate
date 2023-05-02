@@ -186,7 +186,10 @@ function toMenu()
     c_pauses = 0
     c_snoozes = 0
 
-    cycleTimers()
+    if timerCompleted then
+        cycleTimers()
+        timerCompleted = false
+    end
     if c_poms >= confs.pomsPerCycle then
         --TODO alert user that the cycle pom count has been reached
     end
@@ -211,6 +214,7 @@ function toDone()
     currentTimer:stop()
     currentTimer:notify()
     
+    timerCompleted = true
     if currentTimer == timers.long then
         c_poms = 0
     elseif currentTimer == timers.work then
