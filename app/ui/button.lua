@@ -10,6 +10,8 @@ local pd <const> = playdate
 local gfx <const> = pd.graphics
 local utils <const> = utils
 local d <const> = debugger
+local COLOR_BG <const> = COLOR_BG
+local COLOR_PRIM <const> = COLOR_PRIM
 
 ---@class Button is a UI element governing some behaviour if selected.
 --- A button, when pressed, may modify global state indicators and animate itself.
@@ -76,14 +78,12 @@ end
 --- Set the label to show on the button
 ---@param label string
 function Button:setLabel(label)
-    local color_o = gfx.getColor()
     gfx.pushContext(self._img)
         gfx.clear()
-        gfx.setColor(gfx.getBackgroundColor())
+        gfx.setColor(COLOR_BG)
         gfx.fillRect(self:getBounds())
-        gfx.setColor(gfx.kColorXOR)
+        gfx.setColor(COLOR_PRIM)
         gfx.drawText("*"..label.."*", 2, 2) -- TODO refactor
-        gfx.setColor(color_o)    
     gfx.popContext()
 end
 

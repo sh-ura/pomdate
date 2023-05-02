@@ -41,10 +41,10 @@ local menuInst = nil -- instructions shown in MENU --TODO move to init
 local toMenuButton = nil -- return to timer-select menu
 local pauseButton = nil -- pause active timer
 local unpauseButton = nil -- unpause active timer
-local runTimerInst = nil -- instructions shown in RUN_TIMER state --TODO move to init
+local runInst = nil -- instructions shown in RUN_TIMER state --TODO move to init
 
 local snoozeButton = nil -- invisible snooze button --TODO move to init
-local doneTimerInst = nil -- instructions shown in DONE_TIMER state --TODO move to init
+local doneInst = nil -- instructions shown in DONE_TIMER state --TODO move to init
 local scoreboard = nil -- visualizes pause and snooze scores for this timer session
 
 --TODO much of this no longer needs to be in init
@@ -228,51 +228,51 @@ local function init(timers)
         list.isSelected = function() return false end -- no reason for user to select instructions
         
         -- count all instructions to be stacked into list
-        local n = 0
-        for _, _ in pairs(instructions) do n = n + 1 end
-        local w, h = list:getMaxContentDim(n)
+        local c = 0
+        for _ in pairs(instructions) do c = c + 1 end
+        local w, h = list:getMaxContentDim(c)
 
         local created = {}
         for name, text in pairs(instructions) do
             local inst = Textbox({name .. "Inst", w, h}, "_"..text.."_")
-            list:addChildren(inst, 'parentEnables')
+            local kids = list:addChildren(inst, 'parentEnables')
             created[name] = inst
         end
         return created
     end
 
     --TODO DEBUG only 2/3 (or 1/2) instructions showing up per state
-    menuInst = List({"menuInstList", 230, 90})
+    menuInst = List({"menuInstList", 230, 75})
     menuInst:setEnablingCriteria(function() return state == STATES.MENU end)
     writeInstructions(menuInst, {
-        runTimer = "A starts selected timer", --TODO DEBUG not appearing onscreen
+        menuToRun = "A starts selected timer", --TODO DEBUG not appearing onscreen
         setTimer = "Held B + Crank sets duration",
-        confApp = "System menu has config options"
+        menuToConf = "System menu has config options"
     })
     menuInst:moveTo(MARGIN, 140)
     menuInst:setZIndex(60)
 
-    runTimerInst = List({"runTimerInst", 300, 60})
-    runTimerInst:setEnablingCriteria(function() return state == STATES.RUN_TIMER end)
-    writeInstructions(runTimerInst, {
+    runInst = List({"runInst", 230, 50})
+    runInst:setEnablingCriteria(function() return state == STATES.RUN_TIMER end)
+    writeInstructions(runInst, {
         pause = "A toggles timer pause",
-        toMenu = "B returns to menu"
+        runToMenu = "B returns to menu"
     })
-    runTimerInst:moveTo(MARGIN, 140)
-    runTimerInst:setZIndex(60)
+    runInst:moveTo(MARGIN, 140)
+    runInst:setZIndex(60)
 
-    doneTimerInst = List({"doneTimerInst", 300, 60})
-    doneTimerInst:setEnablingCriteria(function() return state == STATES.DONE_TIMER end)
-    writeInstructions(doneTimerInst, {
+    doneInst = List({"doneInst", 230, 50})
+    doneInst:setEnablingCriteria(function() return state == STATES.DONE_TIMER end)
+    writeInstructions(doneInst, {
         snooze = "A snoozes timer", --TODO need this to not appear if snooze disabled
-        toMenu = "B returns to menu"
+        doneToMenu = "B returns to menu"
     })
     .snooze:setEnablingCriteria(function() return
         confs.snoozeOn
-        and doneTimerInst:isEnabled() 
+        and doneInst:isEnabled() 
     end)
-    doneTimerInst:moveTo(MARGIN, 140)
-    doneTimerInst:setZIndex(60)
+    doneInst:moveTo(MARGIN, 140)
+    doneInst:setZIndex(60)
 end
 
 --- Drives the UI. Call on pd.update().

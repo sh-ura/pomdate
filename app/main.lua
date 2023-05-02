@@ -303,8 +303,8 @@ end
 
 ------- APP START -------
 
-gfx.setBackgroundColor(gfx.kColorBlack)
-gfx.setColor(gfx.kColorWhite)
-gfx.setImageDrawMode(gfx.kDrawModeInverted)
+gfx.setBackgroundColor(COLOR_BG)
+gfx.setColor(COLOR_PRIM)
+gfx.setImageDrawMode(COLOR_BITMAP)
 splash()
 init()

@@ -12,7 +12,8 @@ local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
 local d <const> = debugger
---local externalfunc <const> = somepkg.func --TODO any other external vars go here
+local COLOR_BG <const> = COLOR_BG
+local COLOR_PRIM <const> = COLOR_PRIM
 
 ---TODO Dial desc
 class('Dial').extends(UIElement)
@@ -61,6 +62,7 @@ function Dial:init(coreProps, lowerLimit, upperLimit, step)
     self._unit = "unit"
     self._counter = gfx.image.new(20, 20)
     gfx.pushContext(self._counter)
+        gfx.setColor(COLOR_BG)
         gfx.fillCircleAtPoint(9, 9, 9)
     gfx.popContext(self._counter)
 

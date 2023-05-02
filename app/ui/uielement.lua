@@ -163,7 +163,7 @@ function UIElement:addChildren(e, parentEnables)
         element:setZIndex(element:getZIndex() + self:getZIndex())    
     end
 
-    if e.isa then addChild(e)
+    if e.isa then addChild(e) -- a single playdate Object
     else
         for _, element in pairs(e) do
             addChild(element)
