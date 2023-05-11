@@ -295,7 +295,7 @@ end
 -- Only white pixels are drawn; black transparent
 function pd.debugDraw()
     gfx.pushContext()
-        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+        gfx.setImageDrawMode(COLOR_DEBUG)
         d.drawLog()
         d.drawIllustrations()
     gfx.popContext()

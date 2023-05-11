@@ -220,6 +220,7 @@ local function init(timers)
     pomCountDisplay:moveTo(MARGIN, MARGIN)
     pomCountDisplay:setZIndex(80)
 
+    --[[
     --- Populate a list containing instructions for the user.
     ---@param list List to use as a container
     ---@param instructions table containing name:text pairs
@@ -273,6 +274,7 @@ local function init(timers)
     end)
     doneInst:moveTo(MARGIN, 140)
     doneInst:setZIndex(60)
+    --]]
 end
 
 --- Drives the UI. Call on pd.update().
