@@ -28,7 +28,7 @@ local B <const> = pd.kButtonB
 local pairs <const> = pairs
 local ipairs <const> = ipairs
 local crankhandler <const> = crankhandler
-local COLOR_BG <const> = COLOR_BG
+local COLOR_0 <const> = COLOR_0
 
 local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
 
@@ -76,8 +76,8 @@ local function init(timers)
             timerSelectButtons[name] = button
             button.isPressed = function() return pd.buttonJustPressed(A) end
             button:setBackground( function(x, y, width, height)
-                gfx.setColor(COLOR_BG)
-                gfx.fillRect(x, y, width, height)
+                gfx.setColor(COLOR_0)
+                gfx.fillRoundRect(x, y, width, height, height/2)
             end)
             button:setLabel(label)
 

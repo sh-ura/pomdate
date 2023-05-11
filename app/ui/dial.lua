@@ -12,8 +12,8 @@ local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
 local d <const> = debugger
-local COLOR_BG <const> = COLOR_BG
-local COLOR_PRIM <const> = COLOR_PRIM
+local COLOR_0 <const> = COLOR_0
+local COLOR_1 <const> = COLOR_1
 local COLOR_CLEAR <const> = COLOR_CLEAR
 
 ---TODO Dial desc
@@ -63,7 +63,7 @@ function Dial:init(coreProps, lowerLimit, upperLimit, step)
     self._unit = "unit"
     self._counter = gfx.image.new(20, 20, COLOR_CLEAR)
     gfx.pushContext(self._counter)
-        gfx.setColor(COLOR_BG)
+        gfx.setColor(COLOR_1)
         gfx.fillCircleAtPoint(9, 9, 9)
     gfx.popContext(self._counter)
 
@@ -107,6 +107,7 @@ end
 --- Set the visualizer to use.
 ---@param mode enum one of the dial.visualizers options
 function Dial:setMode(mode)
+    local w, h = self:getSize()
     if mode == visualizers.horiCounter then
         self._drawValue = function()
             local counter = self._counter
@@ -114,7 +115,8 @@ function Dial:setMode(mode)
             local spacing = self._spacing
             local x = 0
             gfx.pushContext(self._img)
-                gfx.clear()
+                gfx.setColor(COLOR_CLEAR)
+                gfx.fillRect(0, 0, w, h)
                 for i = 0, self.value - 1 do
                     counter:draw(x, 0)
                     x = x + w_counter + spacing
@@ -128,7 +130,8 @@ function Dial:setMode(mode)
             local spacing = self._spacing
             local y = 0
             gfx.pushContext(self._img)
-                gfx.clear()
+                gfx.setColor(COLOR_CLEAR)
+                gfx.fillRect(0, 0, w, h)
                 for i = 0, self.value - 1 do
                     counter:draw(0, y)
                     y = y + h_counter + spacing
@@ -141,7 +144,8 @@ function Dial:setMode(mode)
             local unit = self._unit
             if val ~= 1 then unit = unit .. "s" end
             gfx.pushContext(self._img)
-                gfx.clear()
+                gfx.setColor(COLOR_CLEAR)
+                gfx.fillRect(0, 0, w, h) --TODO would be nice to call gfx.clear() instead
                 gfx.drawText("*".. val .. " " .. unit .."*", 2, 2)
             gfx.popContext()
         end

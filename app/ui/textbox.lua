@@ -1,6 +1,8 @@
 ---TODO pkg 'textbox' provides a simple textbox UIElement,
 ---     useful for tooltips etc.
 
+--TODO rn this has no distinguishing features from UIElement. rm?
+
 import 'ui/uielement'
 
 -- pkg header: define pkg namespace
@@ -12,6 +14,7 @@ local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
 local d <const> = debugger
+local COLOR_CLEAR <const> = COLOR_CLEAR
 --local externalfunc <const> = somepkg.func --TODO any other external vars go here
 
 ---TODO Textbox desc
@@ -35,9 +38,10 @@ name = "textbox"
 function Textbox:init(coreProps, text)
     Textbox.super.init(self, coreProps) --should always be at top of init func
 
-    self._font = gfx.getFont() --TODO make font config'able
-    if text then self:setText(text)
-    else self:setText(self.name .. " notext") end
+    self._text = self.name .. " no-text"
+    if text then self._text = text end
+
+    --TODO override self.renderText()
 
     self = utils.makeReadOnly(self, "Textbox instance")
 end
@@ -48,23 +52,12 @@ function Textbox:update()
     --d.illustrateBounds(self)
 end
 
---- Set the font to draw text in.
---- If no font is set, textbox uses default-font-at-instantiation.
----@param font playdate.graphics.font
-function Textbox:setFont(font)
-    --TODO check that arg is a font
-    self._font = font
-end
-
 --TODO word wrapping, resizing
 --- Set the label to show on the button
 ---@param text string
 function Textbox:setText(text)
-    gfx.pushContext(self._img)
-        --TODO set font to self._font prior to printing text
-        gfx.clear()
-        gfx.drawText(text, 0, 0)
-    gfx.popContext()
+    self._text = text
+    self:redraw()
 end
 
 -- pkg footer: pack and export the namespace.

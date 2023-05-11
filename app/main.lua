@@ -303,8 +303,8 @@ end
 
 ------- APP START -------
 
-gfx.setBackgroundColor(COLOR_BG)
-gfx.setColor(COLOR_PRIM)
+gfx.setBackgroundColor(COLOR_0) --TODO should be COLOR_CLEAR?
+gfx.setColor(COLOR_1)
 gfx.setImageDrawMode(DRAWMODE_BITMAP)
 splash()
 init()

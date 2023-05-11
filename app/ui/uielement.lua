@@ -71,8 +71,11 @@ function UIElement:init(coreProps)
     h = h // 1
     
     self.name = name
+    self._font = gfx.getFont()
+    self._text = nil
     self._bg = nil -- background
-    self._fg = nil -- foreground
+    self._fg_pic = nil -- non-text foreground
+    self._fg_text = nil -- text foreground
     self._img = gfx.image.new(w, h, COLOR_CLEAR)
     self:setImage(self._img)
 
@@ -108,6 +111,22 @@ function UIElement:init(coreProps)
     end
     self._switch:add()
 
+    --- Prepare the text, to later be drawn onto the element by redraw().
+    self.renderText = function()
+        if not self._isConfigured then d.log("uielement " .. self.name .. "text rendering not set") end
+        if not self._text then d.log("no text to render on " .. self.name) return end
+        local w, h = self:getSize()
+        if not self._fg_text then
+            self._fg_text = gfx.image.new(w, h, COLOR_CLEAR)
+        end
+        gfx.pushContext(self._fg_text)
+            gfx.setColor(COLOR_CLEAR)
+            gfx.fillRect(0, 0, w, h)
+            gfx.setFont(self._font)
+            gfx.draw(2, 2, self._text)
+        gfx.popContext()
+    end
+
     self:setCenter(0, 0) --anchor top-left
 end
 
@@ -123,8 +142,19 @@ function UIElement:redraw()
         gfx.setColor(COLOR_CLEAR)
         gfx.fillRect(0, 0, self.width, self.height)
         if self._bg then self._bg:draw(0,0) end
-        if self._fg then self._fg:draw(0,0) end
+        if self._fg_pic then self._fg_pic:draw(0,0) end
+        if self._text then
+            self.renderText()
+            if self._fg_text then self._fg_text:draw(0,0) end
+        end
     gfx.popContext()
+end
+
+--- Set the font to use for drawing foregrounded text in this element.
+---@param font gfx.font
+function UIElement:setFont(font)
+    self._font = font
+    self:redraw()
 end
 
 --- Set a background for UIElement contents to be drawn on top of.
@@ -132,8 +162,7 @@ end
 ---@param drawable gfx.nineSlice, OR
 ---                  function in the drawInRect(x, y, width, height) format
 function UIElement:setBackground(drawable)
-    local w = self.width
-    local h = self.height
+    local w, h = self:getSize()
     local draw = function(x, y, width, height) end
 
     if type(drawable) == 'function' then
@@ -222,7 +251,7 @@ end
 ---@return integer,integer new coordinates (x1,y1) of the top-left corner
 ---@return integer,integer new coordinates (x2,y2) of the bottom-right corner
 function UIElement:moveTo(x, y, dontMoveChildren)
-    local x_o = self.x; local y_o = self.y
+    local x_o, y_o = self:getPosition()
     UIElement.super.moveTo(self, x, y)
 
     if not dontMoveChildren and self._children then
