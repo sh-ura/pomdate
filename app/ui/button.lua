@@ -12,6 +12,7 @@ local utils <const> = utils
 local d <const> = debugger
 local COLOR_BG <const> = COLOR_BG
 local COLOR_PRIM <const> = COLOR_PRIM
+local COLOR_CLEAR <const> = COLOR_CLEAR
 
 ---@class Button is a UI element governing some behaviour if selected.
 --- A button, when pressed, may modify global state indicators and animate itself.
@@ -37,7 +38,7 @@ function Button:init(coreProps, invisible)
     self._isVisible = true
     if invisible then
         self._isVisible = false
-        self._img = gfx.image.new(1,1)
+        self._img = gfx.image.new(1, 1, COLOR_CLEAR)
         self:setImage(self._img)
     end
 
@@ -78,13 +79,11 @@ end
 --- Set the label to show on the button
 ---@param label string
 function Button:setLabel(label)
-    gfx.pushContext(self._img)
-        gfx.clear()
-        gfx.setColor(COLOR_BG)
-        gfx.fillRect(self:getBounds())
-        gfx.setColor(COLOR_PRIM)
+    self._fg = gfx.image.new(self.width, self.height, COLOR_CLEAR)
+    gfx.pushContext(self._fg)
         gfx.drawText("*"..label.."*", 2, 2) -- TODO refactor
     gfx.popContext()
+    self:redraw()
 end
 
 local _ENV = _G

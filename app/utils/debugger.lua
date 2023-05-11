@@ -13,6 +13,7 @@ local fmod = math.fmod -- TODO may be able to replace this w % modulo lua operat
 
 local W_SCREEN <const> = W_SCREEN
 local H_SCREEN <const> = H_SCREEN
+local COLOR_CLEAR <const> = COLOR_CLEAR
 local W_LEFT_MARGIN <const> = 2
 local H_LINE <const> = 16
 local NUM_LINES <const> = 15 -- 240/16 (screen height / line height)
@@ -20,10 +21,10 @@ local NUM_LINES <const> = 15 -- 240/16 (screen height / line height)
 local _ENV = P
 name = "debugger"
 
-local cMsgs = 0                                      -- logged message count
-local logImg = gfx.image.new(W_SCREEN, H_SCREEN)     -- img containing log
-local illImg = gfx.image.new(W_SCREEN, H_SCREEN)     -- img containing illustrations
-local enabled = true                                 -- true by default. true if debugger is enabled
+local cMsgs = 0                                                 -- logged message count
+local logImg = gfx.image.new(W_SCREEN, H_SCREEN, COLOR_CLEAR)   -- img containing log
+local illImg = gfx.image.new(W_SCREEN, H_SCREEN, COLOR_CLEAR)   -- img containing illustrations
+local enabled = true                                            -- true by default. true if debugger is enabled
 
 --TODO distinguish logWarn from logDebug + allow dev to disable
 --      drawing one or the other log

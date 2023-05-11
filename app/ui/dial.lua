@@ -14,6 +14,7 @@ local utils <const> = utils
 local d <const> = debugger
 local COLOR_BG <const> = COLOR_BG
 local COLOR_PRIM <const> = COLOR_PRIM
+local COLOR_CLEAR <const> = COLOR_CLEAR
 
 ---TODO Dial desc
 class('Dial').extends(UIElement)
@@ -60,7 +61,7 @@ function Dial:init(coreProps, lowerLimit, upperLimit, step)
     if not self.value then self:setValue(0) end
 
     self._unit = "unit"
-    self._counter = gfx.image.new(20, 20)
+    self._counter = gfx.image.new(20, 20, COLOR_CLEAR)
     gfx.pushContext(self._counter)
         gfx.setColor(COLOR_BG)
         gfx.fillCircleAtPoint(9, 9, 9)

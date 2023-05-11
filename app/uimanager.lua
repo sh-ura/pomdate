@@ -3,6 +3,7 @@
 ---     but is not intended to modify any global vars
 
 import 'CoreLibs/crank'
+import 'CoreLibs/nineslice'
 import 'ui/button'
 import 'ui/list'
 import 'ui/dial'
@@ -27,6 +28,7 @@ local B <const> = pd.kButtonB
 local pairs <const> = pairs
 local ipairs <const> = ipairs
 local crankhandler <const> = crankhandler
+local COLOR_BG <const> = COLOR_BG
 
 local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
 
@@ -73,6 +75,10 @@ local function init(timers)
             local button = Button({name .. "Button", wButton, hButton})
             timerSelectButtons[name] = button
             button.isPressed = function() return pd.buttonJustPressed(A) end
+            button:setBackground( function(x, y, width, height)
+                gfx.setColor(COLOR_BG)
+                gfx.fillRect(x, y, width, height)
+            end)
             button:setLabel(label)
 
             local dial = Dial({name .. "Dial", 80, 40}, 1, 60)

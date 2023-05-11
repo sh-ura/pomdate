@@ -12,6 +12,7 @@ local gfx <const> = pd.graphics
 local utils <const> = utils
 local floor <const> = math.floor -- TODO may be able to replace this w // floor division lua operator?
 local STATES <const> = STATES
+local COLOR_CLEAR <const> = COLOR_CLEAR
 
 -- Timer packs a timer with its UI.
 class('Timer').extends(gfx.sprite)
@@ -50,7 +51,7 @@ function Timer:init(name)
     self.name = name
 
     self._duration = 0.0 -- float timer duration in msec
-    self._img = gfx.image.new(200,150)
+    self._img = gfx.image.new(200, 150, COLOR_CLEAR)
     self:setImage(self.img)
     
     self._timer = nil -- "value-based" pd timer w linear interpolation

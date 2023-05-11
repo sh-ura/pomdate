@@ -22,6 +22,7 @@ local insert <const> = table.insert
 
 local W_SCREEN <const> = W_SCREEN
 local H_SCREEN <const> = H_SCREEN
+local COLOR_CLEAR <const> = COLOR_CLEAR
 
 --- UIElement is an interactive sprite that can parent other UIElements.
 --- It can be an abstract class for more specialized UI components, or
@@ -70,7 +71,9 @@ function UIElement:init(coreProps)
     h = h // 1
     
     self.name = name
-    self._img = gfx.image.new(w, h)
+    self._bg = nil -- background
+    self._fg = nil -- foreground
+    self._img = gfx.image.new(w, h, COLOR_CLEAR)
     self:setImage(self._img)
 
     --TODO _isConfigured should be a table of checks since many things need configuring
@@ -114,6 +117,47 @@ function UIElement:update()
     --debugger.bounds(self)
 end
 
+--- Redraw the UIElement's background and foreground onto its sprite.
+function UIElement:redraw()
+    gfx.pushContext(self._img)
+        gfx.setColor(COLOR_CLEAR)
+        gfx.fillRect(0, 0, self.width, self.height)
+        if self._bg then self._bg:draw(0,0) end
+        if self._fg then self._fg:draw(0,0) end
+    gfx.popContext()
+end
+
+--- Set a background for UIElement contents to be drawn on top of.
+--- Background may need to be redrawn into sprite img by extending classes.
+---@param drawable gfx.nineSlice, OR
+---                  function in the drawInRect(x, y, width, height) format
+function UIElement:setBackground(drawable)
+    local w = self.width
+    local h = self.height
+    local draw = function(x, y, width, height) end
+
+    if type(drawable) == 'function' then
+        draw = drawable
+    elseif drawable.drawInRect then
+        if drawable.getSize then                
+            local w_bg, h_bg = drawable:getSize()
+            if w_bg >= w or h_bg >= h then
+                d.log("can't stretch background for " .. self.name)
+                return
+            end
+        end
+        draw = drawable.drawInRect
+    else
+        d.log("background for " .. self.name .. "not drawable")
+    end
+
+    self._bg = gfx.image.new(w, h, COLOR_CLEAR)
+    gfx.pushContext(self._bg)
+        draw(0, 0, w, h)
+    gfx.popContext()
+    self:redraw()
+end
+
 --- Transitions the element into visibility/position.
 function UIElement:transitionIn()
     --if not self._isConfigured then d.log("uielement '" .. self.name .. "' transition-in anim not set") end
@@ -138,10 +182,9 @@ end
 ---@return table of successfully added child UIElements
 ---SPEC EFFECT  overrides each child's ZIndex to be relative to parent above its new parent
 function UIElement:addChildren(e, parentEnables)
-    --TODO want to check e:isa(UIElement) but isa seems to be unstable in 1.12.3?
-    if not (e and type(e) == 'table') then
+    if not e or type(e) == 'boolean' then
         d.log("no children to add to " .. self.name)
-        return
+        return {}
     end
 
     local newChildren = {}
