@@ -94,7 +94,7 @@ function Button:update()
     else
         self:setImage(self._img) --revert img when button is not selected
     end
-    --debugger.bounds(self)
+    d.illustrateBounds(self)
 end
 
 --- Set the label to show on the button

@@ -33,6 +33,8 @@ local crankhandler <const> = crankhandler
 local COLOR_0 <const> = COLOR_0
 
 local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
+local BUTTON_WIDTH <const> = 100
+local BUTTON_HEIGHT <const> = 30
 
 --TODO rm most of these - those that are not needed outside of specific funcs
 local timersMenu = nil  -- contains the buttons for selecting timers --TODO move to init
@@ -67,14 +69,10 @@ local function init(timers)
     ---                 in {t, label} k-v tuples,
     ---                 in the sequence they should appear.
     local function fillTimersMenu (list, timers)
-        local n = 0
-        n = #timers
-        local wButton, hButton = list:getMaxContentDim(n)
-
         local function makeTimerSelector(t, label)
             local name = t.name
 
-            local button = Button({name .. "Button", wButton, hButton})
+            local button = Button({name .. "Button", BUTTON_WIDTH, BUTTON_HEIGHT})
             timerSelectButtons[name] = button
             button.isPressed = function() return pd.buttonJustPressed(A) end
             button:setBackground( function(x, y, width, height)
@@ -115,7 +113,11 @@ local function init(timers)
         end
     end
 
-    timersMenu = List({"timersMenu", 120, 150})
+    local ntimers = #timers
+    timersMenu = List({
+        "timersMenu", BUTTON_WIDTH + MARGIN * 2,
+        (BUTTON_HEIGHT + MARGIN) * ntimers + MARGIN
+    })
     timersMenu:setEnablingCriteria(function () return state == STATES.MENU end)
     -- TODO when configmenu + menuList, remove the following line
     timersMenu.isSelected = function() return state == STATES.MENU end
@@ -125,7 +127,7 @@ local function init(timers)
 
     local paused = false --TODO instead of using this local var, access paused state via STATE or currentTimer.isPaused()
     
-    toMenuButton = Button({"toMenuButton"}, 'invisible')
+    toMenuButton = Button({"toMenuButton", BUTTON_HEIGHT, 50})
     toMenuButton:setEnablingCriteria(function() return
         state == STATES.RUN_TIMER 
         or state == STATES.DONE_TIMER
@@ -135,6 +137,16 @@ local function init(timers)
         paused = false
         toMenu()
     end
+    toMenuButton:setBackground( function(x, y, width, height)
+        gfx.setColor(COLOR_0)
+        gfx.fillRoundRect(x, y, width, height, width/2)
+    end)
+    toMenuButton:setLabel("M")
+    toMenuButton:setPosition(newPoint(280,210))
+    toMenuButton:offsetPositions({
+        disabled = newVector(0,50),
+        pressed = newVector(0,50)
+    })
     toMenuButton:forceConfigured()
 
     pauseButton = Button({"pauseButton"}, 'invisible')
