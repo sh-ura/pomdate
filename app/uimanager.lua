@@ -25,6 +25,8 @@ local d <const> = debugger
 local gfx <const> = pd.graphics
 local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
+local newVector <const> = utils.newVector
+local newPoint <const> = utils.newPoint
 local pairs <const> = pairs
 local ipairs <const> = ipairs
 local crankhandler <const> = crankhandler
@@ -80,6 +82,7 @@ local function init(timers)
                 gfx.fillRoundRect(x, y, width, height, height/2)
             end)
             button:setLabel(label)
+            button:offsetPositions({selected = newVector(-20,0)})
 
             local dial = Dial({name .. "Dial", 80, 40}, 1, 60)
             durationDials[name] = dial
@@ -94,6 +97,8 @@ local function init(timers)
             dial:setUnit("min")
             dial:setValue(initialDurations[name])
             dial:setZIndex(60)
+            dial:setPosition(newPoint(MARGIN, 60))
+            dial:offsetPositions({disabled = newVector(-50,0)})
 
             -- TODO move func def below to be local func more visible at root of this file
             button.pressedAction = function ()
@@ -112,14 +117,9 @@ local function init(timers)
     timersMenu:setEnablingCriteria(function () return state == STATES.MENU end)
     -- TODO when configmenu + menuList, remove the following line
     timersMenu.isSelected = function() return state == STATES.MENU end
+    timersMenu:setPosition(newPoint(250, MARGIN))
+    timersMenu:offsetPositions({disabled = newVector(50, 0)})
     fillTimersMenu(timersMenu, timers)
-    timersMenu:moveTo(250, 60)
-
-    --TODO mv to fillTimersMenu
-    for _, dial in pairs(durationDials) do
-        dial:moveTo(MARGIN, 60)
-    end
-
 
     local paused = false --TODO instead of using this local var, access paused state via STATE or currentTimer.isPaused()
     

@@ -3,6 +3,8 @@
 --- TODO may want to add justSelected and justDeselected to
 ---     improve efficiency and permit custom anims
 
+import 'CoreLibs/easing'
+import 'CoreLibs/animator'
 import 'ui/switch'
 
 -- pkg header: define pkg namespace
@@ -10,10 +12,11 @@ local P = {}; local _G = _G
 uielement = {}
 
 local pd <const> = playdate
-local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
 local d <const> = debugger
+local newVector <const> = utils.newVector
+local newPoint <const> = utils.newPoint
 local Switch <const> = Switch
 local type <const> = type
 local pairs <const> = pairs
@@ -23,20 +26,37 @@ local insert <const> = table.insert
 local W_SCREEN <const> = W_SCREEN
 local H_SCREEN <const> = H_SCREEN
 local COLOR_CLEAR <const> = COLOR_CLEAR
+local ANIM_DURATION <const> = UI_ANIM_DURATION / 400
+local ANIM_DELAY <const> = UI_ANIM_DELAY
+
+-- configure UIElement position transformation math here
+-- For all easing functions: func(t,b,c,d) => r
+-- t = elapsed time
+-- b = val at beginning
+-- c = change == val at ending - beginning
+-- d = duration (total time)
+-- r = next value
+local ease <const> = pd.easingFunctions.linear
 
 --- UIElement is an interactive sprite that can parent other UIElements.
 --- It can be an abstract class for more specialized UI components, or
 ---     be the template for simple UIElement objects such as groups/"folders".
 class('UIElement').extends(gfx.sprite)
 local UIElement <const> = UIElement
-local _ENV = P      -- enter pkg namespace
+local _ENV = P -- enter pkg namespace
 name = "uielement"
 
---local localstatic <const> = val --TODO non-imported statics go here
-
---local localvar = val --TODO local vars go here
-
---local function localfunc() end --TODO local funcs go here
+--- Animate element into a new position
+---@param self UIElement
+---@param destination pd.geometry.point
+---@param origin pd.geometry.point (optional) defaults to current position
+local function reposition(self, destination, origin)
+    if not origin then origin = newPoint(self:getPosition()) end
+    self:setAnimator( gfx.animator.new(
+        ANIM_DURATION * origin:distanceToPoint(destination), --TODO need to make this val tiny
+        origin, destination, ease, ANIM_DELAY
+    ))
+end
 
 --- Initializes a new UIElement sprite.
 ---@param coreProps table containing the following core properties, named or array-indexed:
@@ -45,20 +65,30 @@ name = "uielement"
 ---         'h' or 3: (integer; optional) initial height, defaults to screen height
 function UIElement:init(coreProps)
     UIElement.super.init(self)
+    self:setCenter(0, 0) --anchor top-left
 
     -- unpack coreProps
     local name, w, h
     if coreProps then
-        if coreProps.name then name = coreProps.name
-        elseif coreProps[1] then name = coreProps[1] end
+        if coreProps.name then
+            name = coreProps.name
+        elseif coreProps[1] then
+            name = coreProps[1]
+        end
 
-        if coreProps.w then w = coreProps.w
-        elseif coreProps[2] then w = coreProps[2] end
+        if coreProps.w then
+            w = coreProps.w
+        elseif coreProps[2] then
+            w = coreProps[2]
+        end
 
-        if coreProps.h then h = coreProps.h
-        elseif coreProps[3] then h = coreProps[3] end
+        if coreProps.h then
+            h = coreProps.h
+        elseif coreProps[3] then
+            h = coreProps[3]
+        end
     end
-    if not name or name == "" or type(name) ~= 'string'  then
+    if not name or name == "" or type(name) ~= 'string' then
         name = "unnamed-UIElement"
     end
     if not w or w == 0 or type(w) ~= 'number' then
@@ -69,12 +99,23 @@ function UIElement:init(coreProps)
     end
     w = w // 1 -- ensure int
     h = h // 1
-    
     self.name = name
+
+    -- position props
+    self._posn = {
+        default = newPoint(200, 100),
+        offsets = {
+            disabled = newVector(0, 0),
+            selected = newVector(0, 0)
+        }
+    }
+    self._anim_pos = nil
+
+    -- visualization props
     self._font = gfx.getFont()
     self._text = nil
-    self._bg = nil -- background
-    self._fg_pic = nil -- non-text foreground
+    self._bg = nil      -- background
+    self._fg_pic = nil  -- non-text foreground
     self._fg_text = nil -- text foreground
     self._img = gfx.image.new(w, h, COLOR_CLEAR)
     self:setImage(self._img)
@@ -83,7 +124,7 @@ function UIElement:init(coreProps)
     self._isConfigured = false
     local configWarningComplete = false
     --- Log, once, that the UIElement not had been configured.
-    --- Can optionally call in update(). Or ignore completely. 
+    --- Can optionally call in update(). Or ignore completely.
     self._checkConfig = function()
         if not self._isConfigured and not configWarningComplete then
             d.log("uielement '" .. self.name .. "'' not configured")
@@ -91,21 +132,22 @@ function UIElement:init(coreProps)
         end
     end
 
-    self._parent = "nil" -- this backref should only be used in debugging
-    self._children = {} -- list of UIElements this panel parents
+    self._parent = "nil"    -- this backref should only be used in debugging
+    self._children = {}     -- list of UIElements this panel parents
     self._i_selectChild = 1 -- index of currently selected child
 
     --- Determines if this UIElement is selected, ie. "focused on".
     ---@return boolean true if the element's selection criteria are met
-    self.isSelected = function ()
+    self.isSelected = function()
         if not self._isConfigured then d.log("uielement '" .. self.name .. "' select criteria not set") end
         return true
     end
+    self._wasSelected = false
 
     --- Enables/disables this UIElement.
     --- If setEnablingCriteria() is not called on this element, it will remain disabled by default.
     self._switch = Switch(self)
-    self._switch.shouldClose = function ()
+    self._switch.shouldClose = function()
         if not self._isConfigured then d.log("uielement '" .. self.name .. "' disabled! Set enabling conditions.") end
         return false
     end
@@ -114,39 +156,53 @@ function UIElement:init(coreProps)
     --- Prepare the text, to later be drawn onto the element by redraw().
     self.renderText = function()
         if not self._isConfigured then d.log("uielement " .. self.name .. "text rendering not set") end
-        if not self._text then d.log("no text to render on " .. self.name) return end
+        if not self._text then
+            d.log("no text to render on " .. self.name)
+            return
+        end
         local w, h = self:getSize()
         if not self._fg_text then
             self._fg_text = gfx.image.new(w, h, COLOR_CLEAR)
         end
         gfx.pushContext(self._fg_text)
-            gfx.setColor(COLOR_CLEAR)
-            gfx.fillRect(0, 0, w, h)
-            gfx.setFont(self._font)
-            gfx.draw(2, 2, self._text)
+        gfx.setColor(COLOR_CLEAR)
+        gfx.fillRect(0, 0, w, h)
+        gfx.setFont(self._font)
+        gfx.draw(2, 2, self._text)
         gfx.popContext()
     end
-
-    self:setCenter(0, 0) --anchor top-left
 end
 
 ---TODO desc
 function UIElement:update()
     UIElement.super.update(self)
+
+    -- handle animation to position on screen, depending on state of UI
+    if self:isSelected() then
+        if not self._wasSelected then
+            reposition(self, self._posn.default + self._posn.offsets.selected)
+        end
+        self._wasSelected = true
+    else
+        if self._wasSelected then
+            reposition(self, self._posn.default)
+        end
+        self._wasSelected = false
+    end
     --debugger.bounds(self)
 end
 
 --- Redraw the UIElement's background and foreground onto its sprite.
 function UIElement:redraw()
     gfx.pushContext(self._img)
-        gfx.setColor(COLOR_CLEAR)
-        gfx.fillRect(0, 0, self.width, self.height)
-        if self._bg then self._bg:draw(0,0) end
-        if self._fg_pic then self._fg_pic:draw(0,0) end
-        if self._text then
-            self.renderText()
-            if self._fg_text then self._fg_text:draw(0,0) end
-        end
+    gfx.setColor(COLOR_CLEAR)
+    gfx.fillRect(0, 0, self.width, self.height)
+    if self._bg then self._bg:draw(0, 0) end
+    if self._fg_pic then self._fg_pic:draw(0, 0) end
+    if self._text then
+        self.renderText()
+        if self._fg_text then self._fg_text:draw(0, 0) end
+    end
     gfx.popContext()
 end
 
@@ -163,12 +219,13 @@ end
 ---                  function in the drawInRect(x, y, width, height) format
 function UIElement:setBackground(drawable)
     local w, h = self:getSize()
-    local draw = function(x, y, width, height) end
+    local draw = function(x, y, width, height)
+    end
 
     if type(drawable) == 'function' then
         draw = drawable
     elseif drawable.drawInRect then
-        if drawable.getSize then                
+        if drawable.getSize then
             local w_bg, h_bg = drawable:getSize()
             if w_bg >= w or h_bg >= h then
                 d.log("can't stretch background for " .. self.name)
@@ -182,27 +239,46 @@ function UIElement:setBackground(drawable)
 
     self._bg = gfx.image.new(w, h, COLOR_CLEAR)
     gfx.pushContext(self._bg)
-        draw(0, 0, w, h)
+    draw(0, 0, w, h)
     gfx.popContext()
     self:redraw()
 end
 
---- Transitions the element into visibility/position.
-function UIElement:transitionIn()
-    --if not self._isConfigured then d.log("uielement '" .. self.name .. "' transition-in anim not set") end
-    for _, child in ipairs(self._children) do
-        -- add special additional child tranforms here
+--- Set the element's default position on the screen when the element is visible.
+--- To configure behaviour-specific relocation animations, see offsetPositions()
+---@param point pd.geometry.point default position on the screen
+function UIElement:setPosition(point)
+    if point then
+        self._posn.default = point
     end
-    self:add()
 end
 
---- Transitions the element out of visibility.
-function UIElement:transitionOut()
-    --if not self._isConfigured then d.log("uielement '" .. self.name .. "' transition-out anim not set") end
-    for _, child in ipairs(self._children) do
-        -- add special additional child tranforms here
+--- Configure the relocation of the element upon change in state/behaviour.
+--- If an offset of a given name already exists for this element, the new vector will
+---     be added to it, rather than overriding it entirely.
+--- Thus you may wish to call resetOffsets() priorly.
+---@param vectors table of pd.geometry.vector2D indexed by name, ex. "disabled", "selected"
+function UIElement:offsetPositions(vectors)
+    if vectors and type(vectors) == "table" then
+        for name, v in pairs(vectors) do
+            v_o = self._posn.offsets[name]
+            if not v_o then v_o = newVector(0,0) end
+            self._posn.offsets[name] = v_o + v
+        end
     end
-    self:remove()
+end
+
+--- Reset position offset(s) to the zero vector.
+---@param offsets string OR array of string offset names, ex. {"disabled", "selected"}
+function UIElement:resetOffsets(names)
+    local zero = newVector(0,0)
+    if type(names) == 'table' then
+        for _, name in ipairs(offsets) do
+            if self._posn.offsets[name] then self._posn.offsets[name] = zero end
+        end
+    elseif type(names) == 'string' then
+        if self._posn.offsets[names] then self._posn.offsets[names] = zero end
+    end
 end
 
 --- Parents another UIElement.
@@ -219,7 +295,7 @@ function UIElement:addChildren(e, parentEnables)
     local newChildren = {}
     local function addChild(element)
         if not element:isa(UIElement) then
-            local name = element.name 
+            local name = element.name
             if not name then name = 'no_name' end
             d.log("element " .. name .. " is not a UIElement; can't be child to " .. self.name)
             return
@@ -232,10 +308,11 @@ function UIElement:addChildren(e, parentEnables)
             element:setEnablingCriteria(function() return self:isEnabled() end)
         end
         element:moveTo(self.x + element.x, self.y + element.y)
-        element:setZIndex(element:getZIndex() + self:getZIndex())    
+        element:setZIndex(element:getZIndex() + self:getZIndex())
     end
 
-    if e.isa then addChild(e) -- a single playdate Object
+    if e.isa then
+        addChild(e)           -- a single playdate Object
     else
         for _, element in pairs(e) do
             addChild(element)
@@ -244,14 +321,30 @@ function UIElement:addChildren(e, parentEnables)
     return newChildren
 end
 
+--- Add element to global sprites list and animate it into position.
+function UIElement:add()
+    UIElement.super.add(self)
+    reposition(self, self._posn.default, self._posn.default + self._posn.offsets.disabled)
+end
+
+function UIElement:remove()
+    UIElement.super.remove(self)
+    self._wasSelected = false
+end
+
 --- Moves the UIElement and its children
----@param x integer x-position
+---@param xOrP integer x-position OR pd.geometry.point OR pd.geometry.vector2D
 ---@param y integer y-position
 ---@param dontMoveChildren boolean (optional) false by default, set to true if children should be left in position
 ---@return integer,integer new coordinates (x1,y1) of the top-left corner
 ---@return integer,integer new coordinates (x2,y2) of the bottom-right corner
-function UIElement:moveTo(x, y, dontMoveChildren)
+function UIElement:moveTo(xOrP, y, dontMoveChildren)
     local x_o, y_o = self:getPosition()
+    local x = xOrP
+    if type(xOrP) ~= "number" then
+        x = xOrP.x
+        y = xOrP.y
+    end
     UIElement.super.moveTo(self, x, y)
 
     if not dontMoveChildren and self._children then

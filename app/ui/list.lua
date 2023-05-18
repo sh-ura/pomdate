@@ -10,6 +10,7 @@ local pd <const> = playdate
 local gfx <const> = pd.graphics
 local utils <const> = utils
 local d <const> = debugger
+local newPoint <const> = utils.newPoint
 local ipairs <const> = ipairs
 local abs <const> = math.abs
 local type <const> = type
@@ -49,8 +50,8 @@ function List:init(coreProps, orientiation, spacing)
 
     self._spacing = spacing
     self._orientation = orientiation
-    self._nextX = self.x + spacing
-    self._nextY = self.y + spacing
+    self._nextLocalX = spacing -- next available x pos, relative to this List's top-left corner
+    self._nextLocalY = spacing -- next available y pos, relative to this List's top-left corner
 
     -- orientation-based orientations
     -- could be split into orientation-specific subclasses,
@@ -64,8 +65,13 @@ function List:init(coreProps, orientiation, spacing)
         ---@return integer,integer new coordinates (x1,y1) of the top-left corner
         ---@return integer,integer new coordinates (x2,y2) of the bottom-right corner
         self._layout = function(child)
-            local x1, y1, x2, y2 = child:moveTo(self._nextX, self._nextY)
-            self._nextX = x2 + self._spacing
+            x1 = self._posn.default.x + self._nextLocalX
+            y1 = self._posn.default.y + self._nextLocalY
+            x2 = x1 + child.width
+            y2 = y1 + child.height
+            child:setPosition(newPoint(x1, y1))
+            child:offsetPositions({disabled = self._posn.offsets.disabled})
+            self._nextLocalX = x2 + self._spacing
             return x1, y1, x2, y2 
         end
     else -- default to vertical layout
@@ -78,8 +84,13 @@ function List:init(coreProps, orientiation, spacing)
         ---@return integer,integer new coordinates (x1,y1) of the top-left corner
         ---@return integer,integer new coordinates (x2,y2) of the bottom-right corner
         self._layout = function(child)
-            local x1, y1, x2, y2 = child:moveTo(self._nextX, self._nextY)
-            self._nextY = y2 + self._spacing
+            x1 = self._posn.default.x + self._nextLocalX
+            y1 = self._posn.default.y + self._nextLocalY
+            x2 = x1 + child.width
+            y2 = y1 + child.height
+            child:setPosition(newPoint(x1, y1))
+            child:offsetPositions({disabled = self._posn.offsets.disabled})
+            self._nextLocalY = y2 + self._spacing
             return x1, y1, x2, y2 
         end
     end
@@ -190,22 +201,6 @@ function List:getMaxContentDim(nNewElements)
     end
 
     return w , h 
-end
-
---- Moves the UIElement and its children
----@param x integer x-position
----@param y integer y-position
----@param dontMoveChildren boolean (optional) false by default, set to true if children should be left in position
----@return integer,integer new coordinates (x1,y1) of the top-left corner
----@return integer,integer new coordinates (x2,y2) of the bottom-right corner
-function List:moveTo(x, y, dontMoveChildren)
-    local x_o = self.x; local y_o = self.y
-    local x, y, x2, y2 = List.super.moveTo(self, x, y)
-
-    if self._nextX then self._nextX = self._nextX + x - x_o end
-    if self._nextY then self._nextY = self._nextY + y - y_o end
-
-    return x, y, x2, y2
 end
 
 --- Selects the next child in the list.

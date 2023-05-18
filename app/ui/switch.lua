@@ -35,11 +35,11 @@ function update()
     for _, switch in pairs(activeSwitches) do
         if not switch.isClosed and switch.shouldClose() then
             --d.log("closing switch " .. switch.name)
-            switch._attachedTo:transitionIn()
+            switch._attachedTo:add()
             switch.isClosed = true
         elseif switch.isClosed and not switch.shouldClose() then
             --d.log("opening switch " .. switch.name)
-            switch._attachedTo:transitionOut()
+            switch._attachedTo:remove()
             switch.isClosed = false
         end
     end

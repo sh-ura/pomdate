@@ -19,3 +19,5 @@ STATES = {
     RUN_TIMER   = 4,
     DONE_TIMER  = 5
 }
+UI_ANIM_DURATION = 1500
+UI_ANIM_DELAY = 0 -- base delay in msec on state-based animations after state change

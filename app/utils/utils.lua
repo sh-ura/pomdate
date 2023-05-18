@@ -1,3 +1,4 @@
+local pd = playdate
 local getmetatable = getmetatable
 local setmetatable = setmetatable
 local error = error
@@ -66,6 +67,9 @@ function makeReadOnly(t, name)
 
     return proxy
 end
+
+newVector = pd.geometry.vector2D.new
+newPoint = pd.geometry.point.new
 
 -- prepare package for export, in the global env --
 local _ENV = _G
