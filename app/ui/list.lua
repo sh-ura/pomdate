@@ -86,11 +86,12 @@ end
 --- Not all lists/list-children make use of this functionality.
 --- Depends on what the children's isSelected criteria are configured to.
 function List:update()
+    if not List.super.update(self) then return end
+
     if self.isSelected() then
         if pd.buttonJustPressed(self._inputPrev) then self:prev()
         elseif pd.buttonJustPressed(self._inputNext) then self:next() end
     end
-    List.super.update(self)
     --d.illustrateBounds(self)
 end
 

@@ -48,7 +48,7 @@ end
 
 ---TODO desc
 function Textbox:update()
-    Textbox.super.update(self)
+    if not Textbox.super.update(self) then return end
     --d.illustrateBounds(self)
 end
 

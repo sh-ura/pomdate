@@ -46,19 +46,6 @@ local UIElement <const> = UIElement
 local _ENV = P -- enter pkg namespace
 name = "uielement"
 
---- Animate element into a new position
----@param self UIElement
----@param destination pd.geometry.point
----@param origin pd.geometry.point (optional) defaults to current position
-local function reposition(self, destination, origin)
-    if not origin then origin = newPoint(self:getPosition()) end
-    self._posn.animator = gfx.animator.new(
-        ANIM_DURATION * origin:distanceToPoint(destination), --TODO need to make this val tiny
-        origin, destination, ease, ANIM_DELAY
-    )
-    self:setAnimator(self._posn.animator)
-end
-
 --- Initializes a new UIElement sprite.
 ---@param coreProps table containing the following core properties, named or array-indexed:
 ---         'name' or 1: (string) button name for debugging
@@ -184,12 +171,12 @@ function UIElement:update()
     -- handle animation to position on screen, depending on state of UI
     if self:isSelected() then
         if not self._wasSelected then
-            reposition(self, self._posn.default + self._posn.offsets.selected)
+            self:reposition(self._posn.default + self._posn.offsets.selected)
         end
         self._wasSelected = true
     else
         if self._wasSelected then
-            reposition(self, self._posn.default)
+            self:reposition(self._posn.default)
         end
         self._wasSelected = false
     end
@@ -293,6 +280,18 @@ function UIElement:resetOffsets(names)
     end
 end
 
+--- Animate element into a new position
+---@param destination pd.geometry.point
+---@param origin pd.geometry.point (optional) defaults to current position
+function UIElement:reposition(destination, origin)
+    if not origin then origin = newPoint(self:getPosition()) end
+    self._posn.animator = gfx.animator.new(
+        ANIM_DURATION * origin:distanceToPoint(destination), --TODO need to make this val tiny
+        origin, destination, ease, ANIM_DELAY
+    )
+    self:setAnimator(self._posn.animator)
+end
+
 --- Parents another UIElement.
 ---@param e table of child UIElements, or a single UIElement
 ---@param parentEnables boolean (option) child is enabled/disabled when parent is enabled/disabled
@@ -336,11 +335,11 @@ end
 --- Add element to global sprites list and animate it into position.
 function UIElement:add()
     UIElement.super.add(self)
-    reposition(self, self._posn.default, self._posn.default + self._posn.offsets.disabled)
+    self:reposition(self._posn.default, self._posn.default + self._posn.offsets.disabled)
 end
 
 function UIElement:remove()
-    reposition(self, self._posn.default + self._posn.offsets.disabled)
+    self:reposition(self._posn.default + self._posn.offsets.disabled)
     self._posn.arrivalCallback = function()
         UIElement.super.remove(self)
         self._wasSelected = false

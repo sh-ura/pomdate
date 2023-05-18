@@ -83,6 +83,8 @@ end
 
 ---TODO desc
 function Dial:update()
+    if not Dial.super.update(self) then return end
+    
     local val = self.value
     -- only redraw if val has changed
     if val ~= self._prevValue then self._drawValue() end
@@ -99,8 +101,6 @@ function Dial:update()
             self.value = upp
         end
     end
-
-    Dial.super.update(self)
     --d.illustrateBounds(self)
 end
 

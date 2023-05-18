@@ -10,6 +10,7 @@ local pd <const> = playdate
 local gfx <const> = pd.graphics
 local utils <const> = utils
 local d <const> = debugger
+local newVector <const> = utils.newVector
 local centered = kTextAlignment.center
 local COLOR_0 <const> = COLOR_0
 local COLOR_1 <const> = COLOR_1
@@ -51,6 +52,7 @@ function Button:init(coreProps, invisible)
     self.pressedAction = function ()
         if not self._isConfigured then d.log("button '" .. self.name .. "' pressedAction not set") end
     end
+    self._posn.offsets.pressed = newVector(0,0)
 
     --- Prepare the text, to later be drawn onto the element with redraw().
     self.renderText = function()
@@ -77,18 +79,21 @@ end
 
 --- Updates the button UIElement.
 function Button:update()
+    if not Button.super.update(self) then return end
+    
     if self.isSelected() then
         if self._isVisible then
             self:setImage(self._img:invertedImage()) --invert img when button is selected
         end
         if self.isPressed() then
             --d.log(self.name .. " is pressed")
-            self.pressedAction()
+            self:reposition(self._posn.default + self._posn.offsets.pressed)
+            self._posn.animator.reverses = true
+            self._posn.arrivalCallback = self.pressedAction
         end 
     else
         self:setImage(self._img) --revert img when button is not selected
     end
-    Button.super.update(self)
     --debugger.bounds(self)
 end
 

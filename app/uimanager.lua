@@ -82,7 +82,10 @@ local function init(timers)
                 gfx.fillRoundRect(x, y, width, height, height/2)
             end)
             button:setLabel(label)
-            button:offsetPositions({selected = newVector(-20,0)})
+            button:offsetPositions({
+                selected = newVector(-20,0),
+                pressed = newVector(0,0)
+            })
 
             local dial = Dial({name .. "Dial", 80, 40}, 1, 60)
             durationDials[name] = dial
@@ -104,7 +107,6 @@ local function init(timers)
             button.pressedAction = function ()
                 toRun(t, dial.value)
             end
-            
             return button
         end
 
