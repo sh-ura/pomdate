@@ -59,39 +59,21 @@ function List:init(coreProps, orientiation, spacing)
     if self._orientation == orientations.horizontal then
         self._inputPrev = LEFT
         self._inputNext = RIGHT
-        
-        --- Move a child into position in the list
-        ---@param child UIElement to lay out
-        ---@return integer,integer new coordinates (x1,y1) of the top-left corner
-        ---@return integer,integer new coordinates (x2,y2) of the bottom-right corner
-        self._layout = function(child)
-            x1 = self._posn.default.x + self._nextLocalX
-            y1 = self._posn.default.y + self._nextLocalY
-            x2 = x1 + child.width
-            y2 = y1 + child.height
-            child:setPosition(newPoint(x1, y1))
-            child:offsetPositions({disabled = self._posn.offsets.disabled})
+        --- Prepare the next available position in the list
+        ---@param x2 integer bottom-right corner of most recent child
+        ---@param y2 integer bottom-right corner of most recent child
+        self._setNextLocalXY = function(x2, y2)
             self._nextLocalX = x2 + self._spacing
-            return x1, y1, x2, y2 
         end
     else -- default to vertical layout
         self._orientation = orientations.vertical
         self._inputPrev = UP
         self._inputNext = DOWN
-
-        --- Move a child into position in the list
-        ---@param child UIElement to lay out
-        ---@return integer,integer new coordinates (x1,y1) of the top-left corner
-        ---@return integer,integer new coordinates (x2,y2) of the bottom-right corner
-        self._layout = function(child)
-            x1 = self._posn.default.x + self._nextLocalX
-            y1 = self._posn.default.y + self._nextLocalY
-            x2 = x1 + child.width
-            y2 = y1 + child.height
-            child:setPosition(newPoint(x1, y1))
-            child:offsetPositions({disabled = self._posn.offsets.disabled})
+        --- Prepare the next available position in the list
+        ---@param x2 integer bottom-right corner of most recent child
+        ---@param y2 integer bottom-right corner of most recent child
+        self._setNextLocalXY = function(x2, y2)
             self._nextLocalY = y2 + self._spacing
-            return x1, y1, x2, y2 
         end
     end
 
@@ -121,15 +103,24 @@ end
 ---@return table of successfully added child UIElements
 function List:addChildren(e, parentEnables)
     local newChildren = List.super.addChildren(self, e, parentEnables)
-    
+    local px1 = self._posn.default.x
+    local py1 = self._posn.default.y
+
     for _, child in ipairs(newChildren) do
         child.isSelected = function ()
             return child == self._children[self._i_selectChild]
         end
-        local x1, y1, x2, y2 = self._layout(child)
+        local x1 = px1 + self._nextLocalX
+        local y1 = py1 + self._nextLocalY
+        local x2 = x1 + child.width
+        local y2 = y1 + child.height
+        child:setPosition(newPoint(x1, y1))
+        child:offsetPositions({disabled = self._posn.offsets.disabled})
+        self._setNextLocalXY(x2, y2)
 
-        local px2 = self.x + self.width
-        local py2 = self.y + self.height
+        --[[TODO debug this code isnt working
+        local px2 = px1 + self.width
+        local py2 = py1 + self.height
         if (x2 > px2 - self._spacing) or (y2 > py2 - self._spacing) then
             d.log("UIElement '" .. child.name .. "' out-of-bounds in layout. Illustrating bounds.")
             d.log("child: top-left ("..x1..", "..y1..") bottom-right ("..x2..", "..y2..")")
@@ -137,6 +128,7 @@ function List:addChildren(e, parentEnables)
             d.illustrateBounds(self)
             d.illustrateBounds(child)
         end
+        --]]
     end
 
     return newChildren

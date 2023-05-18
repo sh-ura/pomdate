@@ -52,10 +52,11 @@ name = "uielement"
 ---@param origin pd.geometry.point (optional) defaults to current position
 local function reposition(self, destination, origin)
     if not origin then origin = newPoint(self:getPosition()) end
-    self:setAnimator( gfx.animator.new(
+    self._posn.animator = gfx.animator.new(
         ANIM_DURATION * origin:distanceToPoint(destination), --TODO need to make this val tiny
         origin, destination, ease, ANIM_DELAY
-    ))
+    )
+    self:setAnimator(self._posn.animator)
 end
 
 --- Initializes a new UIElement sprite.
@@ -107,9 +108,10 @@ function UIElement:init(coreProps)
         offsets = {
             disabled = newVector(0, 0),
             selected = newVector(0, 0)
-        }
+        },
+        animator = nil, -- gfx.animator that is currently performing repositioning
+        arrivalCallback = function() end  -- call this function when the element completes repositioning
     }
-    self._anim_pos = nil
 
     -- visualization props
     self._font = gfx.getFont()
@@ -142,7 +144,7 @@ function UIElement:init(coreProps)
         if not self._isConfigured then d.log("uielement '" .. self.name .. "' select criteria not set") end
         return true
     end
-    self._wasSelected = false
+    self._wasSelected = false -- isSelected() was true on previous update
 
     --- Enables/disables this UIElement.
     --- If setEnablingCriteria() is not called on this element, it will remain disabled by default.
@@ -152,6 +154,7 @@ function UIElement:init(coreProps)
         return false
     end
     self._switch:add()
+    self._deferringRemove = false -- element is in the process of transitioning into removal
 
     --- Prepare the text, to later be drawn onto the element by redraw().
     self.renderText = function()
@@ -173,7 +176,8 @@ function UIElement:init(coreProps)
     end
 end
 
----TODO desc
+--- Drives the element.
+---@return boolean whether the element should take up user input this frame.
 function UIElement:update()
     UIElement.super.update(self)
 
@@ -189,7 +193,15 @@ function UIElement:update()
         end
         self._wasSelected = false
     end
-    --debugger.bounds(self)
+
+    if self._posn.animator then
+        if self._posn.animator:ended() then
+            self._posn.arrivalCallback()
+            self._posn.arrivalCallback = function() end
+            self._posn.animator = nil
+        end
+        return false
+    else return true end
 end
 
 --- Redraw the UIElement's background and foreground onto its sprite.
@@ -328,8 +340,11 @@ function UIElement:add()
 end
 
 function UIElement:remove()
-    UIElement.super.remove(self)
-    self._wasSelected = false
+    reposition(self, self._posn.default + self._posn.offsets.disabled)
+    self._posn.arrivalCallback = function()
+        UIElement.super.remove(self)
+        self._wasSelected = false
+    end
 end
 
 --- Moves the UIElement and its children
