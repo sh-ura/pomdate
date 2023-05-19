@@ -215,34 +215,52 @@ function UIElement:setFont(font, drawMode)
     self:redraw()
 end
 
---- Set a background for UIElement contents to be drawn on top of.
---- Background may need to be redrawn into sprite img by extending classes.
+--- Draw an image, matching the UIElement's proportions if appropriate.
+---@param self UIElement
 ---@param drawable gfx.nineSlice, OR
----                  function in the drawInRect(x, y, width, height) format
-function UIElement:setBackground(drawable)
+---                  function in the drawInRect(width, height) format
+---@return gfx.image
+local function renderDrawable(self, drawable)
     local w, h = self:getSize()
-    local draw = function(x, y, width, height)
-    end
+    local draw = function(width, height) end
 
     if type(drawable) == 'function' then
         draw = drawable
     elseif drawable.drawInRect then
         if drawable.getSize then
-            local w_bg, h_bg = drawable:getSize()
-            if w_bg >= w or h_bg >= h then
-                d.log("can't stretch background for " .. self.name)
+            local w_d, h_d = drawable:getSize()
+            if w_d >= w or h_d >= h then
+                d.log("can't stretch nineSlice for " .. self.name)
                 return
             end
         end
         draw = drawable.drawInRect
     else
-        d.log("background for " .. self.name .. "not drawable")
+        d.log("img for " .. self.name .. "not drawable")
     end
 
-    self._bg = gfx.image.new(w, h, COLOR_CLEAR)
-    gfx.pushContext(self._bg)
-    draw(0, 0, w, h)
+    local img = gfx.image.new(w, h, COLOR_CLEAR)
+    gfx.pushContext(img)
+        draw(w, h)
     gfx.popContext()
+    return img
+end
+
+--- Set a foreground image, which will sit above the element's background but below its text.
+--- Foreground may need to be redrawn into self._img by extending classes.
+---@param drawable gfx.nineSlice, OR
+---                  function in the drawInRect(width, height) format
+function UIElement:setPicture(drawable)
+    self._fg_pic = renderDrawable(self, drawable)
+    self:redraw()
+end
+
+--- Set a background for UIElement contents to be drawn on top of.
+--- Background may need to be redrawn into self._img by extending classes.
+---@param drawable gfx.nineSlice, OR
+---                  function in the drawInRect(width, height) format
+function UIElement:setBackground(drawable)
+    self._bg = renderDrawable(self, drawable)
     self:redraw()
 end
 
@@ -321,7 +339,7 @@ function UIElement:addChildren(e, parentEnables)
         if parentEnables then
             element:setEnablingCriteria(function() return self:isEnabled() end)
         end
-        element:moveTo(self.x + element.x, self.y + element.y)
+        element:moveTo(self.x + element.x, self.y + element.y) --TODO offsetPositions({"parent" = self._posn.default})
         element:setZIndex(element:getZIndex() + self:getZIndex())
     end
 

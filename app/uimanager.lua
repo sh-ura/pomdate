@@ -8,6 +8,7 @@ import 'ui/button'
 import 'ui/list'
 import 'ui/dial'
 import 'ui/textbox'
+import 'ui/uielement'
 
 --[[
     TODO 
@@ -35,6 +36,7 @@ local COLOR_0 <const> = COLOR_0
 local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
 local BUTTON_WIDTH <const> = 100
 local BUTTON_HEIGHT <const> = 30
+local LINE_CAP_STYLE <const> = gfx.kLineCapStyleRound
 
 --TODO rm most of these - those that are not needed outside of specific funcs
 local timersMenu = nil  -- contains the buttons for selecting timers --TODO move to init
@@ -52,6 +54,41 @@ local runInst = nil -- instructions shown in RUN_TIMER state --TODO move to init
 local snoozeButton = nil -- invisible snooze button --TODO move to init
 local doneInst = nil -- instructions shown in DONE_TIMER state --TODO move to init
 local scoreboard = nil -- visualizes pause and snooze scores for this timer session
+
+---[[
+local function initCrankDialCircuit()
+    -- These var names borrow similar-function circuitry vocab,
+    --      don't necessarily represent how the sprite looks
+    local wire = UIElement({"crankWire", 420, 140})
+    local switch = Button({"crankSwitch", 60, 60})
+    local preSwitchLED = Button({"crankLEDpre", 40, 80})
+    local postSwitchLED = Button({"crankLEDpost", 80, 40})
+
+    local p = { -- wire junctures to draw, in crank -> dial face order
+        {x=410, y=100},
+        {x=320},
+        {x=270},
+        {x=60},
+        {x=40, y=80},
+        {y=0}
+    }
+    wire:setPicture(function(x, y, width, height)
+        gfx.setColor(COLOR_1)
+        gfx.setLineWidth(13)
+        gfx.setLineCapStyle(LINE_CAP_STYLE)
+        gfx.drawLine(p[1].x, p[1].y, p[2].x, p[1].y)
+        gfx.drawLine(p[3].x, p[1].y, p[4].x, p[1].y)
+        gfx.drawLine(p[4].x, p[1].y, p[5].x, p[5].y)
+        gfx.drawLine(p[5].x, p[5].y, p[5].x, p[6].y)
+    end)
+    wire:setPosition(newPoint(0, 100))
+    wire:setEnablingCriteria(function() return state == STATES.MENU end)
+    wire:forceConfigured()
+    
+
+    wire:addChildren({switch, preSwitchLED, postSwitchLED}, 'parentEnables')
+end
+--]]
 
 --TODO much of this no longer needs to be in init
 -- ex. a addTimerSelector() could be called by main to add each timer selector
@@ -75,9 +112,9 @@ local function init(timers)
             local button = Button({name .. "Button", BUTTON_WIDTH, BUTTON_HEIGHT})
             timerSelectButtons[name] = button
             button.isPressed = function() return pd.buttonJustPressed(A) end
-            button:setBackground( function(x, y, width, height)
+            button:setBackground(function(width, height)
                 gfx.setColor(COLOR_0)
-                gfx.fillRoundRect(x, y, width, height, height/2)
+                gfx.fillRoundRect(0, 0, width, height, height/2)
             end)
             button:setLabel(label)
             button:offsetPositions({
@@ -97,14 +134,14 @@ local function init(timers)
             end
             dial:setUnit("min")
             dial:setValue(initialDurations[name])
-            dial:setBackground( function(x, y, width, height)
+            dial:setBackground(function(width, height)
                 gfx.setColor(COLOR_1)
-                gfx.fillRect(x, y, width, height)
+                gfx.fillRect(0, 0, width, height)
             end)
             dial:setFont(gfx.getFont(), gfx.kDrawModeInverted)
             dial:setZIndex(60)
             dial:setPosition(newPoint(MARGIN, 60))
-            
+
             -- TODO move func def below to be local func more visible at root of this file
             button.pressedAction = function ()
                 toRun(t, dial.value)
@@ -141,9 +178,9 @@ local function init(timers)
         paused = false
         toMenu()
     end
-    toMenuButton:setBackground( function(x, y, width, height)
+    toMenuButton:setBackground( function(width, height)
         gfx.setColor(COLOR_0)
-        gfx.fillRoundRect(x, y, width, height, width/2)
+        gfx.fillRoundRect(0, 0, width, height, width/2)
     end)
     toMenuButton:setLabel("M")
     toMenuButton:setPosition(newPoint(280,210))
@@ -299,6 +336,8 @@ local function init(timers)
     doneInst:moveTo(MARGIN, 140)
     doneInst:setZIndex(60)
     --]]
+
+    initCrankDialCircuit()
 end
 
 --- Drives the UI. Call on pd.update().
