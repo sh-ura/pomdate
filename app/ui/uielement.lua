@@ -22,6 +22,7 @@ local type <const> = type
 local pairs <const> = pairs
 local ipairs <const> = ipairs
 local insert <const> = table.insert
+local centered = kTextAlignment.center
 
 local W_SCREEN <const> = W_SCREEN
 local H_SCREEN <const> = H_SCREEN
@@ -102,6 +103,7 @@ function UIElement:init(coreProps)
 
     -- visualization props
     self._font = gfx.getFont()
+    self._textDrawMode = gfx.kDrawModeCopy
     self._text = nil
     self._bg = nil      -- background
     self._fg_pic = nil  -- non-text foreground
@@ -146,19 +148,18 @@ function UIElement:init(coreProps)
     --- Prepare the text, to later be drawn onto the element by redraw().
     self.renderText = function()
         if not self._isConfigured then d.log("uielement " .. self.name .. "text rendering not set") end
-        if not self._text then
-            d.log("no text to render on " .. self.name)
-            return
-        end
+        if not self._text then d.log("no text to render on " .. self.name) return end
         local w, h = self:getSize()
         if not self._fg_text then
             self._fg_text = gfx.image.new(w, h, COLOR_CLEAR)
         end
+        
         gfx.pushContext(self._fg_text)
-        gfx.setColor(COLOR_CLEAR)
-        gfx.fillRect(0, 0, w, h)
-        gfx.setFont(self._font)
-        gfx.draw(2, 2, self._text)
+            gfx.setColor(COLOR_CLEAR)
+            gfx.fillRect(0, 0, w, h) --TODO would be nice to call gfx.clear() instead
+            gfx.setFont(self._font)
+            gfx.setImageDrawMode(self._textDrawMode)
+            gfx.drawTextAligned(self._text, w/2, (h - self._font:getHeight())/2, centered)
         gfx.popContext()
     end
 end
@@ -194,21 +195,23 @@ end
 --- Redraw the UIElement's background and foreground onto its sprite.
 function UIElement:redraw()
     gfx.pushContext(self._img)
-    gfx.setColor(COLOR_CLEAR)
-    gfx.fillRect(0, 0, self.width, self.height)
-    if self._bg then self._bg:draw(0, 0) end
-    if self._fg_pic then self._fg_pic:draw(0, 0) end
-    if self._text then
-        self.renderText()
-        if self._fg_text then self._fg_text:draw(0, 0) end
-    end
+        gfx.setColor(COLOR_CLEAR)
+        gfx.fillRect(0, 0, self.width, self.height)
+        if self._bg then self._bg:draw(0, 0) end
+        if self._fg_pic then self._fg_pic:draw(0, 0) end
+        if self._text then
+            self.renderText()
+            self._fg_text:draw(0, 0)
+        end
     gfx.popContext()
 end
 
---- Set the font to use for drawing foregrounded text in this element.
+--- Set the font and color to use for drawing foregrounded text in this element.
 ---@param font gfx.font
-function UIElement:setFont(font)
+---@param drawMode gfx.kDrawMode[mode] (optional)
+function UIElement:setFont(font, drawMode)
     self._font = font
+    self._textDrawMode = drawMode
     self:redraw()
 end
 

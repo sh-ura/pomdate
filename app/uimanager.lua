@@ -97,10 +97,14 @@ local function init(timers)
             end
             dial:setUnit("min")
             dial:setValue(initialDurations[name])
+            dial:setBackground( function(x, y, width, height)
+                gfx.setColor(COLOR_1)
+                gfx.fillRect(x, y, width, height)
+            end)
+            dial:setFont(gfx.getFont(), gfx.kDrawModeInverted)
             dial:setZIndex(60)
             dial:setPosition(newPoint(MARGIN, 60))
-            dial:offsetPositions({disabled = newVector(-50,0)})
-
+            
             -- TODO move func def below to be local func more visible at root of this file
             button.pressedAction = function ()
                 toRun(t, dial.value)

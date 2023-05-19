@@ -60,7 +60,7 @@ function Dial:init(coreProps, lowerLimit, upperLimit, step)
     end
     if not self.value then self:setValue(0) end
 
-    self._unit = "unit"
+    self._unit = nil
     self._counter = gfx.image.new(20, 20, COLOR_CLEAR)
     gfx.pushContext(self._counter)
         gfx.setColor(COLOR_1)
@@ -87,7 +87,7 @@ function Dial:update()
     
     local val = self.value
     -- only redraw if val has changed
-    if val ~= self._prevValue then self._drawValue() end
+    if val ~= self._prevValue then self._renderValue() end
 
     if self.isSelected() then
         local low = self._lowLimit
@@ -109,12 +109,12 @@ end
 function Dial:setMode(mode)
     local w, h = self:getSize()
     if mode == visualizers.horiCounter then
-        self._drawValue = function()
+        self._renderValue = function()
             local counter = self._counter
             local w_counter, _ = counter:getSize() --TODO can call width?
             local spacing = self._spacing
             local x = 0
-            gfx.pushContext(self._img)
+            gfx.pushContext(self._fg_pic)
                 gfx.setColor(COLOR_CLEAR)
                 gfx.fillRect(0, 0, w, h)
                 for i = 0, self.value - 1 do
@@ -124,12 +124,12 @@ function Dial:setMode(mode)
             gfx.popContext()
         end
     elseif mode == visualizers.vertCounter then
-        self._drawValue = function()
+        self._renderValue = function()
             local counter = self._counter
             local _, h_counter = counter:getSize()
             local spacing = self._spacing
             local y = 0
-            gfx.pushContext(self._img)
+            gfx.pushContext(self._fg_pic)
                 gfx.setColor(COLOR_CLEAR)
                 gfx.fillRect(0, 0, w, h)
                 for i = 0, self.value - 1 do
@@ -138,16 +138,14 @@ function Dial:setMode(mode)
                 end
             gfx.popContext()
         end
-    elseif mode == visualizers.numeral then
-        self._drawValue = function()
-            local val = self.value
-            local unit = self._unit
-            if val ~= 1 then unit = unit .. "s" end
-            gfx.pushContext(self._img)
-                gfx.setColor(COLOR_CLEAR)
-                gfx.fillRect(0, 0, w, h) --TODO would be nice to call gfx.clear() instead
-                gfx.drawText("*".. val .. " " .. unit .."*", 2, 2)
-            gfx.popContext()
+    elseif mode == visualizers.numeral then --TODO refactor to use self._text instead
+        self._renderValue = function ()
+            local text = "" .. self.value
+            if self._unit then text = text .. " " .. self._unit 
+                if self.value ~= 1 then text = text .. "s" end
+            end
+            self._text = text
+            self:redraw()
         end
     end
 end

@@ -11,7 +11,6 @@ local gfx <const> = pd.graphics
 local utils <const> = utils
 local d <const> = debugger
 local newVector <const> = utils.newVector
-local centered = kTextAlignment.center
 local COLOR_0 <const> = COLOR_0
 local COLOR_1 <const> = COLOR_1
 local COLOR_CLEAR <const> = COLOR_CLEAR
@@ -54,22 +53,6 @@ function Button:init(coreProps, invisible)
     end
     self._posn.offsets.pressed = newVector(0,0)
 
-    --- Prepare the text, to later be drawn onto the element with redraw().
-    self.renderText = function()
-        if not self._text then d.log("no text to render on " .. self.name) return end
-        local w, h = self:getSize()
-        if not self._fg_text then
-            self._fg_text = gfx.image.new(w, h, COLOR_CLEAR)
-        end
-        
-        gfx.pushContext(self._fg_text)
-            gfx.setColor(COLOR_CLEAR)
-            gfx.fillRect(0, 0, w, h) --TODO would be nice to call gfx.clear() instead
-            gfx.setFont(self._font)
-            gfx.drawTextAligned(self._text, w/2, (h - self._font:getHeight())/2, centered)
-        gfx.popContext()
-    end
-
     if self._isVisible then
         self._text = self.name
     end
@@ -94,7 +77,7 @@ function Button:update()
     else
         self:setImage(self._img) --revert img when button is not selected
     end
-    d.illustrateBounds(self)
+    --d.illustrateBounds(self)
 end
 
 --- Set the label to show on the button
