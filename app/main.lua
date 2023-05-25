@@ -8,6 +8,7 @@ import "CoreLibs/object"
 import "CoreLibs/graphics"
 import "CoreLibs/sprites"
 import "CoreLibs/ui"
+import "CoreLibs/animation"
 
 import "gconsts"
 import "utils/utils";
@@ -20,6 +21,7 @@ import "uimanager"
 local pd <const> = playdate
 local d <const> = debugger
 local gfx <const> = pd.graphics
+local ui <const> = uimanager
 local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
 
@@ -99,12 +101,12 @@ local function init()
     for _, t in pairs(timers) do t:setZIndex(50) end
     currentTimer = timers.work --TODO rm
 
-    uimanager.init({
+    ui.init({
         {t = timers.short, label = "short break"},
         {t = timers.work, label = "work"},
         {t = timers.long, label = "long break"}
     })
-    uimanager.selectNextTimer() -- autoselects the 2nd timer, 'work'
+    ui.selectNextTimer() -- autoselects the 2nd timer, 'work'
 end
 
 --TODO replace with a launchImage, configurable in pdxinfo
@@ -126,9 +128,9 @@ local function sav()
 
     -- TODO implement sav func in UIManager
     local sav_durations = {
-        work = uimanager.getDialValue("work"),
-        short = uimanager.getDialValue("short"),
-        long = uimanager.getDialValue("long")
+        work = ui.getDialValue("work"),
+        short = ui.getDialValue("short"),
+        long = ui.getDialValue("long")
     } -- snooze duration is in the confs data file
     d.log("dumping durations to be saved", sav_durations)
     pd.datastore.write(sav_durations, "durations")
@@ -148,14 +150,14 @@ end
 
 local function cycleTimers()
     if currentTimer == timers.short then
-        uimanager.selectNextTimer()
+        ui.selectNextTimer()
     elseif currentTimer == timers.long then
-        uimanager.selectPrevTimer()
+        ui.selectPrevTimer()
     elseif currentTimer == timers.work then
         if c_poms >= confs.pomsPerCycle then
-            uimanager.selectNextTimer()
+            ui.selectNextTimer()
         else
-            uimanager.selectPrevTimer()
+            ui.selectPrevTimer()
         end
     end
 end
@@ -278,7 +280,7 @@ function pd.update()
         end
     end
 
-    uimanager.update()
+    ui.update()
     crankhandler.update()
     pd.timer.updateTimers()
     gfx.sprite.update()
@@ -303,7 +305,7 @@ end
 
 ------- APP START -------
 
-gfx.setBackgroundColor(COLOR_0) --TODO should be COLOR_CLEAR?
+gfx.setBackgroundColor(COLOR_0)
 gfx.setColor(COLOR_1)
 gfx.setImageDrawMode(DRAWMODE_BITMAP)
 splash()

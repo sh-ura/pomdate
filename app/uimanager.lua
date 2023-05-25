@@ -32,11 +32,13 @@ local pairs <const> = pairs
 local ipairs <const> = ipairs
 local crankhandler <const> = crankhandler
 local COLOR_0 <const> = COLOR_0
+local COLOR_1 <const> = COLOR_1
 
 local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
 local BUTTON_WIDTH <const> = 100
 local BUTTON_HEIGHT <const> = 30
 local LINE_CAP_STYLE <const> = gfx.kLineCapStyleRound
+local imgPathPrefix = "assets/ui/"
 
 --TODO rm most of these - those that are not needed outside of specific funcs
 local timersMenu = nil  -- contains the buttons for selecting timers --TODO move to init
@@ -55,14 +57,31 @@ local snoozeButton = nil -- invisible snooze button --TODO move to init
 local doneInst = nil -- instructions shown in DONE_TIMER state --TODO move to init
 local scoreboard = nil -- visualizes pause and snooze scores for this timer session
 
----[[
+--- Make and write the frames for the LED animations
+---@return gfx.imagetable containing the frames
+local function bakeLEDAnimations()
+    local n_frames = 3
+    local imagetable = gfx.imagetable.new(n_frames)
+    for i = 1, n_frames do
+        local frame = gfx.image.new(60, 60, COLOR_CLEAR)
+        gfx.pushContext(frame)
+            gfx.setColor(COLOR_1)
+            gfx.fillRoundRect(0, i * 10, 20, 10, 5)
+        gfx.popContext(frame)
+        pd.datastore.writeImage(frame, imgPathPrefix .. "preSwitchLED-table-" .. i)
+        imagetable:setImage(i, frame)
+    end
+    return imagetable
+end
+
 local function initCrankDialCircuit()
     -- These var names borrow similar-function circuitry vocab,
     --      don't necessarily represent how the sprite looks
-    local wire = UIElement({"crankWire", 420, 140})
-    local switch = Button({"crankSwitch", 60, 60})
-    local preSwitchLED = Button({"crankLEDpre", 40, 80})
-    local postSwitchLED = Button({"crankLEDpost", 80, 40})
+    local wire = UIElement({"wire", 420, 140})
+    local switch = Button({"switch", 60, 60})
+    local preSwitchLED = Button({"preSwitchLED", 40, 80})
+    local postSwitchLED = Button({"postSwitchLED", 80, 40})
+    local function stateIsMENU() return state == STATES.MENU end --TODO these types of funcs can be declared in main, allowing hidind of state var
 
     local p = { -- wire junctures to draw, in crank -> dial face order
         {x=410, y=100},
@@ -72,7 +91,7 @@ local function initCrankDialCircuit()
         {x=40, y=80},
         {y=0}
     }
-    wire:setPicture(function(x, y, width, height)
+    wire:setForeground(function(x, y, width, height)
         gfx.setColor(COLOR_1)
         gfx.setLineWidth(13)
         gfx.setLineCapStyle(LINE_CAP_STYLE)
@@ -82,13 +101,21 @@ local function initCrankDialCircuit()
         gfx.drawLine(p[5].x, p[5].y, p[5].x, p[6].y)
     end)
     wire:setPosition(newPoint(0, 100))
-    wire:setEnablingCriteria(function() return state == STATES.MENU end)
+    wire:setEnablingCriteria(stateIsMENU)
     wire:forceConfigured()
-    
+
+    -- TODO we're searching for these files in the wrong place.
+    -- They'll be saved in the app's folder in Data on the device.
+    local imagetable = gfx.imagetable.new(imgPathPrefix .. "preSwitchLED")
+    if not imagetable then
+        d.log("preSwitchLED images not found; baking")
+        imagetable = bakeLEDAnimations()
+    end
+    preSwitchLED:setForeground(imagetable)
+    preSwitchLED:setPosition(newPoint(150, 120)) --TODO shouldn't i just send x,y to this func. answer: yes, refactor
 
     wire:addChildren({switch, preSwitchLED, postSwitchLED}, 'parentEnables')
 end
---]]
 
 --TODO much of this no longer needs to be in init
 -- ex. a addTimerSelector() could be called by main to add each timer selector
@@ -113,9 +140,10 @@ local function init(timers)
             timerSelectButtons[name] = button
             button.isPressed = function() return pd.buttonJustPressed(A) end
             button:setBackground(function(width, height)
-                gfx.setColor(COLOR_0)
+                gfx.setColor(COLOR_1)
                 gfx.fillRoundRect(0, 0, width, height, height/2)
             end)
+            button:setFont(gfx.getFont(), gfx.kDrawModeInverted)
             button:setLabel(label)
             button:offsetPositions({
                 selected = newVector(-20,0),
@@ -179,9 +207,10 @@ local function init(timers)
         toMenu()
     end
     toMenuButton:setBackground( function(width, height)
-        gfx.setColor(COLOR_0)
+        gfx.setColor(COLOR_1)
         gfx.fillRoundRect(0, 0, width, height, width/2)
     end)
+    toMenuButton:setFont(gfx.getFont(), gfx.kDrawModeInverted)
     toMenuButton:setLabel("M")
     toMenuButton:setPosition(newPoint(280,210))
     toMenuButton:offsetPositions({
@@ -280,62 +309,6 @@ local function init(timers)
         .pom:setMode(dial.visualizers.horiCounter) -- visualize poms as counters
     pomCountDisplay:moveTo(MARGIN, MARGIN)
     pomCountDisplay:setZIndex(80)
-
-    --[[
-    --- Populate a list containing instructions for the user.
-    ---@param list List to use as a container
-    ---@param instructions table containing name:text pairs
-    ---@return table name:instruction pairs of the new instruction objects
-    local function writeInstructions(list, instructions)
-        list.isSelected = function() return false end -- no reason for user to select instructions
-        
-        -- count all instructions to be stacked into list
-        local c = 0
-        for _ in pairs(instructions) do c = c + 1 end
-        local w, h = list:getMaxContentDim(c)
-
-        local created = {}
-        for name, text in pairs(instructions) do
-            local inst = Textbox({name .. "Inst", w, h}, "_"..text.."_")
-            local kids = list:addChildren(inst, 'parentEnables')
-            created[name] = inst
-        end
-        return created
-    end
-
-    --TODO DEBUG only 2/3 (or 1/2) instructions showing up per state
-    menuInst = List({"menuInstList", 230, 75})
-    menuInst:setEnablingCriteria(function() return state == STATES.MENU end)
-    writeInstructions(menuInst, {
-        menuToRun = "A starts selected timer", --TODO DEBUG not appearing onscreen
-        setTimer = "Held B + Crank sets duration",
-        menuToConf = "System menu has config options"
-    })
-    menuInst:moveTo(MARGIN, 140)
-    menuInst:setZIndex(60)
-
-    runInst = List({"runInst", 230, 50})
-    runInst:setEnablingCriteria(function() return state == STATES.RUN_TIMER end)
-    writeInstructions(runInst, {
-        pause = "A toggles timer pause",
-        runToMenu = "B returns to menu"
-    })
-    runInst:moveTo(MARGIN, 140)
-    runInst:setZIndex(60)
-
-    doneInst = List({"doneInst", 230, 50})
-    doneInst:setEnablingCriteria(function() return state == STATES.DONE_TIMER end)
-    writeInstructions(doneInst, {
-        snooze = "A snoozes timer", --TODO need this to not appear if snooze disabled
-        doneToMenu = "B returns to menu"
-    })
-    .snooze:setEnablingCriteria(function() return
-        confs.snoozeOn
-        and doneInst:isEnabled() 
-    end)
-    doneInst:moveTo(MARGIN, 140)
-    doneInst:setZIndex(60)
-    --]]
 
     initCrankDialCircuit()
 end

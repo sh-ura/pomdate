@@ -27,6 +27,8 @@ local centered = kTextAlignment.center
 local W_SCREEN <const> = W_SCREEN
 local H_SCREEN <const> = H_SCREEN
 local COLOR_CLEAR <const> = COLOR_CLEAR
+local COLOR_0 <const> = COLOR_0
+local COLOR_1 <const> = COLOR_1
 local ANIM_DURATION <const> = UI_ANIM_DURATION / 400
 local ANIM_DELAY <const> = UI_ANIM_DELAY
 
@@ -106,7 +108,7 @@ function UIElement:init(coreProps)
     self._textDrawMode = gfx.kDrawModeCopy
     self._text = nil
     self._bg = nil      -- background
-    self._fg_pic = nil  -- non-text foreground
+    self._fg_anim = nil  -- non-text foreground, in an animation loop (1-frame paused if static img)
     self._fg_text = nil -- text foreground
     self._img = gfx.image.new(w, h, COLOR_CLEAR)
     self:setImage(self._img)
@@ -153,10 +155,9 @@ function UIElement:init(coreProps)
         if not self._fg_text then
             self._fg_text = gfx.image.new(w, h, COLOR_CLEAR)
         end
-        
+
         gfx.pushContext(self._fg_text)
-            gfx.setColor(COLOR_CLEAR)
-            gfx.fillRect(0, 0, w, h) --TODO would be nice to call gfx.clear() instead
+            gfx.clear(COLOR_CLEAR)
             gfx.setFont(self._font)
             gfx.setImageDrawMode(self._textDrawMode)
             gfx.drawTextAligned(self._text, w/2, (h - self._font:getHeight())/2, centered)
@@ -182,6 +183,9 @@ function UIElement:update()
         self._wasSelected = false
     end
 
+    if self._fg_anim and not self._fg_anim.paused then
+        self:redraw()
+    end
     if self._posn.animator then
         if self._posn.animator:ended() then
             self._posn.arrivalCallback()
@@ -195,10 +199,9 @@ end
 --- Redraw the UIElement's background and foreground onto its sprite.
 function UIElement:redraw()
     gfx.pushContext(self._img)
-        gfx.setColor(COLOR_CLEAR)
-        gfx.fillRect(0, 0, self.width, self.height)
+        gfx.clear(COLOR_CLEAR)
         if self._bg then self._bg:draw(0, 0) end
-        if self._fg_pic then self._fg_pic:draw(0, 0) end
+        if self._fg_anim then self._fg_anim:draw(0,0) end
         if self._text then
             self.renderText()
             self._fg_text:draw(0, 0)
@@ -217,48 +220,85 @@ end
 
 --- Draw an image, matching the UIElement's proportions if appropriate.
 ---@param self UIElement
----@param drawable gfx.nineSlice, OR
----                  function in the drawInRect(width, height) format
----@return gfx.image
+---@param drawable gfx.animation.loop, OR
+---                function in the drawInRect(width, height) format, OR
+---                gfx.imagetable, OR
+---                gfx.nineSlice, OR anything with a :draw(x, y) funtion, ex.
+---                gfx.image
+---                gfx.sprite, OR
+---                gfx.tilemap
+---@return gfx.animation.loop, paused if the drawable is a static image
 local function renderDrawable(self, drawable)
+    if type(drawable) ~= 'function'
+    and not (drawable.draw or drawable.drawImage) then
+        d.log("img, text, or anim for " .. " not a supported drawable")
+        return nil
+    end
+
+    local anim = gfx.animation.loop.new()
+    anim.shouldLoop = true
     local w, h = self:getSize()
     local draw = function(width, height) end
 
     if type(drawable) == 'function' then
         draw = drawable
-    elseif drawable.drawInRect then
+    elseif drawable.setImageTable then -- is an animation loop
+        anim = drawable
+        return anim
+    elseif drawable.drawImage then -- is an imagetable
+        anim:setImageTable(drawable)
+        return anim
+    elseif drawable.drawInRect then -- is a nineSlice
         if drawable.getSize then
             local w_d, h_d = drawable:getSize()
             if w_d >= w or h_d >= h then
                 d.log("can't stretch nineSlice for " .. self.name)
-                return
+                return nil
             end
         end
         draw = drawable.drawInRect
-    else
-        d.log("img for " .. self.name .. "not drawable")
+    else -- is an image, a sprite, a tilemap, or custom class with a .draw
+        draw = function (x,y) return drawable:draw(x,y) end
     end
 
+    local imagetable = gfx.imagetable.new(1)
     local img = gfx.image.new(w, h, COLOR_CLEAR)
     gfx.pushContext(img)
         draw(w, h)
     gfx.popContext()
-    return img
+    imagetable:setImage(1, img)
+    anim:setImageTable(imagetable)
+    anim.paused = true
+
+    return anim
 end
 
---- Set a foreground image, which will sit above the element's background but below its text.
---- Foreground may need to be redrawn into self._img by extending classes.
----@param drawable gfx.nineSlice, OR
----                  function in the drawInRect(width, height) format
-function UIElement:setPicture(drawable)
-    self._fg_pic = renderDrawable(self, drawable)
+--- Set a foreground image or animation, which will sit above the element's background
+---     but below its text.
+--- All types of non-text foreground are processed into and stored as animations.
+--- Foreground may need to be redrawn into self._img by extending classes, using :draw().
+---@param drawable gfx.animation.loop, OR
+---                function in the drawInRect(width, height) format, OR
+---                gfx.imagetable, OR
+---                gfx.nineSlice, OR anything with a :draw funtion, ex.
+---                gfx.image
+---                gfx.sprite, OR
+---                gfx.tilemap
+function UIElement:setForeground(drawable)
+    self._fg_anim = renderDrawable(self, drawable)
     self:redraw()
 end
 
---- Set a background for UIElement contents to be drawn on top of.
---- Background may need to be redrawn into self._img by extending classes.
----@param drawable gfx.nineSlice, OR
----                  function in the drawInRect(width, height) format
+--- Set a background image or animation.
+--- All types of non-text background are processed into and stored as animations.
+--- Background may need to be redrawn into self._img by extending classes, using :draw().
+---@param drawable gfx.animation.loop, OR
+---                function in the drawInRect(width, height) format, OR
+---                gfx.imagetable, OR
+---                gfx.nineSlice, OR anything with a :draw funtion, ex.
+---                gfx.image
+---                gfx.sprite, OR
+---                gfx.tilemap
 function UIElement:setBackground(drawable)
     self._bg = renderDrawable(self, drawable)
     self:redraw()

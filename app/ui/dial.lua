@@ -115,8 +115,7 @@ function Dial:setMode(mode)
             local spacing = self._spacing
             local x = 0
             gfx.pushContext(self._fg_pic)
-                gfx.setColor(COLOR_CLEAR)
-                gfx.fillRect(0, 0, w, h)
+                gfx.clear(COLOR_CLEAR)
                 for i = 0, self.value - 1 do
                     counter:draw(x, 0)
                     x = x + w_counter + spacing
@@ -130,8 +129,7 @@ function Dial:setMode(mode)
             local spacing = self._spacing
             local y = 0
             gfx.pushContext(self._fg_pic)
-                gfx.setColor(COLOR_CLEAR)
-                gfx.fillRect(0, 0, w, h)
+                gfx.clear(COLOR_CLEAR)
                 for i = 0, self.value - 1 do
                     counter:draw(0, y)
                     y = y + h_counter + spacing

@@ -53,9 +53,6 @@ function Button:init(coreProps, invisible)
     end
     self._posn.offsets.pressed = newVector(0,0)
 
-    if self._isVisible then
-        self._text = self.name
-    end
     self._isConfigured = true
     self = utils.makeReadOnly(self, "button instance")
 end
@@ -65,17 +62,12 @@ function Button:update()
     if not Button.super.update(self) then return end
     
     if self.isSelected() then
-        if self._isVisible then
-            self:setImage(self._img:invertedImage()) --invert img when button is selected
-        end
         if self.isPressed() then
             --d.log(self.name .. " is pressed")
             self:reposition(self._posn.default + self._posn.offsets.pressed)
             self._posn.animator.reverses = true
             self._posn.arrivalCallback = self.pressedAction
-        end 
-    else
-        self:setImage(self._img) --revert img when button is not selected
+        end
     end
     --d.illustrateBounds(self)
 end

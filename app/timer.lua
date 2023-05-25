@@ -94,8 +94,7 @@ function Timer:update()
             timeString = timeString .. sec
 
             gfx.pushContext(self._img)
-                gfx.setColor(COLOR_CLEAR)
-                gfx.fillRect(0, 0, self.width, self.height)
+                gfx.clear(COLOR_CLEAR)
                 gfx.drawText("*"..timeString.."*", 0, 0)
             gfx.popContext()
         end
