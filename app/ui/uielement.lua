@@ -136,6 +136,10 @@ function UIElement:init(coreProps)
         return true
     end
     self._wasSelected = false -- isSelected() was true on previous update
+    --- Called once each time a deselected element becomes selected
+    self.justSelectedAction = function () end
+    --- Called once each time selected element becomes deselected
+    self.justDeselectedAction = function () end
 
     --- Enables/disables this UIElement.
     --- If setEnablingCriteria() is not called on this element, it will remain disabled by default.
@@ -173,11 +177,13 @@ function UIElement:update()
     -- handle animation to position on screen, depending on state of UI
     if self:isSelected() then
         if not self._wasSelected then
+            self.justSelectedAction()
             self:reposition(self._posn.default + self._posn.offsets.selected)
         end
         self._wasSelected = true
     else
         if self._wasSelected then
+            self.justDeselectedAction()
             self:reposition(self._posn.default)
         end
         self._wasSelected = false
@@ -214,7 +220,7 @@ end
 ---@param drawMode gfx.kDrawMode[mode] (optional)
 function UIElement:setFont(font, drawMode)
     self._font = font
-    self._textDrawMode = drawMode
+    if drawMode then self._textDrawMode = drawMode end
     self:redraw()
 end
 
@@ -256,9 +262,9 @@ local function renderDrawable(self, drawable)
                 return nil
             end
         end
-        draw = drawable.drawInRect
+        draw = function (width, height) return drawable.drawInRect(0, 0, width, height) end
     else -- is an image, a sprite, a tilemap, or custom class with a .draw
-        draw = function (x,y) return drawable:draw(x,y) end
+        draw = function (width, height) return drawable:draw(0,0) end
     end
 
     local imagetable = gfx.imagetable.new(1)
@@ -286,6 +292,17 @@ end
 ---                gfx.tilemap
 function UIElement:setForeground(drawable)
     self._fg_anim = renderDrawable(self, drawable)
+    local w, h = self._fg_anim:image():getSize()
+    if w > self.width then
+        d.log(self.name .. " background wide; resizing sprite")
+        self._img = gfx.image.new(w, self.height)
+        self:setImage(self._img)
+    end
+    if h > self.height then
+        d.log(self.name .. " background tall; resizing sprite")
+        self._img = gfx.image.new(self.width, h)
+        self:setImage(self._img)
+    end
     self:redraw()
 end
 
@@ -301,6 +318,17 @@ end
 ---                gfx.tilemap
 function UIElement:setBackground(drawable)
     self._bg = renderDrawable(self, drawable)
+    local w, h = self._bg:image():getSize()
+    if w > self.width then
+        self.log(self.name .. " background wide; resizing sprite")
+        self._img = gfx.image.new(w, self.height)
+        self:setImage(self._img)
+    end
+    if h > self.height then
+        self.log(self.name .. " background tall; resizing sprite")
+        self._img = gfx.image.new(self.width, h)
+        self:setImage(self._img)
+    end
     self:redraw()
 end
 

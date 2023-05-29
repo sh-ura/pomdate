@@ -35,8 +35,8 @@ local COLOR_0 <const> = COLOR_0
 local COLOR_1 <const> = COLOR_1
 
 local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
-local BUTTON_WIDTH <const> = 100
-local BUTTON_HEIGHT <const> = 30
+local BUTTON_WIDTH <const> = 120
+local BUTTON_HEIGHT <const> = 34
 local LINE_CAP_STYLE <const> = gfx.kLineCapStyleRound
 local imgPathPrefix = "assets/ui/"
 
@@ -60,13 +60,21 @@ local scoreboard = nil -- visualizes pause and snooze scores for this timer sess
 --- Make and write the frames for the LED animations
 ---@return gfx.imagetable containing the frames
 local function bakeLEDAnimations()
-    local n_frames = 3
+    local n_frames = 6
+    local w_frame = 60
+    local h_frame = 60
+    local w_min = w_frame // n_frames
+    w_frame = w_min * n_frames -- easier to interpolate between these widths
+
     local imagetable = gfx.imagetable.new(n_frames)
+    local w = 0
     for i = 1, n_frames do
-        local frame = gfx.image.new(60, 60, COLOR_CLEAR)
+        w = i * w_min
+        local frame = gfx.image.new(w_frame, h_frame, COLOR_CLEAR)
         gfx.pushContext(frame)
+            gfx.clear(COLOR_CLEAR)
             gfx.setColor(COLOR_1)
-            gfx.fillRoundRect(0, i * 10, 20, 10, 5)
+            gfx.fillRoundRect((w_frame - w) // 2, i * 10, w, 10, 5)
         gfx.popContext(frame)
         pd.datastore.writeImage(frame, imgPathPrefix .. "preSwitchLED-table-" .. i)
         imagetable:setImage(i, frame)
@@ -140,15 +148,24 @@ local function init(timers)
             timerSelectButtons[name] = button
             button.isPressed = function() return pd.buttonJustPressed(A) end
             button:setBackground(function(width, height)
+                local w_line = 8 -- must be even
                 gfx.setColor(COLOR_1)
                 gfx.fillRoundRect(0, 0, width, height, height/2)
+                gfx.setColor(COLOR_0)
+                gfx.fillRoundRect(w_line//2, w_line//2, width - w_line, height - w_line, (height - w_line)/2)
             end)
-            button:setFont(gfx.getFont(), gfx.kDrawModeInverted)
+            button:setFont(gfx.getFont())
             button:setLabel(label)
             button:offsetPositions({
                 selected = newVector(-20,0),
                 pressed = newVector(0,0)
             })
+            button.justSelectedAction = function()
+                button:setImageDrawMode(gfx.kDrawModeInverted)
+            end
+            button.justDeselectedAction = function()
+                button:setImageDrawMode(gfx.kDrawModeCopy)
+            end
 
             local dial = Dial({name .. "Dial", 80, 40}, 1, 60)
             durationDials[name] = dial
