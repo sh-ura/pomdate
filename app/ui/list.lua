@@ -48,6 +48,9 @@ function List:init(coreProps, orientiation, spacing)
     if not spacing or type(spacing) ~= 'number' then spacing = 0 end
     List.super.init(self, coreProps)
 
+    self.selectedChild = nil -- points to the element in the list that is currently selected
+    self._children = {}
+    self._i_selectChild = 0
     self._spacing = spacing
     self._orientation = orientiation
     self._nextLocalX = spacing -- next available x pos, relative to this List's top-left corner
@@ -108,9 +111,7 @@ function List:addChildren(e, parentEnables)
     local py1 = self._posn.default.y
 
     for _, child in ipairs(newChildren) do
-        child.isSelected = function ()
-            return child == self._children[self._i_selectChild]
-        end
+        child.isSelected = function () return child == self.selectedChild end
         local x1 = px1 + self._nextLocalX
         local y1 = py1 + self._nextLocalY
         local x2 = x1 + child.width
@@ -193,17 +194,19 @@ function List:getMaxContentDim(nNewElements)
         h = available // nNewElements
     end
 
-    return w , h 
+    return w , h
 end
 
 --- Selects the next child in the list.
 function List:prev()
     self._i_selectChild = (self._i_selectChild - 2) % #self._children + 1
+    self.selectedChild = self._children[self._i_selectChild]
 end
 
 --- Selects the next child in the list.
 function List:next()
     self._i_selectChild = self._i_selectChild % #self._children + 1
+    self.selectedChild = self._children[self._i_selectChild]
 end
 
 local _ENV = _G
