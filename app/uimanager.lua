@@ -8,6 +8,7 @@ import 'ui/button'
 import 'ui/list'
 import 'ui/dial'
 import 'ui/textbox'
+import 'ui/cursor'
 import 'ui/uielement'
 
 --[[
@@ -37,6 +38,7 @@ local COLOR_1 <const> = COLOR_1
 local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
 local BUTTON_WIDTH <const> = 120
 local BUTTON_HEIGHT <const> = 34
+local BUTTON_TRAVEL_DISTANCE <const> = 60
 local LINE_CAP_STYLE <const> = gfx.kLineCapStyleRound
 local imgPathPrefix = "assets/ui/"
 
@@ -140,7 +142,8 @@ local function init(timers)
     ---@param timers table all Timers to make selectors for,
     ---                 in {t, label} k-v tuples,
     ---                 in the sequence they should appear.
-    local function fillTimersMenu (list, timers)
+    ---@param cursor Cursor (optional) to point to the buttons
+    local function fillTimersMenu (list, timers, cursor)
         local function makeTimerSelector(t, label)
             local name = t.name
 
@@ -150,21 +153,24 @@ local function init(timers)
             button:setBackground(function(width, height)
                 local w_line = 8 -- must be even
                 gfx.setColor(COLOR_1)
-                gfx.fillRoundRect(0, 0, width, height, height/2)
+                gfx.fillRoundRect(0, 0, width, height, height//2)
                 gfx.setColor(COLOR_0)
                 gfx.fillRoundRect(w_line//2, w_line//2, width - w_line, height - w_line, (height - w_line)/2)
             end)
             button:setFont(gfx.getFont())
-            button:setLabel(label)
-            button:offsetPositions({
-                selected = newVector(-20,0),
-                pressed = newVector(0,0)
-            })
+            button:setText(label)
+            button:offsetPositions({selected = newVector(-BUTTON_TRAVEL_DISTANCE, 0)})
             button.justSelectedAction = function()
                 button:setImageDrawMode(gfx.kDrawModeInverted)
             end
             button.justDeselectedAction = function()
                 button:setImageDrawMode(gfx.kDrawModeCopy)
+            end
+
+            if cursor then
+                cursor:addTarget(button, function ()
+                    return button:getConfiguredPosition("selected") + newVector(button.width + MARGIN, 0)
+                end)
             end
 
             local dial = Dial({name .. "Dial", 80, 40}, 1, 60)
@@ -208,12 +214,26 @@ local function init(timers)
     -- TODO when configmenu + menuList, remove the following line
     timersMenu.isSelected = function() return state == STATES.MENU end
     timersMenu:setPosition(newPoint(250, MARGIN))
-    timersMenu:offsetPositions({disabled = newVector(50, 0)})
-    fillTimersMenu(timersMenu, timers)
+    timersMenu:offsetPositions({disabled = newVector(BUTTON_TRAVEL_DISTANCE, 0)})
+
+    local cursor = Cursor({"timerSelectCursor", BUTTON_TRAVEL_DISTANCE - MARGIN, BUTTON_HEIGHT})
+    cursor:setEnablingCriteria(function () return state == STATES.MENU end)
+    cursor:setBackground(function(width, height)
+        gfx.setColor(COLOR_1)
+        gfx.fillRoundRect(0, 0, width, height, height/2)
+    end)
+    cursor:setFont(gfx.getFont(), gfx.kDrawModeInverted)
+    cursor:setText("A")
+    cursor:setPosition(newPoint(250, MARGIN))
+    cursor:offsetPositions({disabled = newVector(BUTTON_TRAVEL_DISTANCE * 2, 0)})
+    cursor:setZIndex(timersMenu:getZIndex() + 10)
+    cursor:forceConfigured()
+
+    fillTimersMenu(timersMenu, timers, cursor)
 
     local paused = false --TODO instead of using this local var, access paused state via STATE or currentTimer.isPaused()
     
-    toMenuButton = Button({"toMenuButton", BUTTON_HEIGHT, 50})
+    toMenuButton = Button({"toMenuButton", BUTTON_HEIGHT, BUTTON_TRAVEL_DISTANCE - MARGIN})
     toMenuButton:setEnablingCriteria(function() return
         state == STATES.RUN_TIMER 
         or state == STATES.DONE_TIMER
@@ -228,7 +248,7 @@ local function init(timers)
         gfx.fillRoundRect(0, 0, width, height, width/2)
     end)
     toMenuButton:setFont(gfx.getFont(), gfx.kDrawModeInverted)
-    toMenuButton:setLabel("M")
+    toMenuButton:setText("M")
     toMenuButton:setPosition(newPoint(280,210))
     toMenuButton:offsetPositions({
         disabled = newVector(0,50),

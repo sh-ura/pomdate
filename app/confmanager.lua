@@ -131,7 +131,7 @@ local function init(savestate)
         item:addChildren({label, setter}, 'parentEnables')
         confList:addChildren(item, 'parentEnables')
 
-        label:setLabel(description)
+        label:setText(description)
         label.isSelected = function() return item.isSelected() end
         label:forceConfigured() -- label only needs to hilight like a button
         setter.isSelected = function() return item.isSelected() end
@@ -146,11 +146,11 @@ local function init(savestate)
         local w, h = setter:getMaxContentDim(2)
         local switch = init
         local OnBtn = Button({setter.name.."OnBtn", w, h})
-        OnBtn:setLabel("On")
+        OnBtn:setText("On")
         OnBtn.isPressed = OnBtn.isSelected
         OnBtn.pressedAction = function() switch = true end
         local OffBtn = Button({setter.name.."OffBtn", w, h})
-        OffBtn:setLabel("Off")
+        OffBtn:setText("Off")
         OffBtn.isPressed = OffBtn.isSelected
         OffBtn.pressedAction = function() switch = false end
         setter:addChildren({OnBtn, OffBtn}, 'parentEnables')

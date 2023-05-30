@@ -95,6 +95,7 @@ function UIElement:init(coreProps)
     -- position props
     self._posn = {
         default = newPoint(200, 100),
+        cached = nil,
         offsets = {
             disabled = newVector(0, 0),
             selected = newVector(0, 0)
@@ -279,6 +280,14 @@ local function renderDrawable(self, drawable)
     return anim
 end
 
+--- Set some text to show on the element, will render, by default,
+---     above all other foreground and background element images.
+---@param text string
+function UIElement:setText(text)
+    self._text = text
+    self:redraw()
+end
+
 --- Set a foreground image or animation, which will sit above the element's background
 ---     but below its text.
 --- All types of non-text foreground are processed into and stored as animations.
@@ -332,6 +341,21 @@ function UIElement:setBackground(drawable)
     self:redraw()
 end
 
+--- Convenience function returns element's current position as a Point
+---@return gfx.geometry.point
+function UIElement:getPointPosition()
+    return newPoint(self:getPosition())
+end
+
+--- Get one of the element's positional anchors
+---@param name string (optional) name of the position offset type, ex. 'disabled', 'selected'
+---@return gfx.geometry.point
+function UIElement:getConfiguredPosition(name)
+    local offset = self._posn.offsets[name]
+    if not offset then offset = newVector(0, 0) end
+    return self._posn.default + offset
+end
+
 --- Set the element's default position on the screen when the element is visible.
 --- To configure behaviour-specific relocation animations, see offsetPositions()
 ---@param point pd.geometry.point default position on the screen
@@ -373,7 +397,7 @@ end
 ---@param destination pd.geometry.point
 ---@param origin pd.geometry.point (optional) defaults to current position
 function UIElement:reposition(destination, origin)
-    if not origin then origin = newPoint(self:getPosition()) end
+    if not origin then origin = self:getPointPosition() end
     self._posn.animator = gfx.animator.new(
         ANIM_DURATION * origin:distanceToPoint(destination), --TODO need to make this val tiny
         origin, destination, ease, ANIM_DELAY
@@ -424,10 +448,14 @@ end
 --- Add element to global sprites list and animate it into position.
 function UIElement:add()
     UIElement.super.add(self)
-    self:reposition(self._posn.default, self._posn.default + self._posn.offsets.disabled)
+    local destination = self._posn.cached
+    if not destination then destination = self._posn.default end
+    self:reposition(destination, self._posn.default + self._posn.offsets.disabled)
+    self._posn.cached = nil
 end
 
 function UIElement:remove()
+    self._posn.cached = self:getPointPosition()
     self:reposition(self._posn.default + self._posn.offsets.disabled)
     self._posn.arrivalCallback = function()
         UIElement.super.remove(self)

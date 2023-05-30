@@ -52,14 +52,6 @@ function Textbox:update()
     --d.illustrateBounds(self)
 end
 
---TODO word wrapping, resizing
---- Set the label to show on the button
----@param text string
-function Textbox:setText(text)
-    self._text = text
-    self:redraw()
-end
-
 -- pkg footer: pack and export the namespace.
 local _ENV = _G
 textbox = utils.makeReadOnly(P)
