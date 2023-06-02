@@ -358,10 +358,15 @@ end
 
 --- Set the element's default position on the screen when the element is visible.
 --- To configure behaviour-specific relocation animations, see offsetPositions()
----@param point pd.geometry.point default position on the screen
-function UIElement:setPosition(point)
-    if point then
-        self._posn.default = point
+---@param x integer default x-position on the screen
+---         OR gfx.geometry.point
+---         OR gfx.geometry.vector2D
+---@param y integer default y-position on the screen
+function UIElement:setPosition(x, y)
+    if x and y then
+        self._posn.default = newPoint(x, y)
+    elseif x.unpack then
+        self._posn.default = newPoint(x:unpack())
     end
 end
 

@@ -135,7 +135,7 @@ local function initCrankDialCircuit()
         gfx.drawLine(p[4].x, p[1].y, p[5].x, p[5].y)
         gfx.drawLine(p[5].x, p[5].y, p[5].x, p[6].y)
     end)
-    wire:setPosition(newPoint(0, 100))
+    wire:setPosition(0, 100)
     wire:setEnablingCriteria(stateIsMENU)
     wire:forceConfigured()
 
@@ -147,7 +147,7 @@ local function initCrankDialCircuit()
         imagetable = bakeLEDAnimations()
     end
     preSwitchLED:setForeground(imagetable)
-    preSwitchLED:setPosition(newPoint(60, 130)) --TODO shouldn't i just send x,y to this func. answer: yes, refactor
+    preSwitchLED:setPosition(60, 130)
 
     wire:addChildren({switch, preSwitchLED, postSwitchLED}, 'parentEnables')
 end
@@ -216,7 +216,7 @@ local function init(timers)
             end)
             dial:setFont(gfx.getFont(), gfx.kDrawModeInverted)
             dial:setZIndex(60)
-            dial:setPosition(newPoint(MARGIN, 60))
+            dial:setPosition(MARGIN, 60)
 
             -- TODO move func def below to be local func more visible at root of this file
             button.pressedAction = function ()
@@ -238,7 +238,7 @@ local function init(timers)
     timersMenu:setEnablingCriteria(function () return state == STATES.MENU end)
     -- TODO when configmenu + menuList, remove the following line
     timersMenu.isSelected = function() return state == STATES.MENU end
-    timersMenu:setPosition(newPoint(250, MARGIN))
+    timersMenu:setPosition(250, MARGIN)
     timersMenu:offsetPositions({disabled = newVector(BUTTON_TRAVEL_DISTANCE, 0)})
 
     local cursor = Cursor({"timerSelectCursor", BUTTON_TRAVEL_DISTANCE - MARGIN, BUTTON_HEIGHT})
@@ -249,7 +249,7 @@ local function init(timers)
     end)
     cursor:setFont(gfx.getFont(), gfx.kDrawModeInverted)
     cursor:setText("A")
-    cursor:setPosition(newPoint(250, MARGIN))
+    cursor:setPosition(250, MARGIN)
     cursor:offsetPositions({disabled = newVector(BUTTON_TRAVEL_DISTANCE * 2, 0)})
     cursor:setZIndex(timersMenu:getZIndex() + 10)
     cursor:forceConfigured()
@@ -274,7 +274,7 @@ local function init(timers)
     end)
     toMenuButton:setFont(gfx.getFont(), gfx.kDrawModeInverted)
     toMenuButton:setText("M")
-    toMenuButton:setPosition(newPoint(280,210))
+    toMenuButton:setPosition(280,210)
     toMenuButton:offsetPositions({
         disabled = newVector(0,50),
         pressed = newVector(0,50)

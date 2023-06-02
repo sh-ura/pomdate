@@ -115,7 +115,7 @@ function List:addChildren(e, parentEnables)
         local y1 = py1 + self._nextLocalY
         local x2 = x1 + child.width
         local y2 = y1 + child.height
-        child:setPosition(newPoint(x1, y1))
+        child:setPosition(x1, y1)
         child:offsetPositions({disabled = self._posn.offsets.disabled})
         self._setNextLocalXY(x2, y2)
 
