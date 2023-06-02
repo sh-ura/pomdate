@@ -25,7 +25,8 @@ name = "dial"
 visualizers = {
     numeral = 1,
     horiCounter = 2,
-    vertCounter = 3
+    vertCounter = 3,
+    animation = 4
 }
 
 --- Initializes a new Dial instance.
@@ -114,7 +115,7 @@ function Dial:setMode(mode)
             local w_counter, _ = counter:getSize() --TODO can call width?
             local spacing = self._spacing
             local x = 0
-            gfx.pushContext(self._fg_pic)
+            gfx.pushContext(self._fg_anim)
                 gfx.clear(COLOR_CLEAR)
                 for i = 0, self.value - 1 do
                     counter:draw(x, 0)
@@ -128,7 +129,7 @@ function Dial:setMode(mode)
             local _, h_counter = counter:getSize()
             local spacing = self._spacing
             local y = 0
-            gfx.pushContext(self._fg_pic)
+            gfx.pushContext(self._fg_anim)
                 gfx.clear(COLOR_CLEAR)
                 for i = 0, self.value - 1 do
                     counter:draw(0, y)
@@ -144,6 +145,11 @@ function Dial:setMode(mode)
             end
             self._text = text
             self:redraw()
+        end
+    elseif mode == visualizers.animation then
+        self._renderValue = function ()
+            
+            -- TODO set self.value or prevVal to ensure that img is redrawn
         end
     end
 end
