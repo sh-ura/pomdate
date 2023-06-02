@@ -9,11 +9,12 @@ local recentTicks = nil
 
 --- Get the number of ticks that the crank has turned through
 ---     since the previous frame.
----@param ticksPerRevolution int frequency of ticks per full revolution of the crank
-local function getCrankTicks(ticksPerRevolution)
+---@param ticksPerRotation integer (optional) frequency of ticks per full revolution of the crank. Defaults to 360
+local function getCrankTicks(ticksPerRotation)
+    if not ticksPerRotation then ticksPerRotation = 360 end
     usingcrank = true
     -- if relevant, return result from a call earlier this frame
-    if not recentTicks then recentTicks = pd.getCrankTicks(ticksPerRevolution) end
+    if not recentTicks then recentTicks = pd.getCrankTicks(ticksPerRotation) end
     return recentTicks
 end
 
@@ -21,7 +22,7 @@ end
 local function update()
     if not usingcrank then pd.getCrankTicks(1) end
     usingcrank = false
-    recentTicks = 0
+    recentTicks = nil
 end
 
 crankhandler = {
