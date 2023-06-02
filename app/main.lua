@@ -35,6 +35,7 @@ initialDurations = {
     long = 20
 }
 
+local drawFPS = false
 local splashSprite = nil
 local timers = {
     work = 'nil',
@@ -64,7 +65,8 @@ function BPressed() return pd.buttonJustPressed(B) end
 --- If a state save file exists, it will be loaded here.
 local function init()
     utils.disableReadOnly()
-    --debugger.disable() --TODO uncomment
+    debugger.disable() --TODO uncomment
+    drawFPS = true --TODO comment out
 
     -- snooze duration is in the confs data file
     d.log("attempting to load state: durations")
@@ -298,6 +300,7 @@ end
 function pd.debugDraw()
     gfx.pushContext()
         gfx.setImageDrawMode(DRAWMODE_DEBUG)
+        if drawFPS then pd.drawFPS(380,220) end
         d.drawLog()
         d.drawIllustrations()
     gfx.popContext()

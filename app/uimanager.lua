@@ -31,6 +31,10 @@ local newVector <const> = utils.newVector
 local newPoint <const> = utils.newPoint
 local pairs <const> = pairs
 local ipairs <const> = ipairs
+local math <const> = math -- TODO rm
+local pi <const> = math.pi
+local sin <const> = math.sin
+local cos <const> = math.cos
 local crankhandler <const> = crankhandler
 local COLOR_0 <const> = COLOR_0
 local COLOR_1 <const> = COLOR_1
@@ -62,24 +66,45 @@ local scoreboard = nil -- visualizes pause and snooze scores for this timer sess
 --- Make and write the frames for the LED animations
 ---@return gfx.imagetable containing the frames
 local function bakeLEDAnimations()
-    local n_frames = 6
+    local period = 60                       -- period in terms of frames, rather than seconds
+    local n_spokes = 5
     local w_frame = 60
     local h_frame = 60
-    local w_min = w_frame // n_frames
-    w_frame = w_min * n_frames -- easier to interpolate between these widths
+    local A = 20                            -- amplitude, scale
+    local C = pi/2                          -- phase shift
+
+    local n_frames = (period / 2) // n_spokes  -- only show the front-facing half of the cycle
+    local radPerFrame = 2 * pi / period
+    local radPerSpoke = pi / n_spokes
 
     local imagetable = gfx.imagetable.new(n_frames)
-    local w = 0
-    for i = 1, n_frames do
-        w = i * w_min
-        local frame = gfx.image.new(w_frame, h_frame, COLOR_CLEAR)
-        gfx.pushContext(frame)
-            gfx.clear(COLOR_CLEAR)
-            gfx.setColor(COLOR_1)
-            gfx.fillRoundRect((w_frame - w) // 2, i * 10, w, 10, 5)
-        gfx.popContext(frame)
-        pd.datastore.writeImage(frame, imgPathPrefix .. "preSwitchLED-table-" .. i)
-        imagetable:setImage(i, frame)
+    local theta     local x     local y     local i_frame
+    -- Draw CCW motion by iterating thru main loop 'backwards'
+    for j = n_frames-1, 0, -1 do
+        local frame = gfx.image.new(w_frame * 4, h_frame, COLOR_CLEAR)
+        
+        for k = 0, n_spokes-1 do
+            theta = k*radPerSpoke + j*radPerFrame
+            x = 6 * cos(theta - C)
+            y = A * sin(theta - C) + h_frame//2
+            gfx.pushContext(frame)
+                gfx.setColor(COLOR_1)
+                gfx.setLineWidth(6)
+                gfx.setLineCapStyle(gfx.kLineCapStyleRound)
+                x = A * cos(theta - C) + w_frame//2
+                gfx.drawLine(w_frame//2, h_frame//2, x, y)
+                gfx.fillCircleAtPoint(x + w_frame, y, 4)
+
+                x = 6 * cos(theta - C)
+                gfx.drawLine(2.5*w_frame - x*1.5, y, 2.5*w_frame + x*1.5, y)
+                gfx.setLineWidth(x)
+                gfx.drawLine(3.5*w_frame - x*1.5, y, 3.5*w_frame + x*1.5, y)
+            gfx.popContext()
+        end
+        
+        i_frame = n_frames - j
+        pd.datastore.writeImage(frame, imgPathPrefix .. "preSwitchLED-table-" .. i_frame)
+        imagetable:setImage(i_frame, frame)
     end
     return imagetable
 end
@@ -122,7 +147,7 @@ local function initCrankDialCircuit()
         imagetable = bakeLEDAnimations()
     end
     preSwitchLED:setForeground(imagetable)
-    preSwitchLED:setPosition(newPoint(150, 120)) --TODO shouldn't i just send x,y to this func. answer: yes, refactor
+    preSwitchLED:setPosition(newPoint(60, 130)) --TODO shouldn't i just send x,y to this func. answer: yes, refactor
 
     wire:addChildren({switch, preSwitchLED, postSwitchLED}, 'parentEnables')
 end
