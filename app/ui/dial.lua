@@ -115,7 +115,7 @@ function Dial:setMode(mode)
             local w_counter, _ = counter:getSize() --TODO can call width?
             local spacing = self._spacing
             local x = 0
-            gfx.pushContext(self._fg_anim)
+            gfx.pushContext(self._fg_anim:image())
                 gfx.clear(COLOR_CLEAR)
                 for i = 0, self.value - 1 do
                     counter:draw(x, 0)
@@ -129,7 +129,7 @@ function Dial:setMode(mode)
             local _, h_counter = counter:getSize()
             local spacing = self._spacing
             local y = 0
-            gfx.pushContext(self._fg_anim)
+            gfx.pushContext(self._fg_anim:image())
                 gfx.clear(COLOR_CLEAR)
                 for i = 0, self.value - 1 do
                     counter:draw(0, y)
