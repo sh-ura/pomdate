@@ -146,11 +146,6 @@ function Dial:setMode(mode)
             self._text = text
             self:redraw()
         end
-    elseif mode == visualizers.animation then
-        self._renderValue = function ()
-            
-            -- TODO set self.value or prevVal to ensure that img is redrawn
-        end
     end
 end
 

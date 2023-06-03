@@ -39,7 +39,7 @@ local crankhandler <const> = crankhandler
 local COLOR_0 <const> = COLOR_0
 local COLOR_1 <const> = COLOR_1
 
-local CRANK_ROTS_PER_HOUR <const> = 3 -- tune timer-setting dial sensitivity
+local CRANK_UNIT <const> = 60 / 3 -- tune timer-setting dial sensitivity
 local BUTTON_WIDTH <const> = 120
 local BUTTON_HEIGHT <const> = 34
 local BUTTON_TRAVEL_DISTANCE <const> = 60
@@ -79,8 +79,7 @@ local function bakeLEDAnimations()
 
     local imagetable = gfx.imagetable.new(n_frames)
     local theta     local x     local y     local i_frame
-    -- Draw CCW motion by iterating thru main loop 'backwards'
-    for j = n_frames-1, 0, -1 do
+    for j = 0, n_frames-1 do
         local frame = gfx.image.new(w_frame * 4, h_frame, COLOR_CLEAR)
         
         for k = 0, n_spokes-1 do
@@ -147,7 +146,19 @@ local function initCrankDialCircuit()
         imagetable = bakeLEDAnimations()
     end
     preSwitchLED:setForeground(imagetable)
+    preSwitchLED:pauseForeground()
     preSwitchLED:setPosition(60, 130)
+    preSwitchLED.isPressed = function() return true end
+    preSwitchLED.pressedAction = function()
+        local ticks = crankhandler.getCrankTicks(CRANK_UNIT)
+        if ticks == 0 then
+            preSwitchLED:pauseForeground()
+            return
+        end
+        local reverse = false
+        if ticks < 0 then reverse = true end -- reverse direction
+        preSwitchLED:playForeground(100/ticks, reverse)
+    end
 
     wire:addChildren({switch, preSwitchLED, postSwitchLED}, 'parentEnables')
 end
@@ -206,7 +217,7 @@ local function init(timers)
             end)
             dial.isSelected = function () return pd.buttonIsPressed(B) end
             dial.getDialChange = function ()
-                return crankhandler.getCrankTicks(60 / CRANK_ROTS_PER_HOUR)
+                return crankhandler.getCrankTicks(CRANK_UNIT)
             end
             dial:setUnit("min")
             dial:setValue(initialDurations[name])

@@ -49,10 +49,12 @@ function Button:init(coreProps, invisible)
         if not self._isConfigured then d.log("button '" .. self.name .. "' press criteria not set") end
         return false
     end
+    self._wasPressed = false
     self.pressedAction = function ()
         if not self._isConfigured then d.log("button '" .. self.name .. "' pressedAction not set") end
     end
     self._posn.offsets.pressed = nil
+    self.justReleasedAction = function () end -- optional action to take when button is released, one time per press
 
     self._isConfigured = true
     self = utils.makeReadOnly(self, "button instance")
@@ -71,8 +73,12 @@ function Button:update()
             end
 
             self:reposition(self._posn.default + pressedOffset)
-            self._posn.animator.reverses = true
             self._posn.arrivalCallback = self.pressedAction
+            self._wasPressed = true
+        elseif self._wasPressed then
+            self:reposition(self._posn.default)
+            self._posn.arrivalCallback = self.justReleasedAction
+            self._wasPressed = false
         end
     end
     --d.illustrateBounds(self)

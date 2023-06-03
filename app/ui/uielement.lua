@@ -341,6 +341,32 @@ function UIElement:setBackground(drawable)
     self:redraw()
 end
 
+--- Pause the foreground animation
+function UIElement:pauseForeground()
+    if self._fg_anim then self._fg_anim.paused = true end
+end
+
+--- Play the foreground animation
+---@param delay integer (optional) ms delay between frames. Defaults to 100
+---@param reverse boolean (optional) whether to play the animation backwards. Defaults to false
+function UIElement:playForeground(delay, reverse)
+    if not delay then delay = 100
+    elseif delay < 1 then
+        d.log(self.name .. " foreground anim delay cannot be less than 1")
+        delay = 100
+    end
+    local step = 1
+    local anim = self._fg_anim
+    if reverse then step = anim.endFrame - 1 end -- working alternative to setting step = -1
+    if anim then
+        anim.delay = delay
+        d.log("anim.step pre set: ".. anim.step)
+        anim.step = step
+        d.log("anim.step post set: ".. anim.step)
+        anim.paused = false
+    end
+end
+
 --- Convenience function returns element's current position as a Point
 ---@return gfx.geometry.point
 function UIElement:getPointPosition()
