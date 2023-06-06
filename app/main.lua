@@ -266,6 +266,7 @@ function getPauseCount() return c_pauses end
 function getSnoozeCount() return c_snoozes end
 
 --- Get the number of completed pomodoros
+---@return integer
 function getPomCount() return c_poms end
 
 --- Reset the pom cycle by resetting the completed-pomodoro count

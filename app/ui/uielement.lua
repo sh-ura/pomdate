@@ -363,9 +363,7 @@ function UIElement:playForeground(delay, reverse)
     end
     if anim then
         anim.delay = delay
-        d.log("anim.step pre set: ".. anim.step)
         anim.step = step
-        d.log("anim.step post set: ".. anim.step)
         anim.paused = false
     end
 end

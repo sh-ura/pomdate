@@ -85,23 +85,20 @@ end
 ---TODO desc
 function Dial:update()
     if not Dial.super.update(self) then return end
-    
-    local val = self.value
-    -- only redraw if val has changed
-    if val ~= self._prevValue then self._renderValue() end
 
     if self.isSelected() then
         local low = self._lowLimit
         local upp = self._uppLimit
 
-        self._prevValue = val
-        self.value = val + self.getDialChange() * self._step
+        self._prevValue = self.value
+        self.value = self.value + self.getDialChange() * self._step
         if low and self.value <= low then
             self.value = low
         elseif upp and self.value >= upp then
             self.value = upp
         end
     end
+    self._renderValue()
     --d.illustrateBounds(self)
 end
 
@@ -111,6 +108,9 @@ function Dial:setMode(mode)
     local w, h = self:getSize()
     if mode == visualizers.horiCounter then
         self._renderValue = function()
+            -- only redraw if val has changed
+            if self.value == self._prevValue then return end
+
             local counter = self._counter
             local w_counter, _ = counter:getSize() --TODO can call width?
             local spacing = self._spacing
@@ -125,6 +125,9 @@ function Dial:setMode(mode)
         end
     elseif mode == visualizers.vertCounter then
         self._renderValue = function()
+            -- only redraw if val has changed
+            if self.value == self._prevValue then return end
+
             local counter = self._counter
             local _, h_counter = counter:getSize()
             local spacing = self._spacing
@@ -138,13 +141,20 @@ function Dial:setMode(mode)
             gfx.popContext()
         end
     elseif mode == visualizers.numeral then --TODO refactor to use self._text instead
-        self._renderValue = function ()
+        self._renderValue = function()
+            -- only redraw if val has changed
+            if self.value == self._prevValue then return end
+
             local text = "" .. self.value
             if self._unit then text = text .. " " .. self._unit 
                 if self.value ~= 1 then text = text .. "s" end
             end
             self._text = text
             self:redraw()
+        end
+    elseif mode == visualizers.animation then
+        self._renderValue = function()
+            
         end
     end
 end
