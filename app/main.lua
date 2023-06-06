@@ -286,8 +286,9 @@ function pd.update()
     ui.update()
     pd.timer.updateTimers()
     gfx.sprite.update()
-    crankhandler.update()
 end
+
+pd.cranked = crankhandler.cranked
 
 function pd.gameWillTerminate()
     sav()

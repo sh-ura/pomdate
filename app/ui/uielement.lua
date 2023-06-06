@@ -357,7 +357,10 @@ function UIElement:playForeground(delay, reverse)
     end
     local step = 1
     local anim = self._fg_anim
-    if reverse then step = anim.endFrame - 1 end -- working alternative to setting step = -1
+    if reverse then -- jank, yet working alternative to setting step = -1
+        step = anim.endFrame - 1
+        delay = delay * step
+    end
     if anim then
         anim.delay = delay
         d.log("anim.step pre set: ".. anim.step)

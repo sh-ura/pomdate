@@ -39,7 +39,7 @@ local crankhandler <const> = crankhandler
 local COLOR_0 <const> = COLOR_0
 local COLOR_1 <const> = COLOR_1
 
-local CRANK_UNIT <const> = 60 / 3 -- tune timer-setting dial sensitivity
+local CRANKS_REVOLS_PER_HOUR <const> = 3
 local BUTTON_WIDTH <const> = 120
 local BUTTON_HEIGHT <const> = 34
 local BUTTON_TRAVEL_DISTANCE <const> = 60
@@ -149,8 +149,9 @@ local function initCrankDialCircuit()
     preSwitchLED:pauseForeground()
     preSwitchLED:setPosition(60, 130)
     preSwitchLED.isPressed = function() return true end
+    local getCrankTicks = crankhandler.subscribe()
     preSwitchLED.pressedAction = function()
-        local ticks = crankhandler.getCrankTicks(CRANK_UNIT)
+        local ticks = getCrankTicks()
         if ticks == 0 then
             preSwitchLED:pauseForeground()
             return
@@ -216,9 +217,8 @@ local function init(timers)
                 and button.isSelected()
             end)
             dial.isSelected = function () return pd.buttonIsPressed(B) end
-            dial.getDialChange = function ()
-                return crankhandler.getCrankTicks(CRANK_UNIT)
-            end
+            local getCrankTicks = crankhandler.subscribe(60//CRANKS_REVOLS_PER_HOUR)
+            dial.getDialChange = function() return getCrankTicks() end
             dial:setUnit("min")
             dial:setValue(initialDurations[name])
             dial:setBackground(function(width, height)
