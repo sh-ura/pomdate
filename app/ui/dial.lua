@@ -12,6 +12,7 @@ local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
 local d <const> = debugger
+local abs <const> = math.abs
 local COLOR_0 <const> = COLOR_0
 local COLOR_1 <const> = COLOR_1
 local COLOR_CLEAR <const> = COLOR_CLEAR
@@ -154,7 +155,19 @@ function Dial:setMode(mode)
         end
     elseif mode == visualizers.animation then
         self._renderValue = function()
-            
+            --[[
+            if self.value > 0 then
+                self._fg_anim:track(1,1)
+            elseif self.value < 0 then
+                self._fg_anim:track(1,-1)
+            end
+            --]]
+            ---[[
+            local step = 1
+            if self.value < 0 then step = -1 end
+            self._fg_anim:track(self.value * step, step)
+            --]]
+            self.value = 0
         end
     end
 end

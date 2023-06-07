@@ -162,8 +162,7 @@ local function init(savestate)
     local function fillDialSetter(setter, unit, min, max, init)
         local w, h = setter:getMaxContentDim()
         local dial = Dial({setter.name.."Dial", w, h}, min, max)
-        local getCrankTicks = crankhandler.subscribe(max)
-        dial.getDialChange = function() return getCrankTicks() end
+        dial.getDialChange = crankhandler.subscribe(max)
         dial:setUnit(unit)
         setter:addChildren(dial, 'parentEnables')
         dial.isSelected = function () return setter.isSelected() end

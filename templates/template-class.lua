@@ -2,7 +2,6 @@
     This is a template class.
     Features a class namespace + pseudo-readonly access control on pkg and instances
     Find+Replace (case-sensitive) 'Class' with the Classname
-    Find+Replace 'classinstance' with the classname (lowercase)
     Find+Replace 'package' with the classname (lowercase)
 --]]
 
@@ -16,7 +15,6 @@ local pd <const> = playdate
 local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
-local d <const> = debugger
 --local externalfunc <const> = somepkg.func --TODO any other external vars go here
 
 ---TODO Class desc
@@ -45,10 +43,10 @@ end
 
 ---TODO desc
 function Class:update()
-    
-
     Class.super.update(self)
     --d.illustrateBounds(self)
+
+    
 end
 
 -- pkg footer: pack and export the namespace.

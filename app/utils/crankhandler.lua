@@ -38,7 +38,7 @@ end
 ---@param acceleratedChange float change multiplied by a value that increases as the crank moves faster,
 ---                                 similar to the way mouse acceleration works
 local function cranked(change, acceleratedChange)
-    d.log("cranking "..change.." deg, acceleratedChange: "..acceleratedChange)
+    --d.log("cranking "..change.." deg, acceleratedChange: "..acceleratedChange)
     local degrees = 0   local ticks = 0     local degreesPerTick = 0
     for _, sub in ipairs(subscribers) do
         if sub.using then

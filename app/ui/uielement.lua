@@ -6,6 +6,7 @@
 import 'CoreLibs/easing'
 import 'CoreLibs/animator'
 import 'ui/switch'
+import 'ui/animation'
 
 -- pkg header: define pkg namespace
 local P = {}; local _G = _G
@@ -18,6 +19,7 @@ local d <const> = debugger
 local newVector <const> = utils.newVector
 local newPoint <const> = utils.newPoint
 local Switch <const> = Switch
+local Animation <const> = Animation
 local type <const> = type
 local pairs <const> = pairs
 local ipairs <const> = ipairs
@@ -227,8 +229,7 @@ end
 
 --- Draw an image, matching the UIElement's proportions if appropriate.
 ---@param self UIElement
----@param drawable gfx.animation.loop, OR
----                function in the drawInRect(width, height) format, OR
+---@param drawable function in the drawInRect(width, height) format, OR
 ---                gfx.imagetable, OR
 ---                gfx.nineSlice, OR anything with a :draw(x, y) funtion, ex.
 ---                gfx.image
@@ -242,19 +243,16 @@ local function renderDrawable(self, drawable)
         return nil
     end
 
-    local anim = gfx.animation.loop.new()
-    anim.shouldLoop = true
+    local name = self.name .. "Anim"
     local w, h = self:getSize()
     local draw = function(width, height) end
+    local imagetable = gfx.imagetable.new(1)
 
     if type(drawable) == 'function' then
         draw = drawable
-    elseif drawable.setImageTable then -- is an animation loop
-        anim = drawable
-        return anim
     elseif drawable.drawImage then -- is an imagetable
-        anim:setImageTable(drawable)
-        return anim
+        imagetable = drawable
+        return Animation(name, imagetable)
     elseif drawable.drawInRect then -- is a nineSlice
         if drawable.getSize then
             local w_d, h_d = drawable:getSize()
@@ -268,16 +266,12 @@ local function renderDrawable(self, drawable)
         draw = function (width, height) return drawable:draw(0,0) end
     end
 
-    local imagetable = gfx.imagetable.new(1)
     local img = gfx.image.new(w, h, COLOR_CLEAR)
     gfx.pushContext(img)
         draw(w, h)
     gfx.popContext()
     imagetable:setImage(1, img)
-    anim:setImageTable(imagetable)
-    anim.paused = true
-
-    return anim
+    return Animation(name, imagetable)
 end
 
 --- Set some text to show on the element, will render, by default,
@@ -299,8 +293,12 @@ end
 ---                gfx.image
 ---                gfx.sprite, OR
 ---                gfx.tilemap
-function UIElement:setForeground(drawable)
+---@param framesDelay integer (optional) how many update frames to wait before
+---                     incrementing to next animation frame. Defaults to ui.animation default
+function UIElement:setForeground(drawable, framesDelay)
     self._fg_anim = renderDrawable(self, drawable)
+    if framesDelay then self._fg_anim:setDelay(framesDelay) end
+    self._fg_anim:add()
     local w, h = self._fg_anim:image():getSize()
     if w > self.width then
         d.log(self.name .. " background wide; resizing sprite")
@@ -318,15 +316,18 @@ end
 --- Set a background image or animation.
 --- All types of non-text background are processed into and stored as animations.
 --- Background may need to be redrawn into self._img by extending classes, using :draw().
----@param drawable gfx.animation.loop, OR
----                function in the drawInRect(width, height) format, OR
+---@param drawable function in the drawInRect(width, height) format, OR
 ---                gfx.imagetable, OR
 ---                gfx.nineSlice, OR anything with a :draw funtion, ex.
 ---                gfx.image
 ---                gfx.sprite, OR
 ---                gfx.tilemap
-function UIElement:setBackground(drawable)
+---@param framesDelay integer (optional) how many update frames to wait before
+---                     incrementing to next animation frame. Defaults to ui.animation default
+function UIElement:setBackground(drawable, framesDelay)
     self._bg = renderDrawable(self, drawable)
+    if framesDelay then self._bg:setDelay(framesDelay) end
+    self._bg:add()
     local w, h = self._bg:image():getSize()
     if w > self.width then
         self.log(self.name .. " background wide; resizing sprite")
@@ -339,33 +340,6 @@ function UIElement:setBackground(drawable)
         self:setImage(self._img)
     end
     self:redraw()
-end
-
---- Pause the foreground animation
-function UIElement:pauseForeground()
-    if self._fg_anim then self._fg_anim.paused = true end
-end
-
---- Play the foreground animation
----@param delay integer (optional) ms delay between frames. Defaults to 100
----@param reverse boolean (optional) whether to play the animation backwards. Defaults to false
-function UIElement:playForeground(delay, reverse)
-    if not delay then delay = 100
-    elseif delay < 1 then
-        d.log(self.name .. " foreground anim delay cannot be less than 1")
-        delay = 100
-    end
-    local step = 1
-    local anim = self._fg_anim
-    if reverse then -- jank, yet working alternative to setting step = -1
-        step = anim.endFrame - 1
-        delay = delay * step
-    end
-    if anim then
-        anim.delay = delay
-        anim.step = step
-        anim.paused = false
-    end
 end
 
 --- Convenience function returns element's current position as a Point
@@ -404,6 +378,7 @@ end
 ---@param vectors table of pd.geometry.vector2D indexed by name, ex. "disabled", "selected"
 function UIElement:offsetPositions(vectors)
     if vectors and type(vectors) == "table" then
+        local v_o
         for name, v in pairs(vectors) do
             v_o = self._posn.offsets[name]
             if not v_o then v_o = newVector(0,0) end

@@ -10,6 +10,7 @@ import 'ui/dial'
 import 'ui/textbox'
 import 'ui/cursor'
 import 'ui/uielement'
+import 'ui/animation'
 
 --[[
     TODO 
@@ -29,13 +30,9 @@ local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
 local newVector <const> = utils.newVector
 local newPoint <const> = utils.newPoint
-local pairs <const> = pairs
-local ipairs <const> = ipairs
-local math <const> = math -- TODO rm
 local pi <const> = math.pi
 local sin <const> = math.sin
 local cos <const> = math.cos
-local crankhandler <const> = crankhandler
 local COLOR_0 <const> = COLOR_0
 local COLOR_1 <const> = COLOR_1
 
@@ -113,7 +110,7 @@ local function initCrankDialCircuit()
     --      don't necessarily represent how the sprite looks
     local wire = UIElement({"wire", 420, 140})
     local switch = Button({"switch", 60, 60})
-    local preSwitchLED = Button({"preSwitchLED", 40, 80})
+    local preSwitchLED = Dial({"preSwitchLED", 40, 80})
     local postSwitchLED = Button({"postSwitchLED", 80, 40})
     local function stateIsMENU() return state == STATES.MENU end --TODO these types of funcs can be declared in main, allowing hidind of state var
 
@@ -145,21 +142,10 @@ local function initCrankDialCircuit()
         d.log("preSwitchLED images not found; baking")
         imagetable = bakeLEDAnimations()
     end
-    preSwitchLED:setForeground(imagetable)
-    preSwitchLED:pauseForeground()
+    preSwitchLED:setForeground(imagetable, 16)
     preSwitchLED:setPosition(60, 130)
-    preSwitchLED.isPressed = function() return true end
-    local getCrankTicks = crankhandler.subscribe()
-    preSwitchLED.pressedAction = function()
-        local ticks = getCrankTicks()
-        if ticks == 0 then
-            preSwitchLED:pauseForeground()
-            return
-        end
-        local reverse = false
-        if ticks < 0 then reverse = true end -- reverse direction
-        preSwitchLED:playForeground(100/ticks, reverse)
-    end
+    preSwitchLED.getDialChange = crankhandler.subscribe()
+    preSwitchLED:setMode(dial.visualizers.animation)
 
     wire:addChildren({switch, preSwitchLED, postSwitchLED}, 'parentEnables')
 end
@@ -217,8 +203,7 @@ local function init(timers)
                 and button.isSelected()
             end)
             dial.isSelected = function () return pd.buttonIsPressed(B) end
-            local getCrankTicks = crankhandler.subscribe(60//CRANKS_REVOLS_PER_HOUR)
-            dial.getDialChange = function() return getCrankTicks() end
+            dial.getDialChange = crankhandler.subscribe(60//CRANKS_REVOLS_PER_HOUR)
             dial:setUnit("min")
             dial:setValue(initialDurations[name])
             dial:setBackground(function(width, height)
@@ -389,6 +374,7 @@ end
 --- Drives the UI. Call on pd.update().
 local function update()
     switch.update()
+    animation.update()
 end
 
 --- Get the value currently set on a specified dial

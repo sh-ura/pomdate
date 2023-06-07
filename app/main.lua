@@ -3,7 +3,7 @@
 -- todo replace all func comments w the template generated when --- is typed
 -- todo replace type-checking or similar if statements with assert()
 -- todo name private fields on objects _var like in the pd sdk
--- todo for all classes, add @property docs to @class doc
+-- todo for all classes, add @property docs to @class docs
 import "CoreLibs/object"
 import "CoreLibs/graphics"
 import "CoreLibs/sprites"
