@@ -37,6 +37,8 @@ local COLOR_0 <const> = COLOR_0
 local COLOR_1 <const> = COLOR_1
 
 local CRANKS_REVOLS_PER_HOUR <const> = 3
+local WIRE_WIDTH <const> = 13
+local SWITCH_LENGTH <const> = 50
 local BUTTON_WIDTH <const> = 120
 local BUTTON_HEIGHT <const> = 34
 local BUTTON_TRAVEL_DISTANCE <const> = 60
@@ -59,6 +61,39 @@ local runInst = nil -- instructions shown in RUN_TIMER state --TODO move to init
 local snoozeButton = nil -- invisible snooze button --TODO move to init
 local doneInst = nil -- instructions shown in DONE_TIMER state --TODO move to init
 local scoreboard = nil -- visualizes pause and snooze scores for this timer session
+
+local function bakeSwitchAnimation()
+    local w_frame = SWITCH_LENGTH + 10
+    local h_frame = SWITCH_LENGTH + 70
+    local n_frames = 20
+    local C = 3/4 * pi                  -- phase shift
+
+    local A = 0.8 * SWITCH_LENGTH       -- amplitude
+    local radPerFrame = pi/4 / (n_frames - 1)
+
+    local switchImagetable = gfx.imagetable.new(n_frames)
+    local theta     local x     local y     local i_frame
+    for j = 0, n_frames - 1 do
+        local frame = gfx.image.new(w_frame, h_frame, COLOR_CLEAR)
+        theta = j * radPerFrame
+        x = A * cos(-theta - C) d.log("x " .. x)
+        y = A * sin(-theta - C) d.log("y ".. y)
+        gfx.pushContext(frame)
+            gfx.setColor(COLOR_1)
+            gfx.setLineWidth(WIRE_WIDTH)
+            gfx.setLineCapStyle(gfx.kLineCapStyleRound)
+            -- draw line from (x,y) to the unit-circle origin
+            gfx.drawLine(x + SWITCH_LENGTH, y + SWITCH_LENGTH, SWITCH_LENGTH, SWITCH_LENGTH)
+        gfx.popContext()
+
+        i_frame = j + 1
+        pd.datastore.writeImage(frame, imgPathPrefix .. "switch-table-" .. i_frame)
+        switchImagetable:setImage(i_frame, frame)
+    end
+    
+
+    return switchImagetable
+end
 
 --- Make and write the frames for the LED animations
 ---@return gfx.imagetable containing the preSwitchLED frames
@@ -87,11 +122,11 @@ local function bakeLEDAnimations()
             y = A * sin(theta - C) + h_frame//2
             gfx.pushContext(frame)
                 gfx.setColor(COLOR_1)
-                gfx.setLineWidth(6)
                 gfx.setLineCapStyle(gfx.kLineCapStyleRound)
                 gfx.setLineWidth(x)
                 gfx.drawLine((w_frame - x*3)/2, y, (w_frame + x*3)/2, y)
                 -- Other unit circle-visualizers below
+                --gfx.setLineWidth(6)
                 --gfx.drawLine(2.5*w_frame - x*1.5, y, 2.5*w_frame + x*1.5, y)
                 --x = A * cos(theta - C) + w_frame//2
                 --gfx.drawLine(w_frame//2, h_frame//2, x, y)
@@ -100,6 +135,8 @@ local function bakeLEDAnimations()
         end
         
         local rotatedFrame = frame:rotatedImage(90)
+        --TODO which direction should be forward?? reconfigure all dials if needed
+        -- frames are saved in backwards order to match CW forwards motion
         i_frame = n_frames - j
         pd.datastore.writeImage(frame, imgPathPrefix .. "preSwitchLED-table-" .. i_frame)
         preSwitchLEDImagetable:setImage(i_frame, frame)
@@ -121,14 +158,14 @@ local function initCrankDialCircuit()
     local p = { -- wire junctures to draw, in crank -> dial face order
         {x=410, y=100},
         {x=320},
-        {x=270},
+        {x=320-SWITCH_LENGTH},
         {x=60},
         {x=40, y=80},
         {y=0}
     }
     wire:setForeground(function(x, y, width, height)
         gfx.setColor(COLOR_1)
-        gfx.setLineWidth(13)
+        gfx.setLineWidth(WIRE_WIDTH)
         gfx.setLineCapStyle(LINE_CAP_STYLE)
         gfx.drawLine(p[1].x, p[1].y, p[2].x, p[1].y)
         gfx.drawLine(p[3].x, p[1].y, p[4].x, p[1].y)
@@ -141,6 +178,21 @@ local function initCrankDialCircuit()
 
     -- TODO we're searching for these files in the wrong place.
     -- They'll be saved in the app's folder in Data on the device.
+    local switchImagetable = gfx.imagetable.new(imgPathPrefix .. "switch")
+    if not switchImagetable then
+        d.log("switch images not found; baking")
+        switchImagetable = bakeSwitchAnimation()
+    end
+    switch:setForeground(switchImagetable)
+    switch:setPosition(265, 150)
+    switch.isPressed = function() return pd.buttonIsPressed(B) end
+    switch.pressedAction = function ()
+        switch._fg_anim:play(1, 0, animation.bookmarks.last) --TODO publish uielement anims
+    end
+    switch.justReleasedAction = function ()
+        switch._fg_anim:play(-1, 1, animation.bookmarks.first)
+    end
+
     local preSwitchLEDImagetable = gfx.imagetable.new(imgPathPrefix .. "preSwitchLED")
     local postSwitchLEDImagetable = gfx.imagetable.new(imgPathPrefix .. "postSwitchLED")
     if not preSwitchLEDImagetable or not postSwitchLEDImagetable then
@@ -154,7 +206,7 @@ local function initCrankDialCircuit()
     preSwitchLED:setMode(dial.visualizers.animation)
     postSwitchLED:setForeground(postSwitchLEDImagetable, 16)
     postSwitchLED:setPosition(10, 100)
-    postSwitchLED.isSelected = function() return pd.buttonIsPressed(B) end
+    postSwitchLED.isSelected = switch.isPressed
     postSwitchLED.getDialChange = crankhandler.subscribe()
     postSwitchLED:setMode(dial.visualizers.animation)
 
