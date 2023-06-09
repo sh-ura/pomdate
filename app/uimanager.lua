@@ -61,7 +61,8 @@ local doneInst = nil -- instructions shown in DONE_TIMER state --TODO move to in
 local scoreboard = nil -- visualizes pause and snooze scores for this timer session
 
 --- Make and write the frames for the LED animations
----@return gfx.imagetable containing the frames
+---@return gfx.imagetable containing the preSwitchLED frames
+---@return gfx.imagetable containing the postSwitchLED frames
 local function bakeLEDAnimations()
     local period = 60                       -- period in terms of frames, rather than seconds
     local n_spokes = 5
@@ -74,10 +75,11 @@ local function bakeLEDAnimations()
     local radPerFrame = 2 * pi / period
     local radPerSpoke = pi / n_spokes
 
-    local imagetable = gfx.imagetable.new(n_frames)
+    local preSwitchLEDImagetable = gfx.imagetable.new(n_frames)
+    local postSwitchLEDImagetable = gfx.imagetable.new(n_frames)
     local theta     local x     local y     local i_frame
     for j = 0, n_frames-1 do
-        local frame = gfx.image.new(w_frame * 4, h_frame, COLOR_CLEAR)
+        local frame = gfx.image.new(w_frame, h_frame, COLOR_CLEAR)
         
         for k = 0, n_spokes-1 do
             theta = k*radPerSpoke + j*radPerFrame
@@ -87,22 +89,24 @@ local function bakeLEDAnimations()
                 gfx.setColor(COLOR_1)
                 gfx.setLineWidth(6)
                 gfx.setLineCapStyle(gfx.kLineCapStyleRound)
-                x = A * cos(theta - C) + w_frame//2
-                gfx.drawLine(w_frame//2, h_frame//2, x, y)
-                gfx.fillCircleAtPoint(x + w_frame, y, 4)
-
-                x = 6 * cos(theta - C)
-                gfx.drawLine(2.5*w_frame - x*1.5, y, 2.5*w_frame + x*1.5, y)
                 gfx.setLineWidth(x)
-                gfx.drawLine(3.5*w_frame - x*1.5, y, 3.5*w_frame + x*1.5, y)
+                gfx.drawLine((w_frame - x*3)/2, y, (w_frame + x*3)/2, y)
+                -- Other unit circle-visualizers below
+                --gfx.drawLine(2.5*w_frame - x*1.5, y, 2.5*w_frame + x*1.5, y)
+                --x = A * cos(theta - C) + w_frame//2
+                --gfx.drawLine(w_frame//2, h_frame//2, x, y)
+                --gfx.fillCircleAtPoint(x + w_frame, y, 4)
             gfx.popContext()
         end
         
+        local rotatedFrame = frame:rotatedImage(90)
         i_frame = n_frames - j
         pd.datastore.writeImage(frame, imgPathPrefix .. "preSwitchLED-table-" .. i_frame)
-        imagetable:setImage(i_frame, frame)
+        preSwitchLEDImagetable:setImage(i_frame, frame)
+        pd.datastore.writeImage(rotatedFrame, imgPathPrefix .. "postSwitchLED-table-" .. i_frame)
+        postSwitchLEDImagetable:setImage(i_frame, rotatedFrame)
     end
-    return imagetable
+    return preSwitchLEDImagetable, postSwitchLEDImagetable
 end
 
 local function initCrankDialCircuit()
@@ -111,7 +115,7 @@ local function initCrankDialCircuit()
     local wire = UIElement({"wire", 420, 140})
     local switch = Button({"switch", 60, 60})
     local preSwitchLED = Dial({"preSwitchLED", 40, 80})
-    local postSwitchLED = Button({"postSwitchLED", 80, 40})
+    local postSwitchLED = Dial({"postSwitchLED", 80, 40})
     local function stateIsMENU() return state == STATES.MENU end --TODO these types of funcs can be declared in main, allowing hidind of state var
 
     local p = { -- wire junctures to draw, in crank -> dial face order
@@ -137,15 +141,22 @@ local function initCrankDialCircuit()
 
     -- TODO we're searching for these files in the wrong place.
     -- They'll be saved in the app's folder in Data on the device.
-    local imagetable = gfx.imagetable.new(imgPathPrefix .. "preSwitchLED")
-    if not imagetable then
-        d.log("preSwitchLED images not found; baking")
-        imagetable = bakeLEDAnimations()
+    local preSwitchLEDImagetable = gfx.imagetable.new(imgPathPrefix .. "preSwitchLED")
+    local postSwitchLEDImagetable = gfx.imagetable.new(imgPathPrefix .. "postSwitchLED")
+    if not preSwitchLEDImagetable or not postSwitchLEDImagetable then
+        d.log("pre- or postSwitchLED images not found; baking")
+        preSwitchLEDImagetable, postSwitchLEDImagetable = bakeLEDAnimations()
     end
-    preSwitchLED:setForeground(imagetable, 16)
-    preSwitchLED:setPosition(60, 130)
+    preSwitchLED:setForeground(preSwitchLEDImagetable, 16)
+    preSwitchLED:setPosition(350, 170)
+    preSwitchLED.isSelected = function() return true end
     preSwitchLED.getDialChange = crankhandler.subscribe()
     preSwitchLED:setMode(dial.visualizers.animation)
+    postSwitchLED:setForeground(postSwitchLEDImagetable, 16)
+    postSwitchLED:setPosition(10, 100)
+    postSwitchLED.isSelected = function() return pd.buttonIsPressed(B) end
+    postSwitchLED.getDialChange = crankhandler.subscribe()
+    postSwitchLED:setMode(dial.visualizers.animation)
 
     wire:addChildren({switch, preSwitchLED, postSwitchLED}, 'parentEnables')
 end

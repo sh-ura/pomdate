@@ -98,8 +98,8 @@ function Dial:update()
         elseif upp and self.value >= upp then
             self.value = upp
         end
+        self._renderValue()
     end
-    self._renderValue()
     --d.illustrateBounds(self)
 end
 
@@ -170,6 +170,13 @@ function Dial:setMode(mode)
             self.value = 0
         end
     end
+end
+
+--- Add the dial to the global sprite list.
+function Dial:add()
+    Dial.super.add(self)
+    -- ensure that dial value is rendered at least once, otherwise it's only rendered when selected.
+    self._renderValue()
 end
 
 --- Set the unit on the dial,
