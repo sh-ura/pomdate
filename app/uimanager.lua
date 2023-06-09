@@ -38,9 +38,9 @@ local COLOR_1 <const> = COLOR_1
 
 local CRANKS_REVOLS_PER_HOUR <const> = 3
 local WIRE_WIDTH <const> = 13
-local SWITCH_LENGTH <const> = 50
-local BUTTON_WIDTH <const> = 120
-local BUTTON_HEIGHT <const> = 34
+local SWITCH_LENGTH <const> = 65
+local BUTTON_WIDTH <const> = 120        -- for a generic *horizontal* button. Use as height for vertical button
+local BUTTON_HEIGHT <const> = 34        -- for a generic *horizontal* button. Use as width for vertical button
 local BUTTON_TRAVEL_DISTANCE <const> = 60
 local LINE_CAP_STYLE <const> = gfx.kLineCapStyleRound
 local imgPathPrefix = "assets/ui/"
@@ -67,9 +67,12 @@ local function bakeSwitchAnimation()
     local h_frame = SWITCH_LENGTH + 70
     local n_frames = 20
     local C = 3/4 * pi                  -- phase shift
+    local x_button = 0.1 * SWITCH_LENGTH
+    local y_button = SWITCH_LENGTH + MARGIN + 2
 
     local A = 0.8 * SWITCH_LENGTH       -- amplitude
     local radPerFrame = pi/4 / (n_frames - 1)
+    local buttonTravelPerFrame = BUTTON_TRAVEL_DISTANCE / n_frames
 
     local switchImagetable = gfx.imagetable.new(n_frames)
     local theta     local x     local y     local i_frame
@@ -82,8 +85,19 @@ local function bakeSwitchAnimation()
             gfx.setColor(COLOR_1)
             gfx.setLineWidth(WIRE_WIDTH)
             gfx.setLineCapStyle(gfx.kLineCapStyleRound)
-            -- draw line from (x,y) to the unit-circle origin
+            -- draw wire from (x,y) to the unit-circle origin, transposed by (SWITCH_LENGTH, SWITCH_LENGTH)
             gfx.drawLine(x + SWITCH_LENGTH, y + SWITCH_LENGTH, SWITCH_LENGTH, SWITCH_LENGTH)
+            gfx.setLineWidth(4)
+            -- draw tether from the switch wire to the B button
+            x = x_button + BUTTON_HEIGHT/2
+            y = y + SWITCH_LENGTH + 5
+            gfx.drawLine(x, y, x, 242)
+            -- draw B button
+            x = x_button
+            y = y_button + j*buttonTravelPerFrame
+            gfx.fillRoundRect(x, y, x + BUTTON_HEIGHT, y + BUTTON_WIDTH, BUTTON_WIDTH/2)
+            gfx.setImageDrawMode(gfx.kDrawModeInverted)
+            gfx.drawTextAligned("B", x + BUTTON_HEIGHT/2 + 4, y + 10, kTextAlignment.center)
         gfx.popContext()
 
         i_frame = j + 1
@@ -158,7 +172,7 @@ local function initCrankDialCircuit()
     local p = { -- wire junctures to draw, in crank -> dial face order
         {x=410, y=100},
         {x=320},
-        {x=320-SWITCH_LENGTH},
+        {x=328-SWITCH_LENGTH},
         {x=60},
         {x=40, y=80},
         {y=0}
@@ -184,7 +198,7 @@ local function initCrankDialCircuit()
         switchImagetable = bakeSwitchAnimation()
     end
     switch:setForeground(switchImagetable)
-    switch:setPosition(265, 150)
+    switch:setPosition(p[3].x-8, 168 - SWITCH_LENGTH/2)
     switch.isPressed = function() return pd.buttonIsPressed(B) end
     switch.pressedAction = function ()
         switch._fg_anim:play(1, 0, animation.bookmarks.last) --TODO publish uielement anims
