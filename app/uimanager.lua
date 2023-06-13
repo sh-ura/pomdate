@@ -33,14 +33,14 @@ local newPoint <const> = utils.newPoint
 local pi <const> = math.pi
 local sin <const> = math.sin
 local cos <const> = math.cos
-local COLOR_0 <const> = COLOR_0
-local COLOR_1 <const> = COLOR_1
 
 local CRANKS_REVOLS_PER_HOUR <const> = 3
 local WIRE_WIDTH <const> = 13
-local SWITCH_LENGTH <const> = 65
-local BUTTON_WIDTH <const> = 120        -- for a generic *horizontal* button. Use as height for vertical button
-local BUTTON_HEIGHT <const> = 40        -- for a generic *horizontal* button. Use as width for vertical button
+local SWITCH_LENGTH <const> = 80
+local BUTTON_WIDTH_L <const> = 140        -- for a Large *horizontal* button. Use as height for vertical button
+local BUTTON_HEIGHT_L <const> = 46        -- for a Large *horizontal* button. Use as width for vertical button
+local BUTTON_WIDTH_M <const> = 60
+local BUTTON_HEIGHT_M <const> = 32
 local BUTTON_TRAVEL_DISTANCE <const> = 60
 local DIAL_WIDTH <const> = 220
 local DIAL_HEIGHT <const> = 140
@@ -67,7 +67,7 @@ local scoreboard = nil -- visualizes pause and snooze scores for this timer sess
 
 local function bakeSwitchAnimation()
     local w_frame = SWITCH_LENGTH + 10
-    local h_frame = SWITCH_LENGTH + 70
+    local h_frame = SWITCH_LENGTH + MARGIN + BUTTON_WIDTH_M/2
     local n_frames = 20
     local C = 3/4 * pi                  -- phase shift
     local x_button = 0.1 * SWITCH_LENGTH
@@ -92,15 +92,15 @@ local function bakeSwitchAnimation()
             gfx.drawLine(x + SWITCH_LENGTH, y + SWITCH_LENGTH, SWITCH_LENGTH, SWITCH_LENGTH)
             gfx.setLineWidth(4)
             -- draw tether from the switch wire to the B button
-            x = x_button + BUTTON_HEIGHT/2
+            x = x_button + BUTTON_HEIGHT_L/2
             y = y + SWITCH_LENGTH + 5
             gfx.drawLine(x, y, x, 242)
             -- draw B button
             x = x_button
             y = y_button + j*buttonTravelPerFrame
-            gfx.fillRoundRect(x, y, BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT/2)
+            gfx.fillRoundRect(x, y, BUTTON_HEIGHT_L, BUTTON_WIDTH_M, BUTTON_HEIGHT_L/2)
             gfx.setImageDrawMode(gfx.kDrawModeInverted)
-            gfx.drawTextAligned("B", x + BUTTON_HEIGHT/2, y + 10, kTextAlignment.center)
+            gfx.drawTextAligned("B", x + BUTTON_HEIGHT_L/2, y + 10, kTextAlignment.center)
         gfx.popContext()
 
         i_frame = j + 1
@@ -174,8 +174,8 @@ local function initCrankDialCircuit()
 
     local p = { -- wire junctures to draw, in crank -> dial face order
         {x=410, y=100},
-        {x=320},
-        {x=325-SWITCH_LENGTH},
+        {x = X_B_BUTTON + SWITCH_LENGTH - 8},
+        {x = X_B_BUTTON},
         {x=60},
         {x=40, y=80},
         {y=0}
@@ -201,7 +201,7 @@ local function initCrankDialCircuit()
         switchImagetable = bakeSwitchAnimation()
     end
     switch:setForeground(switchImagetable)
-    switch:setPosition(p[3].x-8, 168 - SWITCH_LENGTH/2)
+    switch:setPosition(X_B_BUTTON - BUTTON_HEIGHT_L/4, H_SCREEN - switch.height)
     switch.isPressed = function() return pd.buttonIsPressed(B) end
     switch.pressedAction = function ()
         switch._fg_anim:play(1, 0, animation.bookmarks.last) --TODO publish uielement anims
@@ -250,7 +250,7 @@ local function init(timers)
         local function makeTimerSelector(t, label)
             local name = t.name
 
-            local button = Button({name .. "Button", BUTTON_WIDTH, BUTTON_HEIGHT})
+            local button = Button({name .. "Button", BUTTON_WIDTH_L, BUTTON_HEIGHT_M})
             timerSelectButtons[name] = button
             button.isPressed = function() return pd.buttonJustPressed(A) end
             button:setBackground(function(width, height)
@@ -309,17 +309,18 @@ local function init(timers)
     local ntimers = #timers
     timersMenu = List(
         {"timersMenu",
-        BUTTON_WIDTH + MARGIN * 2,
-        (BUTTON_HEIGHT + MARGIN) * ntimers + MARGIN},
+        BUTTON_WIDTH_L + MARGIN * 2,
+        (BUTTON_HEIGHT_L + MARGIN) * ntimers + MARGIN},
         list.orientations.vertical,
-        MARGIN/2
+        MARGIN
     )
     timersMenu:setEnablingCriteria(function () return state == STATES.MENU end)
     timersMenu.isSelected = function() return state == STATES.MENU end
-    timersMenu:setPosition(250, MARGIN)
+    timersMenu:setPosition(W_SCREEN - (BUTTON_WIDTH_L + MARGIN*2), MARGIN)
     timersMenu:offsetPositions({disabled = newVector(BUTTON_TRAVEL_DISTANCE, 0)})
 
-    local cursor = Cursor({"timerSelectCursor", BUTTON_TRAVEL_DISTANCE - MARGIN, BUTTON_HEIGHT})
+    --[[
+    local cursor = Cursor({"timerSelectCursor", BUTTON_TRAVEL_DISTANCE - MARGIN, BUTTON_HEIGHT_L})
     cursor:setEnablingCriteria(function () return state == STATES.MENU end)
     cursor:setBackground(function(width, height)
         gfx.setColor(COLOR_1)
@@ -331,68 +332,77 @@ local function init(timers)
     cursor:offsetPositions({disabled = newVector(BUTTON_TRAVEL_DISTANCE * 2, 0)})
     cursor:setZIndex(timersMenu:getZIndex() + 10)
     cursor:forceConfigured()
+    --]]
 
-    fillTimersMenu(timersMenu, timers, cursor)
+    fillTimersMenu(timersMenu, timers)
+
+
+    --- Initialize a button that sits directly above the A or B buttons
+    ---@param name string button name
+    ---@param input A or B from the global namespace
+    ---@return Button
+    local function makeABButton (name, input)
+        local button = Button({name .. "Button", BUTTON_HEIGHT_L, BUTTON_TRAVEL_DISTANCE - MARGIN})
+        button.isPressed = function () return pd.buttonIsPressed(input) end
+        button:setBackground(function(width, height)
+            gfx.setColor(COLOR_1)
+            gfx.fillRoundRect(0, 0, width, height, width/2)
+        end)
+        button:setFont(gfx.getFont(), gfx.kDrawModeInverted)
+        button:setText(string.sub(name, 1, 1))
+        if input == A then
+            button:setPosition(X_A_BUTTON, H_SCREEN - button.height * 2/3)
+        elseif input == B then
+            button:setPosition(X_B_BUTTON, H_SCREEN - button.height * 2/3)
+        end
+        button:offsetPositions({
+            disabled = newVector(0,50),
+            pressed = newVector(0,50)
+        })
+        button:forceConfigured()
+        return button
+    end
 
     local paused = false --TODO instead of using this local var, access paused state via STATE or currentTimer.isPaused()
     
-    toMenuButton = Button({"toMenuButton", BUTTON_HEIGHT, BUTTON_TRAVEL_DISTANCE - MARGIN})
+    toMenuButton = makeABButton("toMenu", B)
     toMenuButton:setEnablingCriteria(function() return
         state == STATES.RUN_TIMER
         or state == STATES.DONE_TIMER
     end)
-    toMenuButton.isPressed = function() return pd.buttonJustPressed(B) end
     toMenuButton.pressedAction = function()
         paused = false
         toMenu()
     end
-    toMenuButton:setBackground(function(width, height)
-        gfx.setColor(COLOR_1)
-        gfx.fillRoundRect(0, 0, width, height, width/2)
-    end)
-    toMenuButton:setFont(gfx.getFont(), gfx.kDrawModeInverted)
-    toMenuButton:setText("M")
-    toMenuButton:setPosition(280,210)
-    toMenuButton:offsetPositions({
-        disabled = newVector(0,50),
-        pressed = newVector(0,50)
-    })
-    toMenuButton:forceConfigured()
 
-    pauseButton = Button({"pauseButton"}, 'invisible')
+    pauseButton = makeABButton("pause", A)
     pauseButton:setEnablingCriteria(function() return
         state == STATES.RUN_TIMER
         and not paused
     end)
-    pauseButton.isPressed = function() return pd.buttonJustPressed(A) end
     pauseButton.pressedAction = function()
         pause()
         paused = true
     end
-    pauseButton:forceConfigured()
 
-    unpauseButton = Button({"unpauseButton"}, 'invisible')
+    unpauseButton = makeABButton("unpause", A)
     unpauseButton:setEnablingCriteria(function() return
         state == STATES.RUN_TIMER and
         paused
     end)
-    unpauseButton.isPressed = function() return pd.buttonJustPressed(A) end
     unpauseButton.pressedAction = function()
         unpause()
         paused = false
     end
-    unpauseButton:forceConfigured()
 
-    snoozeButton = Button({"snoozeButton"}, 'invisible')
+    snoozeButton = makeABButton("snooze", A)
     snoozeButton:setEnablingCriteria(function()
         return state == STATES.DONE_TIMER
         and confs.snoozeOn
     end)
-    snoozeButton.isPressed = function() return pd.buttonJustPressed(A) end
     snoozeButton.pressedAction = function()
         snooze()
     end
-    snoozeButton:forceConfigured()
 
 
     --- Initialize a score display.
