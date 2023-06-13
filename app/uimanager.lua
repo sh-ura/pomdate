@@ -40,7 +40,7 @@ local CRANKS_REVOLS_PER_HOUR <const> = 3
 local WIRE_WIDTH <const> = 13
 local SWITCH_LENGTH <const> = 65
 local BUTTON_WIDTH <const> = 120        -- for a generic *horizontal* button. Use as height for vertical button
-local BUTTON_HEIGHT <const> = 34        -- for a generic *horizontal* button. Use as width for vertical button
+local BUTTON_HEIGHT <const> = 40        -- for a generic *horizontal* button. Use as width for vertical button
 local BUTTON_TRAVEL_DISTANCE <const> = 60
 local DIAL_WIDTH <const> = 220
 local DIAL_HEIGHT <const> = 140
@@ -82,8 +82,8 @@ local function bakeSwitchAnimation()
     for j = 0, n_frames - 1 do
         local frame = gfx.image.new(w_frame, h_frame, COLOR_CLEAR)
         theta = j * radPerFrame
-        x = A * cos(-theta - C) d.log("x " .. x)
-        y = A * sin(-theta - C) d.log("y ".. y)
+        x = A * cos(-theta - C)
+        y = A * sin(-theta - C)
         gfx.pushContext(frame)
             gfx.setColor(COLOR_1)
             gfx.setLineWidth(WIRE_WIDTH)
@@ -98,9 +98,9 @@ local function bakeSwitchAnimation()
             -- draw B button
             x = x_button
             y = y_button + j*buttonTravelPerFrame
-            gfx.fillRoundRect(x, y, x + BUTTON_HEIGHT, y + BUTTON_WIDTH, BUTTON_WIDTH/2)
+            gfx.fillRoundRect(x, y, BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT/2)
             gfx.setImageDrawMode(gfx.kDrawModeInverted)
-            gfx.drawTextAligned("B", x + BUTTON_HEIGHT/2 + 4, y + 10, kTextAlignment.center)
+            gfx.drawTextAligned("B", x + BUTTON_HEIGHT/2, y + 10, kTextAlignment.center)
         gfx.popContext()
 
         i_frame = j + 1
@@ -175,7 +175,7 @@ local function initCrankDialCircuit()
     local p = { -- wire junctures to draw, in crank -> dial face order
         {x=410, y=100},
         {x=320},
-        {x=328-SWITCH_LENGTH},
+        {x=325-SWITCH_LENGTH},
         {x=60},
         {x=40, y=80},
         {y=0}
@@ -293,8 +293,7 @@ local function init(timers)
             dial:setFont(gfx.getFont(), gfx.kDrawModeInverted)
             dial:setPosition(MARGIN, MARGIN)
 
-            dial:setZIndex(60)
-            button:setZIndex(70)
+            dial:setZIndex(timersMenu:getZIndex() - 10)
             -- TODO move func def below to be local func more visible at root of this file
             button.pressedAction = function ()
                 toRun(t, dial.value)
@@ -308,12 +307,14 @@ local function init(timers)
     end
 
     local ntimers = #timers
-    timersMenu = List({
-        "timersMenu", BUTTON_WIDTH + MARGIN * 2,
-        (BUTTON_HEIGHT + MARGIN) * ntimers + MARGIN
-    })
+    timersMenu = List(
+        {"timersMenu",
+        BUTTON_WIDTH + MARGIN * 2,
+        (BUTTON_HEIGHT + MARGIN) * ntimers + MARGIN},
+        list.orientations.vertical,
+        MARGIN/2
+    )
     timersMenu:setEnablingCriteria(function () return state == STATES.MENU end)
-    -- TODO when configmenu + menuList, remove the following line
     timersMenu.isSelected = function() return state == STATES.MENU end
     timersMenu:setPosition(250, MARGIN)
     timersMenu:offsetPositions({disabled = newVector(BUTTON_TRAVEL_DISTANCE, 0)})
@@ -337,7 +338,7 @@ local function init(timers)
     
     toMenuButton = Button({"toMenuButton", BUTTON_HEIGHT, BUTTON_TRAVEL_DISTANCE - MARGIN})
     toMenuButton:setEnablingCriteria(function() return
-        state == STATES.RUN_TIMER 
+        state == STATES.RUN_TIMER
         or state == STATES.DONE_TIMER
     end)
     toMenuButton.isPressed = function() return pd.buttonJustPressed(B) end
@@ -345,7 +346,7 @@ local function init(timers)
         paused = false
         toMenu()
     end
-    toMenuButton:setBackground( function(width, height)
+    toMenuButton:setBackground(function(width, height)
         gfx.setColor(COLOR_1)
         gfx.fillRoundRect(0, 0, width, height, width/2)
     end)
@@ -431,7 +432,7 @@ local function init(timers)
         gfx.fillCircleAtPoint(COUNTER_DIAMETER//2, COUNTER_DIAMETER//2, COUNTER_DIAMETER//2)
     gfx.popContext()
     pomCountDisplay = makeScoreDisplay("pom", getPomCount,
-        confs.pomsPerCycle * (COUNTER_DIAMETER + spacing) - spacing, COUNTER_DIAMETER)
+        confs.pomsPerCycle * (COUNTER_DIAMETER + spacing), COUNTER_DIAMETER)
     pomCountDisplay:setEnablingCriteria(function ()
         return state == STATES.MENU
         and getPomCount() ~= 0

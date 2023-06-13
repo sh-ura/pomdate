@@ -42,7 +42,7 @@ orientations = {
 ---         'name' or 1: (string) button name for debugging
 ---         'w' or 2: (integer; optional) initial width, defaults to screen width
 ---         'h' or 3: (integer; optional) initial height, defaults to screen height
----@param orientiation enum (optional) member of list.ol. Defaults to vert.
+---@param orientiation enum (optional) member of list.orientations. Defaults to vert.
 ---@param spacing integer (optional) number of pixels between UIElements (this list & its children)
 function List:init(coreProps, orientiation, spacing)
     if not spacing or type(spacing) ~= 'number' then spacing = 0 end
@@ -50,8 +50,8 @@ function List:init(coreProps, orientiation, spacing)
 
     self._spacing = spacing
     self._orientation = orientiation
-    self._nextLocalX = spacing -- next available x pos, relative to this List's top-left corner
-    self._nextLocalY = spacing -- next available y pos, relative to this List's top-left corner
+    self._nextLocalX = nil -- next available x pos, relative to this List's top-left corner
+    self._nextLocalY = nil -- next available y pos, relative to this List's top-left corner
 
     -- orientation-based orientations
     -- could be split into orientation-specific subclasses,
@@ -64,6 +64,7 @@ function List:init(coreProps, orientiation, spacing)
         ---@param y2 integer bottom-right corner of most recent child
         self._setNextLocalXY = function(x2, y2)
             self._nextLocalX = x2 + self._spacing
+            self._nextLocalY = self._posn.default.y + self._spacing
         end
     else -- default to vertical layout
         self._orientation = orientations.vertical
@@ -73,6 +74,7 @@ function List:init(coreProps, orientiation, spacing)
         ---@param x2 integer bottom-right corner of most recent child
         ---@param y2 integer bottom-right corner of most recent child
         self._setNextLocalXY = function(x2, y2)
+            self._nextLocalX = self._posn.default.x + self._spacing
             self._nextLocalY = y2 + self._spacing
         end
     end
@@ -103,20 +105,25 @@ end
 ---@param parentEnables boolean (option) child is enabled/disabled when parent is enabled/disabled
 ---@return table of successfully added child UIElements
 function List:addChildren(e, parentEnables)
+    d.log("spacing " .. self._spacing)
     local newChildren = List.super.addChildren(self, e, parentEnables)
     local px1 = self._posn.default.x
     local py1 = self._posn.default.y
 
+    if not self._nextLocalX or not self._nextLocalY then self._setNextLocalXY(px1, py1) end
+    local x1    local y1    local x2    local y2
     for _, child in ipairs(newChildren) do
         child.isSelected = function ()
             return child == self._children[self._i_selectChild]
         end
-        local x1 = px1 + self._nextLocalX
-        local y1 = py1 + self._nextLocalY
-        local x2 = x1 + child.width
-        local y2 = y1 + child.height
+
+        x1 = self._nextLocalX
+        y1 = self._nextLocalY
         child:setPosition(x1, y1)
         child:offsetPositions({disabled = self._posn.offsets.disabled})
+
+        x2 = x1 + child.width
+        y2 = y1 + child.height
         self._setNextLocalXY(x2, y2)
 
         --[[TODO debug this code isnt working
@@ -193,7 +200,7 @@ function List:getMaxContentDim(nNewElements)
         h = available // nNewElements
     end
 
-    return w , h 
+    return w , h
 end
 
 --- Selects the next child in the list.
