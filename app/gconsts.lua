@@ -21,3 +21,4 @@ STATES = {
 }
 UI_ANIM_DURATION = 1500
 UI_ANIM_DELAY = 0 -- base delay in msec on state-based animations after state change
+POMS_MAX = 7

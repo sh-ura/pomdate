@@ -42,6 +42,9 @@ local SWITCH_LENGTH <const> = 65
 local BUTTON_WIDTH <const> = 120        -- for a generic *horizontal* button. Use as height for vertical button
 local BUTTON_HEIGHT <const> = 34        -- for a generic *horizontal* button. Use as width for vertical button
 local BUTTON_TRAVEL_DISTANCE <const> = 60
+local DIAL_WIDTH <const> = 220
+local DIAL_HEIGHT <const> = 140
+local COUNTER_DIAMETER <const> = 15
 local LINE_CAP_STYLE <const> = gfx.kLineCapStyleRound
 local imgPathPrefix = "assets/ui/"
 
@@ -273,7 +276,7 @@ local function init(timers)
                 end)
             end
 
-            local dial = Dial({name .. "Dial", 80, 40}, 1, 60)
+            local dial = Dial({name .. "Dial", DIAL_WIDTH, DIAL_HEIGHT}, 1, 60)
             durationDials[name] = dial
             dial:setEnablingCriteria(function() return
                 button:isEnabled()
@@ -288,9 +291,10 @@ local function init(timers)
                 gfx.fillRect(0, 0, width, height)
             end)
             dial:setFont(gfx.getFont(), gfx.kDrawModeInverted)
-            dial:setZIndex(60)
-            dial:setPosition(MARGIN, 60)
+            dial:setPosition(MARGIN, MARGIN)
 
+            dial:setZIndex(60)
+            button:setZIndex(70)
             -- TODO move func def below to be local func more visible at root of this file
             button.pressedAction = function ()
                 toRun(t, dial.value)
@@ -390,45 +394,26 @@ local function init(timers)
     snoozeButton:forceConfigured()
 
 
-    --- Populate a scoreboard.
-    ---@param list List to use as a container
-    ---@param instructions table containing unit:scoringFunction pairs
-    ---@return table name:display pairs of the new score display objects
-    local function makeScoreDisplays(list, scoringFuncs)
-        list.isSelected = function() return false end -- no reason for user to select instructions
-        
-        -- count all instructions to be stacked into list
-        local n = 0
-        for _, _ in pairs(scoringFuncs) do n = n + 1 end
-        local w, h = list:getMaxContentDim(n)
+    --- Initialize a score display.
+    ---@param scoringFunc function that returns the score when called
+    ---@return Dial new display dial
+    local function makeScoreDisplay(unit, scoringFunc, width, height)
+        local display = Dial({unit .. "Score", width, height})
+        display.isSelected = function() return true end
+        display:setUnit(unit)
 
-        local created = {}
-        for unit, score in pairs(scoringFuncs) do
-            local display = Dial({unit .. "Score", w, h})
-            list:addChildren(display)
-            display:setEnablingCriteria(function() return
-                list:isEnabled() 
-                and score() ~= 0
-            end)
-            display.isSelected = function() return true end
-            display:setUnit(unit)
-
-            local prevScore = 0
-            display.getDialChange = function()
-                local currentScore = score()
-                local scoreDiff = currentScore - prevScore
-                prevScore = currentScore
-                return scoreDiff
-            end
-
-            --TODO can collide on units; use numbered or name indices instead
-            created[unit] = display
+        local prevScore = 0
+        display.getDialChange = function()
+            local currentScore = scoringFunc()
+            local scoreDiff = currentScore - prevScore
+            prevScore = currentScore
+            return scoreDiff
         end
-        return created
+        return display
     end
 
-    --TODO DEBUG sometimes this appears chopped in half.
-    --      I think it has to do with the image canvas being a bit too small for the text
+    --[[
+    --TODO redesign, then remake these score displays
     scoreboard = List({"scoreboard", 100, 80})
     scoreboard:setEnablingCriteria(function() return state == STATES.DONE_TIMER end)
     makeScoreDisplays(scoreboard, {
@@ -437,12 +422,24 @@ local function init(timers)
     })
     scoreboard:moveTo(300, 60)
     scoreboard:setZIndex(80)
+    --]]
 
-    pomCountDisplay = List({"pomCountDisplay", 100, 25})
-    pomCountDisplay:setEnablingCriteria(function() return state == STATES.MENU end)
-    makeScoreDisplays(pomCountDisplay, { pom = getPomCount })
-        .pom:setMode(dial.visualizers.horiCounter) -- visualize poms as counters
-    pomCountDisplay:moveTo(MARGIN, MARGIN)
+    local spacing = 4
+    local pomCounter = gfx.image.new(COUNTER_DIAMETER, COUNTER_DIAMETER, COLOR_CLEAR)
+    gfx.pushContext(pomCounter)
+        gfx.setColor(COLOR_1)
+        gfx.fillCircleAtPoint(COUNTER_DIAMETER//2, COUNTER_DIAMETER//2, COUNTER_DIAMETER//2)
+    gfx.popContext()
+    pomCountDisplay = makeScoreDisplay("pom", getPomCount,
+        confs.pomsPerCycle * (COUNTER_DIAMETER + spacing) - spacing, COUNTER_DIAMETER)
+    pomCountDisplay:setEnablingCriteria(function ()
+        return state == STATES.MENU
+        and getPomCount() ~= 0
+    end)
+    d.log("setting mode")
+    pomCountDisplay:setMode(dial.visualizers.horiCounter) -- visualize poms as counters
+    pomCountDisplay:setCounter(pomCounter, spacing)
+    pomCountDisplay:setPosition(MARGIN + DIAL_WIDTH - pomCountDisplay.width, MARGIN*2 + DIAL_HEIGHT)
     pomCountDisplay:setZIndex(80)
 
     initCrankDialCircuit()

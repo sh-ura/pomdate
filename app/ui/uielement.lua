@@ -235,7 +235,7 @@ end
 ---                gfx.image
 ---                gfx.sprite, OR
 ---                gfx.tilemap
----@return gfx.animation.loop, paused if the drawable is a static image
+---@return ui.animation, paused if the drawable is a static image
 local function renderDrawable(self, drawable)
     if type(drawable) ~= 'function'
     and not (drawable.draw or drawable.drawImage) then

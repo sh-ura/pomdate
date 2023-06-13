@@ -11,8 +11,7 @@ local pd <const> = playdate
 local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
-local d <const> = debugger
-local abs <const> = math.abs
+local type <const> = type
 local COLOR_0 <const> = COLOR_0
 local COLOR_1 <const> = COLOR_1
 local COLOR_CLEAR <const> = COLOR_CLEAR
@@ -24,10 +23,10 @@ local _ENV = P      -- enter pkg namespace
 name = "dial"
 
 visualizers = {
-    numeral = 1,
-    horiCounter = 2,
-    vertCounter = 3,
-    animation = 4
+    numeral = "numeral",
+    horiCounter = "width",
+    vertCounter = "height",
+    animation = "animation"
 }
 
 --- Initializes a new Dial instance.
@@ -42,7 +41,6 @@ function Dial:init(coreProps, lowerLimit, upperLimit, step)
     if not step then step = 1 end
     Dial.super.init(self, coreProps) --should always be at top of init func
 
-    self._spacing = 2
     self._step = step    -- step to inc/decrement value by
     self._lowLimit = nil
     self._uppLimit = nil
@@ -68,6 +66,8 @@ function Dial:init(coreProps, lowerLimit, upperLimit, step)
         gfx.setColor(COLOR_1)
         gfx.fillCircleAtPoint(9, 9, 9)
     gfx.popContext(self._counter)
+    self._spacing = 2    -- pixels between counter images, if applicable
+    self._direction = 1  -- direction to increment counter images in, if applicable
 
     --- Declare dial behaviour, to be configured elsewhere, prob by UI Manager
     ---@return integer amount to dial. pos for forward, neg for backward, 0 for no change
@@ -107,37 +107,24 @@ end
 ---@param mode enum one of the dial.visualizers options
 function Dial:setMode(mode)
     local w, h = self:getSize()
-    if mode == visualizers.horiCounter then
+    if mode == visualizers.horiCounter or mode == visualizers.vertCounter then
+        self:setForeground(gfx.image.new(self.width, self.height, COLOR_CLEAR))
+        
         self._renderValue = function()
             -- only redraw if val has changed
             if self.value == self._prevValue then return end
 
             local counter = self._counter
-            local w_counter, _ = counter:getSize() --TODO can call width?
+            local dim_counter = counter[mode]
             local spacing = self._spacing
-            local x = 0
+            local posn = 0
+            if self._direction < 0 then posn = self[mode] - dim_counter end
             gfx.pushContext(self._fg_anim:image())
                 gfx.clear(COLOR_CLEAR)
                 for i = 0, self.value - 1 do
-                    counter:draw(x, 0)
-                    x = x + w_counter + spacing
-                end
-            gfx.popContext()
-        end
-    elseif mode == visualizers.vertCounter then
-        self._renderValue = function()
-            -- only redraw if val has changed
-            if self.value == self._prevValue then return end
-
-            local counter = self._counter
-            local _, h_counter = counter:getSize()
-            local spacing = self._spacing
-            local y = 0
-            gfx.pushContext(self._fg_anim:image())
-                gfx.clear(COLOR_CLEAR)
-                for i = 0, self.value - 1 do
-                    counter:draw(0, y)
-                    y = y + h_counter + spacing
+                    if mode == visualizers.horiCounter then counter:draw(posn, 0)
+                    else counter:draw(0, posn) d.log("vert") end
+                    posn = posn + self._direction * (dim_counter + spacing)
                 end
             gfx.popContext()
         end
@@ -147,13 +134,16 @@ function Dial:setMode(mode)
             if self.value == self._prevValue then return end
 
             local text = "" .. self.value
-            if self._unit then text = text .. " " .. self._unit 
+            if self._unit then text = text .. " " .. self._unit
                 if self.value ~= 1 then text = text .. "s" end
             end
             self._text = text
             self:redraw()
         end
     elseif mode == visualizers.animation then
+        if not self._fg_anim then
+            self:setForeground(gfx.image.new(self.width, self.height, COLOR_CLEAR))
+        end
         self._renderValue = function()
             --[[
             if self.value > 0 then
@@ -191,9 +181,13 @@ end
 ---@param img playdate.graphics.image image to use as counter.
 ---@param spacing integer (optional) number of pixels between each counter.
 ---         Defaults to 2.
-function Dial:setCounter(img, spacing)
+---@param reverseDirection boolean (optional) if true, counters will incement:
+---         UPWARDS onscreen for vertCounter
+---         LEFTWARDS onscreen for horiCounter
+function Dial:setCounter(img, spacing, reverseDirection)
     self._counter = img
-    if spacing then self._spacing = spacing end
+    if spacing and type(spacing) == 'number' then self._spacing = spacing end
+    if reverseDirection then self._direction = -1 end
 end
 
 --- Set the value on the dial.

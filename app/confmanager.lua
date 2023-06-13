@@ -42,7 +42,7 @@ local metaconfs = {
     pomsPerCycle = {
         default = 4,
         min = 2,
-        max = 8,
+        max = POMS_MAX,
         get = function()
             d.log("no confs.pomsPerCycle.get func set")
             return confs.pomsPerCycle
