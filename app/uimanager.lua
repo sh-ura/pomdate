@@ -177,9 +177,12 @@ local function bakeLEDAnimations()
 end
 
 local function initCrankDialCircuit()
+    local w_circuit = 400
+    local h_circuit = 140
+
     -- These var names borrow similar-function circuitry vocab,
     --      don't necessarily represent how the sprite looks
-    local wire = UIElement({"wire", 420, 140})
+    local wire = UIElement({"wire", w_circuit, h_circuit})
     local switch = Button({"switch", 60, 60})
     local preSwitchLED = Dial({"preSwitchLED", 40, 80})
     local postSwitchLED = Dial({"postSwitchLED", 80, 40})
@@ -214,7 +217,7 @@ local function initCrankDialCircuit()
         switchImagetable = bakeSwitchAnimation()
     end
     switch:setForeground(switchImagetable)
-    switch:setPosition(X_B_BUTTON - BUTTON_HEIGHT_L/4, H_SCREEN - switch.height)
+    switch:setPosition(X_B_BUTTON - BUTTON_HEIGHT_L/4, h_circuit - switch.height)
     switch.isPressed = function() return pd.buttonIsPressed(B) end
     switch.pressedAction = function ()
         switch.fg_anim:play(1, 0, animation.bookmarks.last,
@@ -232,12 +235,12 @@ local function initCrankDialCircuit()
         preSwitchLEDImagetable, postSwitchLEDImagetable = bakeLEDAnimations()
     end
     preSwitchLED:setForeground(preSwitchLEDImagetable, 16)
-    preSwitchLED:setPosition(350, 170)
+    preSwitchLED:setPosition(w_circuit - 50, h_circuit - 70)
     preSwitchLED.isSelected = function() return true end
     preSwitchLED.getDialChange = crankhandler.subscribe()
     preSwitchLED:setMode(dial.visualizers.animation)
     postSwitchLED:setForeground(postSwitchLEDImagetable, 16)
-    postSwitchLED:setPosition(10, 130)
+    postSwitchLED:setPosition(10, 34)
     postSwitchLED.isSelected = getCrankDialCircuitClosure
     postSwitchLED.getDialChange = crankhandler.subscribe()
     postSwitchLED:setMode(dial.visualizers.animation)

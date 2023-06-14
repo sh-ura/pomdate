@@ -53,7 +53,7 @@ function Button:init(coreProps, invisible)
     self.pressedAction = function ()
         if not self._isConfigured then d.log("button '" .. self.name .. "' pressedAction not set") end
     end
-    self._posn.offsets.pressed = nil
+    self.position.offsets.pressed = nil
     self.justReleasedAction = function () end -- optional action to take when button is released, one time per press
 
     self._isConfigured = true
@@ -68,16 +68,16 @@ function Button:update()
         if self.isPressed() then
             --d.log(self.name .. " is pressed")
             local pressedOffset = newVector(0,0)
-            if self._posn.offsets.pressed then pressedOffset = self._posn.offsets.pressed
-            elseif self._posn.offsets.selected then pressedOffset = self._posn.offsets.selected
+            if self.position.offsets.pressed then pressedOffset = self.position.offsets.pressed
+            elseif self.position.offsets.selected then pressedOffset = self.position.offsets.selected
             end
 
-            self:reposition(self._posn.default + pressedOffset)
-            self._posn.arrivalCallback = self.pressedAction
+            self:reposition(self:getPointPosition(), self.position.default + pressedOffset)
+            self.position._arrivalCallback = self.pressedAction
             self._wasPressed = true
         elseif self._wasPressed then
-            self:reposition(self._posn.default)
-            self._posn.arrivalCallback = self.justReleasedAction
+            self:reposition(self:getPointPosition(), self.position.default)
+            self.position._arrivalCallback = self.justReleasedAction
             self._wasPressed = false
         end
     end

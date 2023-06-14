@@ -64,7 +64,7 @@ function List:init(coreProps, orientiation, spacing)
         ---@param y2 integer bottom-right corner of most recent child
         self._setNextLocalXY = function(x2, y2)
             self._nextLocalX = x2 + self._spacing
-            self._nextLocalY = self._posn.default.y + self._spacing
+            self._nextLocalY = self.position.default.y + self._spacing
         end
     else -- default to vertical layout
         self._orientation = orientations.vertical
@@ -74,7 +74,7 @@ function List:init(coreProps, orientiation, spacing)
         ---@param x2 integer bottom-right corner of most recent child
         ---@param y2 integer bottom-right corner of most recent child
         self._setNextLocalXY = function(x2, y2)
-            self._nextLocalX = self._posn.default.x + self._spacing
+            self._nextLocalX = self.position.default.x + self._spacing
             self._nextLocalY = y2 + self._spacing
         end
     end
@@ -107,8 +107,8 @@ end
 function List:addChildren(e, parentEnables)
     d.log("spacing " .. self._spacing)
     local newChildren = List.super.addChildren(self, e, parentEnables)
-    local px1 = self._posn.default.x
-    local py1 = self._posn.default.y
+    local px1 = self.position.default.x
+    local py1 = self.position.default.y
 
     if not self._nextLocalX or not self._nextLocalY then self._setNextLocalXY(px1, py1) end
     local x1    local y1    local x2    local y2
@@ -120,7 +120,7 @@ function List:addChildren(e, parentEnables)
         x1 = self._nextLocalX
         y1 = self._nextLocalY
         child:setPosition(x1, y1)
-        child:offsetPositions({disabled = self._posn.offsets.disabled})
+        child:offsetPositions({disabled = self.position.offsets.disabled})
 
         x2 = x1 + child.width
         y2 = y1 + child.height

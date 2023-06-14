@@ -29,7 +29,7 @@ function Cursor:init(coreProps)
 
     self._targetWas = nil -- what's currently being pointed to
     self._targets = {} -- array-indexed
-    self._posn.getTargetPoints = {} -- functions for getting target cursor-anchoring points. uses same array indices as self._targets
+    self.position.getTargetPoints = {} -- functions for getting target cursor-anchoring points. uses same array indices as self._targets
 
     self = utils.makeReadOnly(self, "Cursor instance")
 end
@@ -43,7 +43,7 @@ function Cursor:addTarget(element, getCursorAnchorPoint)
         d.log("cannot add non-UIElement target to cursor " .. self.name)
     end
     insert(self._targets, element)
-    insert(self._posn.getTargetPoints, getCursorAnchorPoint)
+    insert(self.position.getTargetPoints, getCursorAnchorPoint)
 end
 
 ---TODO desc
@@ -57,8 +57,8 @@ function Cursor:update()
         if element.isSelected() then
             selectedTargets = selectedTargets + 1
             if self._targetWas ~= element then
-                local posn = self._posn.getTargetPoints[i]()
-                self:reposition(posn)
+                local posn = self.position.getTargetPoints[i]()
+                self:reposition(self:getPointPosition(), posn)
                 self:setPosition(posn) -- return to this location after scene change
             end
             self._targetWas = element

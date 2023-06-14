@@ -95,15 +95,14 @@ function UIElement:init(coreProps)
     self.name = name
 
     -- position props
-    self._posn = {
-        default = newPoint(200, 100),
-        cached = nil,
+    self.position = {
+        default = newPoint(0, 0),
         offsets = {
             disabled = newVector(0, 0),
             selected = newVector(0, 0)
         },
-        animator = nil, -- gfx.animator that is currently performing repositioning
-        arrivalCallback = function() end  -- call this function when the element completes repositioning
+        _animator = nil, -- gfx.animator that is currently performing repositioning
+        _arrivalCallback = function() end  -- call this function when the element completes repositioning
     }
 
     -- visualization props
@@ -182,13 +181,13 @@ function UIElement:update()
     if self:isSelected() then
         if not self._wasSelected then
             self.justSelectedAction()
-            self:reposition(self._posn.default + self._posn.offsets.selected)
+            self:reposition(self:getPointPosition(), self.position.default + self.position.offsets.selected)
         end
         self._wasSelected = true
     else
         if self._wasSelected then
             self.justDeselectedAction()
-            self:reposition(self._posn.default)
+            self:reposition(self:getPointPosition(), self.position.default)
         end
         self._wasSelected = false
     end
@@ -196,11 +195,11 @@ function UIElement:update()
     if self.fg_anim and not self.fg_anim.paused then
         self:redraw()
     end
-    if self._posn.animator then
-        if self._posn.animator:ended() then
-            self._posn.arrivalCallback()
-            self._posn.arrivalCallback = function() end
-            self._posn.animator = nil
+    if self.position._animator then
+        if self.position._animator:ended() then
+            self.position._arrivalCallback()
+            self.position._arrivalCallback = function() end
+            self.position._animator = nil
         end
         return false
     else return true end
@@ -354,9 +353,9 @@ end
 ---@param name string (optional) name of the position offset type, ex. 'disabled', 'selected'
 ---@return gfx.geometry.point
 function UIElement:getConfiguredPosition(name)
-    local offset = self._posn.offsets[name]
+    local offset = self.position.offsets[name]
     if not offset then offset = newVector(0, 0) end
-    return self._posn.default + offset
+    return self.position.default + offset
 end
 
 --- Set the element's default position on the screen when the element is visible.
@@ -367,9 +366,9 @@ end
 ---@param y integer default y-position on the screen
 function UIElement:setPosition(x, y)
     if x and y then
-        self._posn.default = newPoint(x, y)
+        self.position.default = newPoint(x, y)
     elseif x.unpack then
-        self._posn.default = newPoint(x:unpack())
+        self.position.default = newPoint(x:unpack())
     end
 end
 
@@ -382,9 +381,9 @@ function UIElement:offsetPositions(vectors)
     if vectors and type(vectors) == "table" then
         local v_o
         for name, v in pairs(vectors) do
-            v_o = self._posn.offsets[name]
+            v_o = self.position.offsets[name]
             if not v_o then v_o = newVector(0,0) end
-            self._posn.offsets[name] = v_o + v
+            self.position.offsets[name] = v_o + v
         end
     end
 end
@@ -395,23 +394,25 @@ function UIElement:resetOffsets(names)
     local zero = newVector(0,0)
     if type(names) == 'table' then
         for _, name in ipairs(offsets) do
-            if self._posn.offsets[name] then self._posn.offsets[name] = zero end
+            if self.position.offsets[name] then self.position.offsets[name] = zero end
         end
     elseif type(names) == 'string' then
-        if self._posn.offsets[names] then self._posn.offsets[names] = zero end
+        if self.position.offsets[names] then self.position.offsets[names] = zero end
     end
 end
 
 --- Animate element into a new position
----@param destination pd.geometry.point
----@param origin pd.geometry.point (optional) defaults to current position
-function UIElement:reposition(destination, origin)
-    if not origin then origin = self:getPointPosition() end
-    self._posn.animator = gfx.animator.new(
+---@param origin pd.geometry.point
+---@param destination pd.geometry.point or pd.geometry.vector2D
+---@param callback function (optional) to call upon arrival at destination
+function UIElement:reposition(origin, destination, callback)
+    if destination and destination.dotProduct then destination = newPoint(0,0) + destination end
+    self.position._animator = gfx.animator.new(
         ANIM_DURATION * origin:distanceToPoint(destination), --TODO need to make this val tiny
         origin, destination, ease, ANIM_DELAY
     )
-    self:setAnimator(self._posn.animator)
+    self:setAnimator(self.position._animator)
+    if callback then self.position._arrivalCallback = callback end
 end
 
 --- Parents another UIElement.
@@ -440,7 +441,7 @@ function UIElement:addChildren(e, parentEnables)
         if parentEnables then
             element:setEnablingCriteria(function() return self:isEnabled() end)
         end
-        element:moveTo(self.x + element.x, self.y + element.y) --TODO offsetPositions({"parent" = self._posn.default})
+        element:setPosition(element.position.default + newVector(self.position.default:unpack()))
         element:setZIndex(element:getZIndex() + self:getZIndex())
     end
 
@@ -457,19 +458,14 @@ end
 --- Add element to global sprites list and animate it into position.
 function UIElement:add()
     UIElement.super.add(self)
-    local destination = self._posn.cached
-    if not destination then destination = self._posn.default end
-    self:reposition(destination, self._posn.default + self._posn.offsets.disabled)
-    self._posn.cached = nil
+    self:reposition(self.position.default + self.position.offsets.disabled, self.position.default)
 end
 
 function UIElement:remove()
-    self._posn.cached = self:getPointPosition()
-    self:reposition(self._posn.default + self._posn.offsets.disabled)
-    self._posn.arrivalCallback = function()
+    self:reposition(self:getPointPosition(), self.position.default + self.position.offsets.disabled, function()
         UIElement.super.remove(self)
         self._wasSelected = false
-    end
+    end)
 end
 
 --- Moves the UIElement and its children
