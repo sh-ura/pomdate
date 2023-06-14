@@ -128,7 +128,8 @@ local function bakeLEDAnimations()
     local n_spokes = 5
     local w_frame = 60
     local h_frame = 60
-    local A = 20                            -- amplitude, scale
+    local lineWidth = 1.3                   -- scales the lineWidth
+    local A = 22                            -- amplitude/scale of the graphic
     local C = pi/2                          -- phase shift
 
     local n_frames = (period / 2) // n_spokes  -- only show the front-facing half of the cycle
@@ -148,7 +149,7 @@ local function bakeLEDAnimations()
             gfx.pushContext(frame)
                 gfx.setColor(COLOR_1)
                 gfx.setLineCapStyle(gfx.kLineCapStyleRound)
-                gfx.setLineWidth(x)
+                gfx.setLineWidth(x * lineWidth)
                 gfx.drawLine((w_frame - x*3)/2, y, (w_frame + x*3)/2, y)
                 -- Other unit circle-visualizers below
                 --gfx.setLineWidth(6)
@@ -184,8 +185,8 @@ local function initCrankDialCircuit()
         {x=410, y=100},
         {x = X_B_BUTTON + SWITCH_LENGTH - 8},
         {x = X_B_BUTTON},
-        {x=60},
-        {x=40, y=80},
+        {x=54},
+        {x=40, y=86},
         {y=0}
     }
     wire:setForeground(function(x, y, width, height)
