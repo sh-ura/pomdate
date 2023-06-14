@@ -119,7 +119,7 @@ function Dial:setMode(mode)
             local spacing = self._spacing
             local posn = 0
             if self._direction < 0 then posn = self[mode] - dim_counter end
-            gfx.pushContext(self._fg_anim:image())
+            gfx.pushContext(self.fg_anim:image())
                 gfx.clear(COLOR_CLEAR)
                 for i = 0, self.value - 1 do
                     if mode == visualizers.horiCounter then counter:draw(posn, 0)
@@ -141,21 +141,21 @@ function Dial:setMode(mode)
             self:redraw()
         end
     elseif mode == visualizers.animation then
-        if not self._fg_anim then
+        if not self.fg_anim then
             self:setForeground(gfx.image.new(self.width, self.height, COLOR_CLEAR))
         end
         self._renderValue = function()
-            --[[
+            ---[[
             if self.value > 0 then
-                self._fg_anim:track(1,1)
+                self.fg_anim:play(1, 0, 1)
             elseif self.value < 0 then
-                self._fg_anim:track(1,-1)
+                self.fg_anim:play(-1, 0, 1)
             end
             --]]
-            ---[[
+            --[[
             local step = 1
             if self.value < 0 then step = -1 end
-            self._fg_anim:track(self.value * step, step)
+            self.fg_anim:play(step, 0, self.value * step)
             --]]
             self.value = 0
         end

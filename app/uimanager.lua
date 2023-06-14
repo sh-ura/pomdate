@@ -43,10 +43,18 @@ local BUTTON_WIDTH_M <const> = 60
 local BUTTON_HEIGHT_M <const> = 32
 local BUTTON_TRAVEL_DISTANCE <const> = 60
 local DIAL_WIDTH <const> = 220
-local DIAL_HEIGHT <const> = 140
+local DIAL_HEIGHT <const> = 130
 local COUNTER_DIAMETER <const> = 15
 local LINE_CAP_STYLE <const> = gfx.kLineCapStyleRound
 local imgPathPrefix = "assets/ui/"
+
+local crankDialSwitchIsClosed = false
+--- Get the open/closed status of the crank-dial circuit.
+--- If closed, timer duration setting should be settable by cranking.
+---@return boolean true iff crank-dial circuit is closed/complete
+local function getCrankDialCircuitClosure()
+    return crankDialSwitchIsClosed
+end
 
 --TODO rm most of these - those that are not needed outside of specific funcs
 local timersMenu = nil  -- contains the buttons for selecting timers --TODO move to init
@@ -171,7 +179,7 @@ local function initCrankDialCircuit()
     local preSwitchLED = Dial({"preSwitchLED", 40, 80})
     local postSwitchLED = Dial({"postSwitchLED", 80, 40})
     local function stateIsMENU() return state == STATES.MENU end --TODO these types of funcs can be declared in main, allowing hidind of state var
-
+    
     local p = { -- wire junctures to draw, in crank -> dial face order
         {x=410, y=100},
         {x = X_B_BUTTON + SWITCH_LENGTH - 8},
@@ -204,10 +212,12 @@ local function initCrankDialCircuit()
     switch:setPosition(X_B_BUTTON - BUTTON_HEIGHT_L/4, H_SCREEN - switch.height)
     switch.isPressed = function() return pd.buttonIsPressed(B) end
     switch.pressedAction = function ()
-        switch._fg_anim:play(1, 0, animation.bookmarks.last) --TODO publish uielement anims
+        switch.fg_anim:play(1, 0, animation.bookmarks.last,
+        function () crankDialSwitchIsClosed = true end)
     end
     switch.justReleasedAction = function ()
-        switch._fg_anim:play(-1, 1, animation.bookmarks.first)
+        switch.fg_anim:play(-1, 1, animation.bookmarks.first)
+        crankDialSwitchIsClosed = false
     end
 
     local preSwitchLEDImagetable = gfx.imagetable.new(imgPathPrefix .. "preSwitchLED")
@@ -222,8 +232,8 @@ local function initCrankDialCircuit()
     preSwitchLED.getDialChange = crankhandler.subscribe()
     preSwitchLED:setMode(dial.visualizers.animation)
     postSwitchLED:setForeground(postSwitchLEDImagetable, 16)
-    postSwitchLED:setPosition(10, 100)
-    postSwitchLED.isSelected = switch.isPressed
+    postSwitchLED:setPosition(10, 130)
+    postSwitchLED.isSelected = getCrankDialCircuitClosure
     postSwitchLED.getDialChange = crankhandler.subscribe()
     postSwitchLED:setMode(dial.visualizers.animation)
 
@@ -282,7 +292,7 @@ local function init(timers)
                 button:isEnabled()
                 and button.isSelected()
             end)
-            dial.isSelected = function () return pd.buttonIsPressed(B) end
+            dial.isSelected = getCrankDialCircuitClosure
             dial.getDialChange = crankhandler.subscribe(60//CRANKS_REVOLS_PER_HOUR)
             dial:setUnit("min")
             dial:setValue(initialDurations[name])

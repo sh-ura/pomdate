@@ -110,8 +110,8 @@ function UIElement:init(coreProps)
     self._font = gfx.getFont()
     self._textDrawMode = gfx.kDrawModeCopy
     self._text = nil
-    self._bg = nil      -- background
-    self._fg_anim = nil  -- non-text foreground, in an animation loop (1-frame paused if static img)
+    self.bg_anim = nil      -- background
+    self.fg_anim = nil  -- non-text foreground, in an animation loop (1-frame paused if static img)
     self._fg_text = nil -- text foreground
     self._img = gfx.image.new(w, h, COLOR_CLEAR)
     self:setImage(self._img)
@@ -192,7 +192,7 @@ function UIElement:update()
         self._wasSelected = false
     end
 
-    if self._fg_anim and not self._fg_anim.paused then
+    if self.fg_anim and not self.fg_anim.paused then
         self:redraw()
     end
     if self._posn.animator then
@@ -209,8 +209,8 @@ end
 function UIElement:redraw()
     gfx.pushContext(self._img)
         gfx.clear(COLOR_CLEAR)
-        if self._bg then self._bg:draw(0, 0) end
-        if self._fg_anim then self._fg_anim:draw(0,0) end
+        if self.bg_anim then self.bg_anim:draw(0, 0) end
+        if self.fg_anim then self.fg_anim:draw(0,0) end
         if self._text then
             self.renderText()
             self._fg_text:draw(0, 0)
@@ -296,10 +296,10 @@ end
 ---@param framesDelay integer (optional) how many update frames to wait before
 ---                     incrementing to next animation frame. Defaults to ui.animation default
 function UIElement:setForeground(drawable, framesDelay)
-    self._fg_anim = renderDrawable(self, drawable)
-    if framesDelay then self._fg_anim:setDelay(framesDelay) end
-    self._fg_anim:add()
-    local w, h = self._fg_anim:image():getSize()
+    self.fg_anim = renderDrawable(self, drawable)
+    if framesDelay then self.fg_anim:setDelay(framesDelay) end
+    self.fg_anim:add()
+    local w, h = self.fg_anim:image():getSize()
     if w > self.width then
         d.log(self.name .. " background wide; resizing sprite")
         self._img = gfx.image.new(w, self.height)
@@ -325,10 +325,10 @@ end
 ---@param framesDelay integer (optional) how many update frames to wait before
 ---                     incrementing to next animation frame. Defaults to ui.animation default
 function UIElement:setBackground(drawable, framesDelay)
-    self._bg = renderDrawable(self, drawable)
-    if framesDelay then self._bg:setDelay(framesDelay) end
-    self._bg:add()
-    local w, h = self._bg:image():getSize()
+    self.bg_anim = renderDrawable(self, drawable)
+    if framesDelay then self.bg_anim:setDelay(framesDelay) end
+    self.bg_anim:add()
+    local w, h = self.bg_anim:image():getSize()
     if w > self.width then
         self.log(self.name .. " background wide; resizing sprite")
         self._img = gfx.image.new(w, self.height)

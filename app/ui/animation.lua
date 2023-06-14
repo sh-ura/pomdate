@@ -56,6 +56,7 @@ function Animation:init(name, imagetable)
     self._isPaused = true
     self._endAt = nil
     self._countdownFrames = nil
+    self._callback = function () end
 
     self._i = i_nextAnimation
     i_nextAnimation = i_nextAnimation + 1
@@ -92,6 +93,7 @@ function Animation:update()
         self._delay = self._default_delay
         self._endAt = nil
         self._countdownFrames = nil
+        self._callback()
         return
     end
     
@@ -140,8 +142,9 @@ end
 ---@param ending integer (optional) how many frames to play
 ---                     OR bookmark the frame to end on.
 ---                     If not provided, the animation loops.
+---@param callback function (optional) to call if+when animation ends at ending.
 ---@param beginning animation.bookmark (optional) the frame to start on.
-function Animation:play(step, delay, ending, beginning)
+function Animation:play(step, delay, ending, callback, beginning)
     if beginning then
         self._frame = self._bookmarks[beginning]
     end
@@ -151,29 +154,17 @@ function Animation:play(step, delay, ending, beginning)
         else -- bookmark
             self._endAt = self._bookmarks[ending]
         end
+        if callback then
+            self._callback = callback
+        else
+            self._callback = function () end
+        end
     end
     if step then self._step = step
     else self._step = self._default_step end
     if delay then self._delay = delay
     else self._delay = self._default_delay end
     self._isPaused = false
-end
-
---- Tracks through an animation by attempting to play the intermediate frames
----     at a higher frame rate.
----@param target integer how many animation frames to show, regardless of step size,
----              OR bookmark to track to
----@param step integer (optional)unit to step through frames by.
----                     Negative value: backwards. Defaults to 1.
-function Animation:track(target, step)
-    if not step then step = 1 end
-    if type(target) == 'number' then
-        local delay = 0
-        if target > 0 then delay = self._delay // target end
-        self:play(step, delay, target)
-    else -- bookmark
-        self:play(step, 1, target)
-    end
 end
 
 -- pkg footer: pack and export the namespace.
