@@ -5,7 +5,7 @@ local pd <const> = playdate
 local d <const> = debugger
 local insert <const> = table.insert
 local ipairs <const> = ipairs
-local abs <const> = math.abs
+local floor <const> = math.floor
 
 local subscribers = {}
 
@@ -15,7 +15,7 @@ local subscribers = {}
 --- An inactive subscriber can become active any time by calling their getCrankTicks function.
 ---@param ticksPerRevolution integer (optional) number of ticks to count per one full rotation of the crank.
 ---                             Defaults to 360.
----@return function getCrankTicks()
+---@return function getCrankTicks() returns integer
 local function subscribe(ticksPerRevolution)
     if not ticksPerRevolution then ticksPerRevolution = 360 end
     local sub = {
@@ -27,7 +27,7 @@ local function subscribe(ticksPerRevolution)
     insert(subscribers, sub)
     return function()
         sub.using = true
-        local ticks = sub.ticks
+        local ticks = floor(sub.ticks)
         sub.ticks = 0
         return ticks
     end
@@ -44,7 +44,7 @@ local function cranked(change, acceleratedChange)
         if sub.using then
             degrees = sub.bufferedDegrees + change
             degreesPerTick = sub.degreesPerTick
-            ticks = degrees // degreesPerTick
+            ticks = degrees / degreesPerTick
             sub.bufferedDegrees = degrees % degreesPerTick -- leftovers -> buffer
             sub.ticks = sub.ticks + ticks
         end

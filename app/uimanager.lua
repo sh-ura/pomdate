@@ -294,7 +294,7 @@ local function init(timers)
             end)
             dial.isSelected = getCrankDialCircuitClosure
             dial.getDialChange = crankhandler.subscribe(60//CRANKS_REVOLS_PER_HOUR)
-            dial:setUnit("min")
+            --dial:setUnit("min")
             dial:setValue(initialDurations[name])
             dial:setBackground(function(width, height)
                 gfx.setColor(COLOR_1)
