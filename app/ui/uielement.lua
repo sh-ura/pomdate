@@ -111,10 +111,11 @@ function UIElement:init(coreProps)
     self._textDrawMode = gfx.kDrawModeCopy
     self._text = nil
     self.bg_anim = nil      -- background
-    self.fg_anim = nil  -- non-text foreground, in an animation loop (1-frame paused if static img)
-    self._fg_text = nil -- text foreground
+    self.fg_anim = nil      -- non-text foreground, in an animation loop (1-frame paused if static img)
+    self._fg_text = nil     -- text foreground
     self._img = gfx.image.new(w, h, COLOR_CLEAR)
     self:setImage(self._img)
+    self._scale = 1         -- sprite scale
 
     --TODO _isConfigured should be a table of checks since many things need configuring
     self._isConfigured = false
@@ -167,7 +168,7 @@ function UIElement:init(coreProps)
             gfx.clear(COLOR_CLEAR)
             gfx.setFont(self._font)
             gfx.setImageDrawMode(self._textDrawMode)
-            gfx.drawTextAligned(self._text, w/2, (h - self._font:getHeight())/2, centered)
+            gfx.drawTextAligned(self._text, w/(2 * self._scale), (h/self._scale - self._font:getHeight())/2, centered)
         gfx.popContext()
     end
 end
@@ -216,6 +217,7 @@ function UIElement:redraw()
             self._fg_text:draw(0, 0)
         end
     gfx.popContext()
+    if self._scale ~= 1 then self:setImage(self._img:scaledImage(self._scale)) end
 end
 
 --- Set the font and color to use for drawing foregrounded text in this element.
@@ -493,6 +495,11 @@ function UIElement:moveTo(xOrP, y, dontMoveChildren)
     end
 
     return x, y, x + self.width, y + self.height
+end
+
+function UIElement:setScale(scale)
+    self._scale = scale
+    self:redraw()
 end
 
 --- Set the Z index for the UIElement.

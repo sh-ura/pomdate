@@ -65,7 +65,7 @@ function BPressed() return pd.buttonJustPressed(B) end
 --- If a state save file exists, it will be loaded here.
 local function init()
     utils.disableReadOnly()
-    --debugger.disable() --TODO uncomment
+    debugger.disable() --TODO uncomment
     drawFPS = true --TODO comment out
 
     -- snooze duration is in the confs data file

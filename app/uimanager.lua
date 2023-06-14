@@ -34,6 +34,11 @@ local pi <const> = math.pi
 local sin <const> = math.sin
 local cos <const> = math.cos
 
+local imgPathPrefix <const> = "assets/ui/"
+local fontPathPrefix <const> = "assets/fonts/"
+local timerDialFontPath <const> = "Blades of Steel"
+local DIAL_FONT_SCALE <const> = 10
+
 local CRANKS_REVOLS_PER_HOUR <const> = 3
 local WIRE_WIDTH <const> = 13
 local SWITCH_LENGTH <const> = 80
@@ -46,7 +51,6 @@ local DIAL_WIDTH <const> = 220
 local DIAL_HEIGHT <const> = 130
 local COUNTER_DIAMETER <const> = 15
 local LINE_CAP_STYLE <const> = gfx.kLineCapStyleRound
-local imgPathPrefix = "assets/ui/"
 
 local crankDialSwitchIsClosed = false
 --- Get the open/closed status of the crank-dial circuit.
@@ -258,6 +262,9 @@ local function init(timers)
     ---                 in the sequence they should appear.
     ---@param cursor Cursor (optional) to point to the buttons
     local function fillTimersMenu (list, timers, cursor)
+        local timerDialFont = gfx.font.new(fontPathPrefix .. timerDialFontPath)
+        if not timerDialFont then d.log("no font at ".. fontPathPrefix .. timerDialFontPath) end
+
         local function makeTimerSelector(t, label)
             local name = t.name
 
@@ -287,7 +294,7 @@ local function init(timers)
                 end)
             end
 
-            local dial = Dial({name .. "Dial", DIAL_WIDTH, DIAL_HEIGHT}, 1, 60)
+            local dial = Dial({name .. "Dial", DIAL_WIDTH/DIAL_FONT_SCALE, DIAL_HEIGHT/DIAL_FONT_SCALE}, 1, 60)
             durationDials[name] = dial
             dial:setEnablingCriteria(function() return
                 button:isEnabled()
@@ -301,7 +308,8 @@ local function init(timers)
                 gfx.setColor(COLOR_1)
                 gfx.fillRect(0, 0, width, height)
             end)
-            dial:setFont(gfx.getFont(), gfx.kDrawModeInverted)
+            dial:setFont(timerDialFont, gfx.kDrawModeInverted)
+            dial:setScale(DIAL_FONT_SCALE)
             dial:setPosition(MARGIN, MARGIN)
 
             dial:setZIndex(timersMenu:getZIndex() - 10)
