@@ -38,8 +38,8 @@ name = "textbox"
 function Textbox:init(coreProps, text)
     Textbox.super.init(self, coreProps) --should always be at top of init func
 
-    self._text = self.name .. " no-text"
-    if text then self._text = text end
+    self.text = self.name .. " no-text"
+    if text then self.text = text end
 
     --TODO override self.renderText()
 

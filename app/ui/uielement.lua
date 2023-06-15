@@ -108,7 +108,7 @@ function UIElement:init(coreProps)
     -- visualization props
     self._font = gfx.getFont()
     self._textDrawMode = gfx.kDrawModeCopy
-    self._text = nil
+    self.text = nil
     self.bg_anim = nil      -- background
     self.fg_anim = nil      -- non-text foreground, in an animation loop (1-frame paused if static img)
     self._fg_text = nil     -- text foreground
@@ -157,7 +157,7 @@ function UIElement:init(coreProps)
     --- Prepare the text, to later be drawn onto the element by redraw().
     self.renderText = function()
         if not self._isConfigured then d.log("uielement " .. self.name .. "text rendering not set") end
-        if not self._text then d.log("no text to render on " .. self.name) return end
+        if not self.text then d.log("no text to render on " .. self.name) return end
         local w, h = self:getSize()
         if not self._fg_text then
             self._fg_text = gfx.image.new(w, h, COLOR_CLEAR)
@@ -167,7 +167,7 @@ function UIElement:init(coreProps)
             gfx.clear(COLOR_CLEAR)
             gfx.setFont(self._font)
             gfx.setImageDrawMode(self._textDrawMode)
-            gfx.drawTextAligned(self._text, w/(2 * self._scale), (h/self._scale - self._font:getHeight())/2, centered)
+            gfx.drawTextAligned(self.text, w/(2 * self._scale), (h/self._scale - self._font:getHeight())/2, centered)
         gfx.popContext()
     end
 end
@@ -211,7 +211,7 @@ function UIElement:redraw()
         gfx.clear(COLOR_CLEAR)
         if self.bg_anim then self.bg_anim:draw(0, 0) end
         if self.fg_anim then self.fg_anim:draw(0,0) end
-        if self._text then
+        if self.text then
             self.renderText()
             self._fg_text:draw(0, 0)
         end
@@ -279,7 +279,7 @@ end
 ---     above all other foreground and background element images.
 ---@param text string
 function UIElement:setText(text)
-    self._text = text
+    self.text = text
     self:redraw()
 end
 

@@ -314,6 +314,11 @@ local function init(timers)
             dial:setFont(timerDialFont, gfx.kDrawModeInverted)
             dial:setScale(DIAL_FONT_SCALE)
             dial:setPosition(MARGIN, MARGIN)
+            local renderText = dial.renderText
+            dial.renderText = function () -- render 1-digit values with a space in the tens position
+                if string.len(dial.text) == 1 then dial.text = " " .. dial.text end
+                renderText()
+            end
 
             dial:setZIndex(timersMenu:getZIndex() - 10)
             -- TODO move func def below to be local func more visible at root of this file
