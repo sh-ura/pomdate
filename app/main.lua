@@ -17,6 +17,7 @@ import "utils/crankhandler"
 
 -- Gives all subsequently-imported project files access to state
 local state = STATES.LOADING
+local sysmenuOpened = false
 --- Query for the current app state
 ---@return boolean true iff app state is LOADING mode
 function stateIsLOADING() return state == STATES.LOADING end
@@ -28,6 +29,14 @@ function stateIsMENU() return state == STATES.MENU end
 function stateIsRUN_TIMER() return state == STATES.RUN_TIMER end
 ---@return boolean true iff app state is DONE_TIMER mode
 function stateIsDONE_TIMER() return state == STATES.DONE_TIMER end
+--- Special case: query for whether the state was recently in system menu mode
+---@return boolean true iff system menu had been opened+closed since the last time this function was called
+function stateWasSYS_MENU()
+    local result = sysmenuOpened
+    sysmenuOpened = false
+    return result
+end
+
 import "timer"
 import "confmanager"
 import "uimanager"
@@ -61,7 +70,7 @@ local timerCompleted = false
 local c_poms = 0
 local c_pauses = 0
 local c_snoozes = 0
-local cachedState = nil -- state prior to entering configuration mode
+local cachedState = nil -- state prior to entering conf mode or other system-menu mode
 
 --TODO move below asset path info to config or smth
 local soundPathPrefix = "assets/sound/"
@@ -308,6 +317,10 @@ function pd.update()
 end
 
 pd.cranked = crankhandler.cranked
+
+function pd.gameWillPause()
+    sysmenuOpened = true
+end
 
 function pd.gameWillTerminate()
     sav()

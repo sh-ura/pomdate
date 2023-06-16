@@ -65,7 +65,8 @@ function Button:update()
     if not Button.super.update(self) then return end
     
     if self.isSelected() then
-        local selectedPosition = self.position.default + self.position.offsets.selected
+        local selectedPosition = self.position.default
+        if self.position.offsets.selected then selectedPosition = selectedPosition + self.position.offsets.selected end
         if self.isPressed() then
             --d.log(self.name .. " is pressed")
             local reverses = false
