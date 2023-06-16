@@ -85,7 +85,7 @@ local function bakeSwitchAnimation()
     local x_button = 0.1 * SWITCH_LENGTH
     local y_button = SWITCH_LENGTH + MARGIN + 2
 
-    local A = 0.8 * SWITCH_LENGTH       -- amplitude
+    local Amp = 0.8 * SWITCH_LENGTH       -- amplitude
     local radPerFrame = pi/4 / (n_frames - 1)
     local buttonTravelPerFrame = BUTTON_TRAVEL_DISTANCE / n_frames
 
@@ -94,8 +94,8 @@ local function bakeSwitchAnimation()
     for j = 0, n_frames - 1 do
         local frame = gfx.image.new(w_frame, h_frame, COLOR_CLEAR)
         theta = j * radPerFrame
-        x = A * cos(-theta - C)
-        y = A * sin(-theta - C)
+        x = Amp * cos(-theta - C)
+        y = Amp * sin(-theta - C)
         gfx.pushContext(frame)
             gfx.setColor(COLOR_1)
             gfx.setLineWidth(WIRE_WIDTH)
@@ -133,7 +133,7 @@ local function bakeLEDAnimations()
     local w_frame = 60
     local h_frame = 60
     local lineWidth = 1.3                   -- scales the lineWidth
-    local A = 22                            -- amplitude/scale of the graphic
+    local Amp = 22                            -- amplitude/scale of the graphic
     local C = pi/2                          -- phase shift
 
     local n_frames = (period / 2) // n_spokes  -- only show the front-facing half of the cycle
@@ -149,7 +149,7 @@ local function bakeLEDAnimations()
         for k = 0, n_spokes-1 do
             theta = k*radPerSpoke + j*radPerFrame
             x = 6 * cos(theta - C)
-            y = A * sin(theta - C) + h_frame//2
+            y = Amp * sin(theta - C) + h_frame//2
             gfx.pushContext(frame)
                 gfx.setColor(COLOR_1)
                 gfx.setLineCapStyle(gfx.kLineCapStyleRound)
@@ -158,7 +158,7 @@ local function bakeLEDAnimations()
                 -- Other unit circle-visualizers below
                 --gfx.setLineWidth(6)
                 --gfx.drawLine(2.5*w_frame - x*1.5, y, 2.5*w_frame + x*1.5, y)
-                --x = A * cos(theta - C) + w_frame//2
+                --x = Amp * cos(theta - C) + w_frame//2
                 --gfx.drawLine(w_frame//2, h_frame//2, x, y)
                 --gfx.fillCircleAtPoint(x + w_frame, y, 4)
             gfx.popContext()
@@ -370,6 +370,7 @@ local function init(timers)
     ---@return Button
     local function makeABButton (name, input)
         local button = Button({name .. "Button", BUTTON_HEIGHT_L, BUTTON_TRAVEL_DISTANCE - MARGIN})
+        
         button.isPressed = function () return pd.buttonIsPressed(input) end
         button:setBackground(function(width, height)
             gfx.setColor(COLOR_1)
@@ -382,54 +383,53 @@ local function init(timers)
         elseif input == B then
             button:setPosition(X_B_BUTTON, H_SCREEN - button.height * 2/3)
         end
-        button:offsetPositions({
-            disabled = newVector(0,50),
-            pressed = newVector(0,50)
-        })
+        button:offsetPositions({ disabled = newVector(0,50),
+                            pressed = newVector(0, BUTTON_TRAVEL_DISTANCE)})
         button:forceConfigured()
         return button
     end
 
+    --TODO for all buttons, pressedAction animates to pressedPosition and then back, and THEN does the other usual actions as a callback
     local paused = false --TODO instead of using this local var, access paused state via STATE or currentTimer.isPaused()
     
     toMenuButton = makeABButton("toMenu", B)
+    toMenuButton.pressedAction = function ()
+        paused = false
+        toMenu()
+    end
     toMenuButton:setEnablingCriteria(function() return
         state == STATES.RUN_TIMER
         or state == STATES.DONE_TIMER
     end)
-    toMenuButton.pressedAction = function()
-        paused = false
-        toMenu()
-    end
+    toMenuButton:offsetPositions({}, { pressed = { reverses = true }})
 
     pauseButton = makeABButton("pause", A)
-    pauseButton:setEnablingCriteria(function() return
-        state == STATES.RUN_TIMER
-        and not paused
-    end)
     pauseButton.pressedAction = function()
         pause()
         paused = true
     end
+    pauseButton:setEnablingCriteria(function() return
+        state == STATES.RUN_TIMER
+        and not paused
+    end)
 
     unpauseButton = makeABButton("unpause", A)
-    unpauseButton:setEnablingCriteria(function() return
-        state == STATES.RUN_TIMER and
-        paused
-    end)
     unpauseButton.pressedAction = function()
         unpause()
         paused = false
     end
+    unpauseButton:setEnablingCriteria(function() return
+        state == STATES.RUN_TIMER and
+        paused
+    end)
 
     snoozeButton = makeABButton("snooze", A)
+    snoozeButton.pressedAction = snooze
     snoozeButton:setEnablingCriteria(function()
         return state == STATES.DONE_TIMER
         and confs.snoozeOn
     end)
-    snoozeButton.pressedAction = function()
-        snooze()
-    end
+    snoozeButton:offsetPositions({}, { pressed = { reverses = true }})
 
 
     --- Initialize a score display.

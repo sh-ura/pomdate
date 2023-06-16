@@ -101,6 +101,7 @@ function UIElement:init(coreProps)
             disabled = newVector(0, 0),
             selected = newVector(0, 0)
         },
+        options = {},
         _animator = nil, -- gfx.animator that is currently performing repositioning
         _arrivalCallback = function() end  -- call this function when the element completes repositioning
     }
@@ -377,13 +378,19 @@ end
 ---     be added to it, rather than overriding it entirely.
 --- Thus you may wish to call resetOffsets() priorly.
 ---@param vectors table of pd.geometry.vector2D indexed by name, ex. "disabled", "selected"
-function UIElement:offsetPositions(vectors)
+---@param options table (optional) options indexed by the vector name they apply to
+function UIElement:offsetPositions(vectors, options)
     if vectors and type(vectors) == "table" then
         local v_o
         for name, v in pairs(vectors) do
             v_o = self.position.offsets[name]
             if not v_o then v_o = newVector(0,0) end
             self.position.offsets[name] = v_o + v
+        end
+    else d.log("bad arg1 to offsetPositions. need table of Vector2D") end
+    if options and type(options) == 'table' then
+        for name, o in pairs(options) do
+            self.position.options[name] = o
         end
     end
 end
@@ -405,14 +412,20 @@ end
 ---@param origin pd.geometry.point
 ---@param destination pd.geometry.point or pd.geometry.vector2D
 ---@param callback function (optional) to call upon arrival at destination
-function UIElement:reposition(origin, destination, callback)
-    if destination and destination.dotProduct then destination = newPoint(0,0) + destination end
+---@param reverses boolean (optional) true if element should move back to origin after upon reaching destination
+function UIElement:reposition(origin, destination, callback, reverses)
+    if destination and destination.dotProduct then
+        destination = origin + destination
+    end
     self.position._animator = gfx.animator.new(
         ANIM_DURATION * origin:distanceToPoint(destination), --TODO need to make this val tiny
         origin, destination, ease, ANIM_DELAY
     )
+    if callback then
+        self.position._arrivalCallback = callback end
+    if reverses then
+        self.position._animator.reverses = true end
     self:setAnimator(self.position._animator)
-    if callback then self.position._arrivalCallback = callback end
 end
 
 --- Parents another UIElement.
