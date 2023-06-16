@@ -76,8 +76,6 @@ end
 --- Initializes the configuration manager and screen.
 ---@param state table containing any loaded configuration state
 local function init(savestate)
-    local function stateIsCONF() return state == STATES.CONF end
-
     -- initialize confs using loaded savestate or the default values
     for k, v in pairs(metaconfs) do
         if savestate and savestate[k] ~= nil then confs[k] = savestate[k]

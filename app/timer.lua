@@ -11,7 +11,8 @@ local d <const> = debugger
 local gfx <const> = pd.graphics
 local utils <const> = utils
 local floor <const> = math.floor -- TODO may be able to replace this w // floor division lua operator?
-local STATES <const> = STATES
+local stateIsRUN_TIMER <const> = stateIsRUN_TIMER
+local stateIsDONE_TIMER <const> = stateIsDONE_TIMER
 local COLOR_CLEAR <const> = COLOR_CLEAR
 
 -- Timer packs a timer with its UI.
@@ -71,7 +72,7 @@ end
 -- Timer:update() draws the current time in the timer countdown
 function Timer:update()
     --TODO refactor when pd.timer.pause() is fixed
-    if _G.state == STATES.RUN_TIMER then
+    if stateIsRUN_TIMER() then
         local msec
         if self._isPaused then msec = self._duration --TODO rm workaround
         elseif self._timer then msec = self._timer.value
@@ -98,7 +99,7 @@ function Timer:update()
                 gfx.drawText("*"..timeString.."*", 0, 0)
             gfx.popContext()
         end
-    elseif _G.state == STATES.DONE_TIMER then
+    elseif stateIsDONE_TIMER() then --TODO actually this doesn't need to be done by timer.lua! refactor this whole if/else out.
         gfx.pushContext(self._img)
         gfx.clear()
         gfx.drawText("*DONE*", 0, 0)

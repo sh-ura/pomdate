@@ -186,7 +186,6 @@ local function initCrankDialCircuit()
     local switch = Button({"switch", 60, 60})
     local preSwitchLED = Dial({"preSwitchLED", 40, 80})
     local postSwitchLED = Dial({"postSwitchLED", 80, 40})
-    local function stateIsMENU() return state == STATES.MENU end --TODO these types of funcs can be declared in main, allowing hidind of state var
     
     local p = { -- wire junctures to draw, in crank -> dial face order
         {x=410, y=100},
@@ -341,14 +340,14 @@ local function init(timers)
         list.orientations.vertical,
         MARGIN
     )
-    timersMenu:setEnablingCriteria(function () return state == STATES.MENU end)
-    timersMenu.isSelected = function() return state == STATES.MENU end
+    timersMenu:setEnablingCriteria(stateIsMENU)
+    timersMenu.isSelected = stateIsMENU
     timersMenu:setPosition(W_SCREEN - (BUTTON_WIDTH_L + MARGIN*2), MARGIN)
     timersMenu:offsetPositions({disabled = newVector(BUTTON_TRAVEL_DISTANCE, 0)})
 
     --[[
     local cursor = Cursor({"timerSelectCursor", BUTTON_TRAVEL_DISTANCE - MARGIN, BUTTON_HEIGHT_L})
-    cursor:setEnablingCriteria(function () return state == STATES.MENU end)
+    cursor:setEnablingCriteria(stateIsMENU)
     cursor:setBackground(function(width, height)
         gfx.setColor(COLOR_1)
         gfx.fillRoundRect(0, 0, width, height, height/2)
@@ -394,8 +393,8 @@ local function init(timers)
         toMenu()
     end
     toMenuButton:setEnablingCriteria(function() return
-        state == STATES.RUN_TIMER
-        or state == STATES.DONE_TIMER
+        stateIsRUN_TIMER()
+        or stateIsDONE_TIMER()
     end)
     toMenuButton:offsetPositions({}, { pressed = { reverses = true }})
 
@@ -404,8 +403,8 @@ local function init(timers)
         pause()
     end
     pauseButton:setEnablingCriteria(function() return
-        state == STATES.RUN_TIMER
-        and not paused
+        stateIsRUN_TIMER()
+        and not timerIsPaused()
     end)
 
     unpauseButton = makeABButton("unpause", A)
@@ -413,14 +412,14 @@ local function init(timers)
         unpause()
     end
     unpauseButton:setEnablingCriteria(function() return
-        state == STATES.RUN_TIMER and
-        getPaused()
+        stateIsRUN_TIMER()
+        and timerIsPaused()
     end)
 
     snoozeButton = makeABButton("snooze", A)
     snoozeButton.pressedAction = snooze
-    snoozeButton:setEnablingCriteria(function()
-        return state == STATES.DONE_TIMER
+    snoozeButton:setEnablingCriteria(function() return
+        stateIsDONE_TIMER()
         and confs.snoozeOn
     end)
     snoozeButton:offsetPositions({}, { pressed = { reverses = true }})
@@ -447,7 +446,7 @@ local function init(timers)
     --[[
     --TODO redesign, then remake these score displays
     scoreboard = List({"scoreboard", 100, 80})
-    scoreboard:setEnablingCriteria(function() return state == STATES.DONE_TIMER end)
+    scoreboard:setEnablingCriteria(stateIsDONE_TIMER)
     makeScoreDisplays(scoreboard, {
         pause = getPauseCount,
         snooze = getSnoozeCount
@@ -464,8 +463,8 @@ local function init(timers)
     gfx.popContext()
     pomCountDisplay = makeScoreDisplay("pom", getPomCount,
         confs.pomsPerCycle * (COUNTER_DIAMETER + spacing), COUNTER_DIAMETER)
-    pomCountDisplay:setEnablingCriteria(function ()
-        return state == STATES.MENU
+    pomCountDisplay:setEnablingCriteria(function () return
+        stateIsMENU()
         and getPomCount() ~= 0
     end)
     d.log("setting mode")

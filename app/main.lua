@@ -14,6 +14,20 @@ import "gconsts"
 import "utils/utils";
 import "utils/debugger"
 import "utils/crankhandler"
+
+-- Gives all subsequently-imported project files access to state
+local state = STATES.LOADING
+--- Query for the current app state
+---@return boolean true iff app state is LOADING mode
+function stateIsLOADING() return state == STATES.LOADING end
+---@return boolean true iff app state is CONFiguration mode
+function stateIsCONF() return state == STATES.CONF end
+---@return boolean true iff app state is MENU mode
+function stateIsMENU() return state == STATES.MENU end
+---@return boolean true iff app state is RUN_TIMER mode
+function stateIsRUN_TIMER() return state == STATES.RUN_TIMER end
+---@return boolean true iff app state is DONE_TIMER mode
+function stateIsDONE_TIMER() return state == STATES.DONE_TIMER end
 import "timer"
 import "confmanager"
 import "uimanager"
@@ -26,8 +40,6 @@ local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
 
 -- TODO can states be a set of update funcs, or do we need the enum?
-STATES = STATES
-state = STATES.LOADING
 confs = confmanager.confs
 initialDurations = {
     work = 25,
@@ -258,7 +270,8 @@ function unpause()
 end
 
 --- Get the (un)paused status of the current timer
-function getPaused()
+---@return boolean true iff the current timer is paused
+function timerIsPaused()
     return currentTimer:isPaused()
 end
 
@@ -280,7 +293,7 @@ function resetPomCount() c_poms = 0 end
 -- pd.update() is called right before every frame is drawn onscreen.
 function pd.update()
     --TODO replace this with playdate's builtin init screen system
-    if state == STATES.LOADING then
+    if stateIsLOADING() then
         pd.ui.crankIndicator:update() --TODO why isnt this working??
         if pd.buttonJustPressed(A) then
             splashSprite:remove()
