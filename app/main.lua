@@ -257,6 +257,11 @@ function unpause()
     else currentTimer:start() end
 end
 
+--- Get the (un)paused status of the current timer
+function getPaused()
+    return currentTimer:isPaused()
+end
+
 --- Get the number of times the current timer has been paused
 ---@return integer
 function getPauseCount() return c_pauses end

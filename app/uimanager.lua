@@ -388,13 +388,9 @@ local function init(timers)
         button:forceConfigured()
         return button
     end
-
-    --TODO for all buttons, pressedAction animates to pressedPosition and then back, and THEN does the other usual actions as a callback
-    local paused = false --TODO instead of using this local var, access paused state via STATE or currentTimer.isPaused()
     
     toMenuButton = makeABButton("toMenu", B)
     toMenuButton.pressedAction = function ()
-        paused = false
         toMenu()
     end
     toMenuButton:setEnablingCriteria(function() return
@@ -406,7 +402,6 @@ local function init(timers)
     pauseButton = makeABButton("pause", A)
     pauseButton.pressedAction = function()
         pause()
-        paused = true
     end
     pauseButton:setEnablingCriteria(function() return
         state == STATES.RUN_TIMER
@@ -416,11 +411,10 @@ local function init(timers)
     unpauseButton = makeABButton("unpause", A)
     unpauseButton.pressedAction = function()
         unpause()
-        paused = false
     end
     unpauseButton:setEnablingCriteria(function() return
         state == STATES.RUN_TIMER and
-        paused
+        getPaused()
     end)
 
     snoozeButton = makeABButton("snooze", A)
