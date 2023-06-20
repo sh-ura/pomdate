@@ -42,11 +42,11 @@ local DIAL_FONT_SCALE <const> = 10
 local CRANKS_REVOLS_PER_HOUR <const> = 3
 local WIRE_WIDTH <const> = 13
 local SWITCH_LENGTH <const> = 80
-local BUTTON_WIDTH_L <const> = 100        -- for a Large *horizontal* button. Use as height for vertical button
+local BUTTON_WIDTH_L <const> = 140        -- for a Large *horizontal* button. Use as height for vertical button
 local BUTTON_HEIGHT_L <const> = 46        -- for a Large *horizontal* button. Use as width for vertical button
 local BUTTON_WIDTH_M <const> = 60
 local BUTTON_HEIGHT_M <const> = 32
-local BUTTON_TRAVEL_DISTANCE <const> = 46
+local BUTTON_TRAVEL_DISTANCE <const> = 60
 local DIAL_WIDTH <const> = 220
 local DIAL_HEIGHT <const> = 130
 local COUNTER_DIAMETER <const> = 15
@@ -256,24 +256,6 @@ end
 ---                 in {t, label} k-v tuples,
 ---                 in the sequence they should appear.
 local function init(timers)
-    local sysmenuButton = Button({"sysmenuButton", BUTTON_TRAVEL_DISTANCE - MARGIN, BUTTON_HEIGHT_L})
-    sysmenuButton.isPressed = stateWasSYS_MENU
-    sysmenuButton:setBackground(function(width, height)
-        gfx.setColor(COLOR_1)
-        gfx.fillRoundRect(0, 0, width, height, width/2)
-    end)
-    sysmenuButton:setFont(gfx.getFont(), gfx.kDrawModeInverted)
-    sysmenuButton:setText(":")
-    sysmenuButton:setPosition(W_SCREEN - sysmenuButton.width * 2/3, Y_SYSMENU_BUTTON)
-    -- Since there's no way to animate the button press when the sysmenu is opened,
-    --      button pops in from the edge of the screen when the sysmenu is closed.
-    sysmenuButton.pressedAction = function ()
-        sysmenuButton:reposition(sysmenuButton.position.default + newVector(BUTTON_TRAVEL_DISTANCE, 0), sysmenuButton.position.default)
-    end
-    sysmenuButton:offsetPositions({disabled = newVector(50,0)})
-    sysmenuButton:setEnablingCriteria(function () return not stateIsLOADING() end)
-    sysmenuButton:forceConfigured()
-    
     --- Populate timersMenu with the timer-selecting/-configuring UIElements that are
     ---     to be displayed on the MENU screen.
     ---@param list List to contain the timer-selecting buttons
@@ -360,7 +342,7 @@ local function init(timers)
     )
     timersMenu:setEnablingCriteria(stateIsMENU)
     timersMenu.isSelected = stateIsMENU
-    timersMenu:setPosition(sysmenuButton.position.default.x - MARGIN - timersMenu.width, MARGIN)
+    timersMenu:setPosition(W_SCREEN - (BUTTON_WIDTH_L + MARGIN*2), MARGIN)
     timersMenu:offsetPositions({disabled = newVector(BUTTON_TRAVEL_DISTANCE, 0)})
 
     --[[
