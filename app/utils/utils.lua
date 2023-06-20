@@ -2,8 +2,6 @@ local pd = playdate
 local getmetatable = getmetatable
 local setmetatable = setmetatable
 local error = error
-local debug = debug
-local print = print
 local next = next
 
 -- pkgs decorators such as access control
@@ -72,19 +70,6 @@ end
 
 newVector = pd.geometry.vector2D.new
 newPoint = pd.geometry.point.new
-
---- Assert that an object or class is member of a parent class
----@param instance Object
----@param class Object
----@return boolean true iff instance is a member of class
-function assertMembership(instance, class)
-    if instance.super.class ~= class then
-        print("WARN: failed to assert " .. instance.super.className .. "'s membership in " .. class.className .. " class")
-        print(debug.traceback())
-        return false
-    end
-    return true
-end
 
 -- prepare package for export, in the global env --
 local _ENV = _G

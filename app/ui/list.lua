@@ -25,9 +25,11 @@ local RIGHT <const> = pd.kButtonRight
 --- sequence that can be navigated with directional buttons.
 class('List').extends(UIElement)
 local List <const> = List
+
+-- local consts go here
+
 local _ENV = P
 name = "list"
-local Class = List
 
 orientations = {
     horizontal = 1,
@@ -86,8 +88,7 @@ end
 --- Not all lists/list-children make use of this functionality.
 --- Depends on what the children's isSelected criteria are configured to.
 function List:update()
-    if not utils.assertMembership(self, Class)
-    or not Class.super.update(self) then return end
+    if not List.super.update(self) then return end
 
     if self.isSelected() then
         if pd.buttonJustPressed(self._inputPrev) then self:prev()
@@ -104,6 +105,7 @@ end
 ---@param parentEnables boolean (option) child is enabled/disabled when parent is enabled/disabled
 ---@return table of successfully added child UIElements
 function List:addChildren(e, parentEnables)
+    d.log("spacing " .. self._spacing)
     local newChildren = List.super.addChildren(self, e, parentEnables)
     local px1 = self.position.default.x
     local py1 = self.position.default.y

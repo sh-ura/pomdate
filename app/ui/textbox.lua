@@ -22,7 +22,6 @@ class('Textbox').extends(UIElement)
 local Textbox <const> = Textbox
 local _ENV = P      -- enter pkg namespace
 name = "textbox"
-local Class = Textbox
 
 --local localstatic <const> = val --TODO non-imported statics go here
 
@@ -49,8 +48,7 @@ end
 
 ---TODO desc
 function Textbox:update()
-    if not utils.assertMembership(self, Class)
-    or not Class.super.update(self) then return end
+    if not Textbox.super.update(self) then return end
     --d.illustrateBounds(self)
 end
 

@@ -43,7 +43,6 @@ end
 
 ---TODO desc
 function Class:update()
-    if not utils.assertMembership(self, Class) then return end
     Class.super.update(self)
     --d.illustrateBounds(self)
 

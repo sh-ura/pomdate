@@ -2,8 +2,8 @@
 --- For dev convenience and runtime speed, this package accesses the global namespace,
 ---     but is not intended to modify any global vars
 
-import 'CoreLibs/crank' -- TODO rm?
-import 'CoreLibs/nineslice' -- TODO rm?
+import 'CoreLibs/crank'
+import 'CoreLibs/nineslice'
 import 'ui/button'
 import 'ui/list'
 import 'ui/dial'
@@ -257,8 +257,7 @@ end
 ---                 in the sequence they should appear.
 local function init(timers)
     local sysmenuButton = Button({"sysmenuButton", BUTTON_TRAVEL_DISTANCE - MARGIN, BUTTON_HEIGHT_L})
-    sysmenuButton.isPressed = sysmenuhandler.subscribe(function()
-        sysmenuButton:update() end)
+    sysmenuButton.isPressed = stateWasSYS_MENU
     sysmenuButton:setBackground(function(width, height)
         gfx.setColor(COLOR_1)
         gfx.fillRoundRect(0, 0, width, height, width/2)
@@ -266,10 +265,12 @@ local function init(timers)
     sysmenuButton:setFont(gfx.getFont(), gfx.kDrawModeInverted)
     sysmenuButton:setText(":")
     sysmenuButton:setPosition(W_SCREEN - sysmenuButton.width * 2/3, Y_SYSMENU_BUTTON)
+    -- Since there's no way to animate the button press when the sysmenu is opened,
+    --      button pops in from the edge of the screen when the sysmenu is closed.
     sysmenuButton.pressedAction = function ()
-        sysmenuButton:reposition(sysmenuButton:getPointPosition(), sysmenuButton.position.default + sysmenuButton.position.offsets.pressed, 'reverses')
+        sysmenuButton:reposition(sysmenuButton.position.default + newVector(BUTTON_TRAVEL_DISTANCE, 0), sysmenuButton.position.default)
     end
-    sysmenuButton:offsetPositions({disabled = newVector(50,0), pressed = newVector(BUTTON_TRAVEL_DISTANCE, 0)})
+    sysmenuButton:offsetPositions({disabled = newVector(50,0)})
     sysmenuButton:setEnablingCriteria(function () return not stateIsLOADING() end)
     sysmenuButton:forceConfigured()
     

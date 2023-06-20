@@ -18,7 +18,6 @@ class('Cursor').extends(UIElement)
 local Cursor <const> = Cursor
 local _ENV = P      -- enter pkg namespace
 name = "cursor"
-local Class = Cursor
 
 --- Initializes a new Cursor instance.
 ---@param coreProps table containing the following core properties, named or array-indexed:
@@ -49,8 +48,8 @@ end
 
 ---TODO desc
 function Cursor:update()
-    if not utils.assertMembership(self, Class) then return end
     Cursor.super.update(self)
+    --if not Cursor.super.update(self) then return end
 
     local selectedTargets = 0
 

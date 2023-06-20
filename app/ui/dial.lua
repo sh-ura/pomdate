@@ -21,7 +21,6 @@ class('Dial').extends(UIElement)
 local Dial <const> = Dial
 local _ENV = P      -- enter pkg namespace
 name = "dial"
-local Class = Dial
 
 visualizers = {
     numeral = "numeral",
@@ -86,14 +85,14 @@ end
 
 ---TODO desc
 function Dial:update()
-    if not utils.assertMembership(self, Class)
-    or not Class.super.update(self) then return end
+    if not Dial.super.update(self) then return end
 
     if self.isSelected() then
         local low = self._lowLimit
         local upp = self._uppLimit
+
         self._prevValue = self.value
-        self.value = self.value + self.getDialChange() * self._step --TODO handle nil getDialChanges
+        self.value = self.value + self.getDialChange() * self._step
         if low and self.value <= low then
             self.value = low
         elseif upp and self.value >= upp then
