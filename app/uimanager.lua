@@ -42,7 +42,7 @@ local DIAL_FONT_SCALE <const> = 10
 local CRANKS_REVOLS_PER_HOUR <const> = 3
 local WIRE_WIDTH <const> = 13
 local SWITCH_LENGTH <const> = 80
-local BUTTON_WIDTH_L <const> = 140        -- for a Large *horizontal* button. Use as height for vertical button
+local BUTTON_WIDTH_L <const> = 126        -- for a Large *horizontal* button. Use as height for vertical button
 local BUTTON_HEIGHT_L <const> = 46        -- for a Large *horizontal* button. Use as width for vertical button
 local BUTTON_WIDTH_M <const> = 60
 local BUTTON_HEIGHT_M <const> = 32
@@ -283,12 +283,14 @@ local function init(timers)
             button:setFont(gfx.getFont())
             button:setText(label)
             button:offsetPositions({selected = newVector(-BUTTON_TRAVEL_DISTANCE, 0)})
+            --[[ -- Toggle color inversion on selected button
             button.justSelectedAction = function()
                 button:setImageDrawMode(gfx.kDrawModeInverted)
             end
             button.justDeselectedAction = function()
                 button:setImageDrawMode(gfx.kDrawModeCopy)
             end
+            --]]
 
             if cursor then
                 cursor:addTarget(button, function ()
@@ -345,8 +347,9 @@ local function init(timers)
     timersMenu:setPosition(W_SCREEN - (BUTTON_WIDTH_L + MARGIN*2), MARGIN)
     timersMenu:offsetPositions({disabled = newVector(BUTTON_TRAVEL_DISTANCE, 0)})
 
-    --[[
-    local cursor = Cursor({"timerSelectCursor", BUTTON_TRAVEL_DISTANCE - MARGIN, BUTTON_HEIGHT_L})
+    local cursor = nil
+    ---[[ -- toggle timers-menu-navigating cursor
+    cursor = Cursor({"timerSelectCursor", BUTTON_TRAVEL_DISTANCE - MARGIN, BUTTON_HEIGHT_M})
     cursor:setEnablingCriteria(stateIsMENU)
     cursor:setBackground(function(width, height)
         gfx.setColor(COLOR_1)
@@ -360,7 +363,7 @@ local function init(timers)
     cursor:forceConfigured()
     --]]
 
-    fillTimersMenu(timersMenu, timers)
+    fillTimersMenu(timersMenu, timers, cursor)
 
 
     --- Initialize a button that sits directly above the A or B buttons
