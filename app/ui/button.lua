@@ -21,11 +21,9 @@ local pairs = pairs
 --- The scope of what it knows should otherwise be limited.
 class('Button').extends(UIElement)
 local Button <const> = Button
-
--- local consts go here
-
 local _ENV = P
 name = "button"
+local Class = Button
 
 --- Initializes a button UIElement.
 ---@param coreProps table containing the following core properties, named or array-indexed:
@@ -62,7 +60,8 @@ end
 
 --- Updates the button UIElement.
 function Button:update()
-    if not Button.super.update(self) then return end
+    if not utils.assertMembership(self, Class)
+    or not Class.super.update(self) then return end
     
     if self.isSelected() then
         local selectedPosition = self.position.default
