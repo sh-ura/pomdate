@@ -145,12 +145,17 @@ function Dial:setMode(mode)
             self:setForeground(gfx.image.new(self.width, self.height, COLOR_CLEAR))
         end
         self._renderValue = function()
+            local sound = self.fileplayer
             ---[[
-            if self.value > 0 then
+            if self.value == 0 then
+                if sound then sound:pause() end
+                return
+            elseif self.value > 0 then
                 self.fg_anim:play(1, 0, 1)
             elseif self.value < 0 then
                 self.fg_anim:play(-1, 0, 1)
             end
+            if sound then sound:play() end
             --]]
             --[[
             local step = 1

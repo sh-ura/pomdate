@@ -64,7 +64,7 @@ local c_snoozes = 0
 local cachedState = nil -- state prior to entering configuration mode
 
 --TODO move below asset path info to config or smth
-local soundPathPrefix = "assets/sound/"
+soundPathPrefix = "assets/sound/"
 local toWorkSoundPath = "to-work.wav"
 local toBreakSoundPath = "to-break.wav"
 local snoozeSoundPath = "snooze.wav"

@@ -238,6 +238,7 @@ local function initCrankDialCircuit()
     preSwitchLED.isSelected = function() return true end
     preSwitchLED.getDialChange = crankhandler.subscribe()
     preSwitchLED:setMode(dial.visualizers.animation)
+    preSwitchLED:setSound(pd.sound.fileplayer.new(soundPathPrefix .. "tape_playback_02"))
     postSwitchLED:setForeground(postSwitchLEDImagetable, 16)
     postSwitchLED:setPosition(10, 34)
     postSwitchLED.isSelected = getCrankDialCircuitClosure

@@ -117,6 +117,10 @@ function UIElement:init(coreProps)
     self:setImage(self._img)
     self._scale = 1         -- sprite scale
 
+    -- sound props
+    self.sampleplayer = nil
+    self.fileplayer = nil
+
     --TODO _isConfigured should be a table of checks since many things need configuring
     self._isConfigured = false
     local configWarningComplete = false
@@ -342,6 +346,19 @@ function UIElement:setBackground(drawable, framesDelay)
         self:setImage(self._img)
     end
     self:redraw()
+end
+
+---TODO might be nice to use sound.sample more and recycle sampleplayers
+--- Associate a sound effect to this UIElement.
+--- Sound-play will need to be triggered manually or configured elsewhere.
+---@param soundplayer pd.sound.sampleplayer
+---             or pd.sound.fileplayer
+function UIElement:setSound(soundplayer)
+    if soundplayer and soundplayer.play then
+        if soundplayer.pause then self.fileplayer = soundplayer
+        else self.sampleplayer = soundplayer end
+    else d.log("attempted to set invalid soundplayer for " .. self.name)
+    end
 end
 
 --- Convenience function returns element's current position as a Point
