@@ -26,6 +26,7 @@ import 'ui/animation'
 local pd <const> = playdate
 local d <const> = debugger
 local gfx <const> = pd.graphics
+local snd <const> = pd.sound
 local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
 local newVector <const> = utils.newVector
@@ -34,6 +35,7 @@ local pi <const> = math.pi
 local sin <const> = math.sin
 local cos <const> = math.cos
 
+local soundPathPrefix <const> = "assets/sound/ui/"
 local imgPathPrefix <const> = "assets/ui/"
 local fontPathPrefix <const> = "assets/fonts/"
 local timerDialFontPath <const> = "Blades of Steel"
@@ -238,7 +240,7 @@ local function initCrankDialCircuit()
     preSwitchLED.isSelected = function() return true end
     preSwitchLED.getDialChange = crankhandler.subscribe()
     preSwitchLED:setMode(dial.visualizers.animation)
-    preSwitchLED:setSound(pd.sound.fileplayer.new(soundPathPrefix .. "tape_playback_02"))
+    preSwitchLED:setSound(snd.fileplayer.new(soundPathPrefix .. "tape_playback_02"))
     postSwitchLED:setForeground(postSwitchLEDImagetable, 16)
     postSwitchLED:setPosition(10, 34)
     postSwitchLED.isSelected = getCrankDialCircuitClosure
@@ -267,12 +269,16 @@ local function init(timers)
     local function fillTimersMenu (list, timers, cursor)
         local timerDialFont = gfx.font.new(fontPathPrefix .. timerDialFontPath)
         if not timerDialFont then d.log("no font at ".. fontPathPrefix .. timerDialFontPath) end
+        local button_select_sfx = snd.sampleplayer.new(soundPathPrefix .. "FUI Navigation Swipe Short-1")
 
+        local i_button = 0
         local function makeTimerSelector(t, label)
+            i_button = i_button + 1
             local name = t.name
 
             local button = Button({name .. "Button", BUTTON_WIDTH_L, BUTTON_HEIGHT_M})
             timerSelectButtons[name] = button
+            button:setSound(snd.sampleplayer.new(soundPathPrefix .. "click0" .. i_button))
             button.isPressed = function() return pd.buttonJustPressed(A) end
             button:setBackground(function(width, height)
                 local w_line = 8 -- must be even
@@ -286,6 +292,7 @@ local function init(timers)
             button:offsetPositions({selected = newVector(-BUTTON_TRAVEL_DISTANCE, 0)})
             ---[[ -- Toggle color inversion on selected button
             button.justSelectedAction = function()
+                button_select_sfx:play(1)
                 button:setImageDrawMode(gfx.kDrawModeInverted)
             end
             button.justDeselectedAction = function()

@@ -69,6 +69,11 @@ function Button:update()
         if self.position.offsets.selected then selectedPosition = selectedPosition + self.position.offsets.selected end
         if self.isPressed() then
             --d.log(self.name .. " is pressed")
+            
+            -- rn, Button only supports playing sample one time upon press; fine for this application.
+            if self.sampleplayer then self.sampleplayer:play(1)
+            elseif self.fileplayer then self.fileplayer:play(0) end
+            
             local reverses = false
             if self.position.options.pressed and self.position.options.pressed.reverses then reverses = true end
 
