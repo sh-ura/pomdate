@@ -65,9 +65,9 @@ local cachedState = nil -- state prior to entering configuration mode
 
 --TODO move below asset path info to config or smth
 soundPathPrefix = "assets/sound/"
-local toWorkSoundPath = "01 Into the Maelstrom"
-local toBreakSoundPath = "06 When Your Eyes Meet From Across the Bar"
-local snoozeSoundPath = "03 Bittersweet"
+local toWorkSoundPath = "01 Into the Maelstrom.mp3"
+local toBreakSoundPath = "06 When Your Eyes Meet From Across the Bar.mp3"
+local snoozeSoundPath = "03 Bittersweet.mp3"
 
 --TODO replace other calls to these functions
 function APressed() return pd.buttonJustPressed(A) end
