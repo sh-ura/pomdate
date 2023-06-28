@@ -284,7 +284,7 @@ local function init(timers)
             button:setFont(gfx.getFont())
             button:setText(label)
             button:offsetPositions({selected = newVector(-BUTTON_TRAVEL_DISTANCE, 0)})
-            --[[ -- Toggle color inversion on selected button
+            ---[[ -- Toggle color inversion on selected button
             button.justSelectedAction = function()
                 button:setImageDrawMode(gfx.kDrawModeInverted)
             end
@@ -349,7 +349,7 @@ local function init(timers)
     timersMenu:offsetPositions({disabled = newVector(BUTTON_TRAVEL_DISTANCE, 0)})
 
     local cursor = nil
-    ---[[ -- toggle timers-menu-navigating cursor
+    --[[ -- toggle timers-menu-navigating cursor
     cursor = Cursor({"timerSelectCursor", BUTTON_TRAVEL_DISTANCE - MARGIN, BUTTON_HEIGHT_M})
     cursor:setEnablingCriteria(stateIsMENU)
     cursor:setBackground(function(width, height)

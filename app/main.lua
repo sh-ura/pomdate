@@ -11,7 +11,7 @@ import "CoreLibs/ui"
 import "CoreLibs/animation"
 
 import "gconsts"
-import "utils/utils";
+import "utils/utils"
 import "utils/debugger"
 import "utils/crankhandler"
 
@@ -65,9 +65,9 @@ local cachedState = nil -- state prior to entering configuration mode
 
 --TODO move below asset path info to config or smth
 soundPathPrefix = "assets/sound/"
-local toWorkSoundPath = "to-work.wav"
-local toBreakSoundPath = "to-break.wav"
-local snoozeSoundPath = "snooze.wav"
+local toWorkSoundPath = "01 Into the Maelstrom.wav"
+local toBreakSoundPath = "06 When Your Eyes Meet From Across the Bar.wav"
+local snoozeSoundPath = "03 Bittersweet.wav"
 
 --TODO replace other calls to these functions
 function APressed() return pd.buttonJustPressed(A) end
