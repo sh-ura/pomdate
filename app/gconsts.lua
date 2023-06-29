@@ -26,23 +26,27 @@ UI_ANIM_DELAY = 0 -- base delay in msec on state-based animations after state ch
 POMS_MAX = 7
 
 SOUND = {
-    notifPathPrefix = "assets/sound/notif/",
+    notifPathPrefix = "assets/sound/notif-wav/",
+    notifPathSuffix = "",
     uiPathPrefix = "assets/sound/ui/"
 }
 SOUND.notif_workToBreak = {
     path = SOUND.notifPathPrefix ..
-        "01 Into the Maelstrom.mp3",
-    vol = 1
+        "06 When Your Eyes Meet From Across the Bar"
+        .. SOUND.notifPathSuffix,
+    vol = 0.9
 }
 SOUND.notif_breakToWork = {
     path = SOUND.notifPathPrefix ..
-        "06 When Your Eyes Meet From Across the Bar.mp3",
-    vol = 1
+        "01 Into the Maelstrom"
+        .. SOUND.notifPathSuffix,
+    vol = 0.9
 }
 SOUND.notif_fromSnooze = {
     path = SOUND.notifPathPrefix ..
-        "03 Bittersweet.mp3",
-    vol = 1
+        "03 Bittersweet"
+        .. SOUND.notifPathSuffix,
+    vol = 0.9
 }
 SOUND.timerButtonSelected = {
     path = SOUND.uiPathPrefix ..

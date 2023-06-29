@@ -240,7 +240,7 @@ local function initCrankDialCircuit()
     preSwitchLED.isSelected = function() return true end
     preSwitchLED.getDialChange = crankhandler.subscribe()
     preSwitchLED:setMode(dial.visualizers.animation)
-    preSwitchLED:setSound(snd.fileplayer.new(SOUND.preSwitchLED.path))
+    preSwitchLED:setSound(snd.fileplayer.new(SOUND.preSwitchLED.path), SOUND.preSwitchLED.vol)
     postSwitchLED:setForeground(postSwitchLEDImagetable, 16)
     postSwitchLED:setPosition(10, 34)
     postSwitchLED.isSelected = getCrankDialCircuitClosure
@@ -271,6 +271,7 @@ local function init(timers)
         if not timerDialFont then d.log("no font at ".. fontPathPrefix .. timerDialFontPath) end
         print("pre buttonselectsfx") --TODO rm all print() statements in this file
         local button_select_sfx = snd.sampleplayer.new(SOUND.timerButtonSelected.path)
+        button_select_sfx:setVolume(SOUND.timerButtonSelected.vol)
         print("post buttonselectsfx")
 
         local function makeTimerSelector(t, label)
@@ -279,7 +280,7 @@ local function init(timers)
             local button = Button({name .. "Button", BUTTON_WIDTH_L, BUTTON_HEIGHT_M})
             timerSelectButtons[name] = button
             print("pre setSound")
-            button:setSound(snd.sampleplayer.new(SOUND.timerButtonPressed.paths[name]))
+            button:setSound(snd.sampleplayer.new(SOUND.timerButtonPressed.paths[name]), SOUND.timerButtonPressed.vol)
             print("post setSound")
             button.isPressed = function() return pd.buttonJustPressed(A) end
             button:setBackground(function(width, height)

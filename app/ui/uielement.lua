@@ -353,10 +353,16 @@ end
 --- Sound-play will need to be triggered manually or configured elsewhere.
 ---@param soundplayer pd.sound.sampleplayer
 ---             or pd.sound.fileplayer
-function UIElement:setSound(soundplayer)
+---@param volume float
+function UIElement:setSound(soundplayer, volume)
     if soundplayer and soundplayer.play then
-        if soundplayer.pause then self.fileplayer = soundplayer
-        else self.sampleplayer = soundplayer end
+        if soundplayer.pause then
+            self.fileplayer = soundplayer
+            if volume then self.fileplayer:setVolume(volume) end
+        else
+            self.sampleplayer = soundplayer
+            if volume then self.sampleplayer:setVolume(volume) end
+        end
     else d.log("attempted to set invalid soundplayer for " .. self.name)
     end
 end

@@ -176,7 +176,8 @@ end
 
 --- Set the sound to be played when a timer finishes
 ---@param sound pd.sound.sampleplayer or pd.sound.fileplayer
-function Timer:setNotifSound(sound)
+---@param volume (optional) float
+function Timer:setNotifSound(sound, volume)
     if not sound then
         d.log("missing sound arg for timer.setNotifSound")
     elseif not sound.play or not sound.stop then
@@ -184,6 +185,7 @@ function Timer:setNotifSound(sound)
     else
         self._notifSound = sound
     end
+    if volume and self._notifSound then self._notifSound:setVolume(volume) end
 end
 
 --- Set the duration the timer should run for (in minutes).

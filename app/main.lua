@@ -101,10 +101,10 @@ local function init()
     timers.snooze = Timer("snooze")
     timers = utils.makeReadOnly(timers, "timers")
 
-    timers.work:setNotifSound(pd.sound.fileplayer.new(SOUND.notif_workToBreak.path))
-    timers.short:setNotifSound(pd.sound.fileplayer.new(SOUND.notif_breakToWork.path))
-    timers.long:setNotifSound(pd.sound.fileplayer.new(SOUND.notif_breakToWork.path))
-    timers.snooze:setNotifSound(pd.sound.fileplayer.new(SOUND.notif_fromSnooze.path))
+    timers.work:setNotifSound(pd.sound.fileplayer.new(SOUND.notif_workToBreak.path), SOUND.notif_workToBreak.vol)
+    timers.short:setNotifSound(pd.sound.fileplayer.new(SOUND.notif_breakToWork.path), SOUND.notif_breakToWork.vol)
+    timers.long:setNotifSound(pd.sound.fileplayer.new(SOUND.notif_breakToWork.path), SOUND.notif_breakToWork.vol)
+    timers.snooze:setNotifSound(pd.sound.fileplayer.new(SOUND.notif_fromSnooze.path), SOUND.notif_fromSnooze.vol)
     for _, t in pairs(timers) do t:setZIndex(50) end
     currentTimer = timers.work --TODO rm
 
