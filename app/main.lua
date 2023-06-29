@@ -58,7 +58,6 @@ local timers = {
 local currentTimer = nil
 local timerCompleted = false
 local c_poms = 0
-local c_pauses = 0
 local c_snoozes = 0
 local cachedState = nil -- state prior to entering configuration mode
 
@@ -155,6 +154,7 @@ local function sav()
     end
 end
 
+--- Auto-selects the next timer in the pomodoro cycle
 local function cycleTimers()
     if currentTimer == timers.short then
         ui.selectNextTimer()
@@ -167,6 +167,20 @@ local function cycleTimers()
             ui.selectPrevTimer()
         end
     end
+end
+
+--- Pauses currently running timer.
+local function pause()
+    -- if should also check :isStopped() once pd.timer:pause() is fixed
+    if currentTimer:isPaused() then
+        d.log("current timer " .. currentTimer.name .. " is already paused")
+    else currentTimer:pause() end
+end
+
+--- Unpause current timer.
+local function unpause()
+    if not currentTimer:isPaused() then d.log("current timer " .. currentTimer.name .. " is not paused; can't unpause")
+    else currentTimer:start() end
 end
 
 function toConf()
@@ -188,11 +202,9 @@ end
 -- then inits select
 -- then switches update func
 -- TODO need to transition run -> select sometimes; refactor
--- TODO align semantics of menu w pause
 -- TODO rename to toMENU
 function toMenu()
     currentTimer:remove()
-    c_pauses = 0
     c_snoozes = 0
 
     if timerCompleted then
@@ -244,33 +256,6 @@ function snooze()
         toRun(timers.snooze, confs.snoozeDuration)
     --end
 end
-
---- Pauses currently running timer.
-function pause()
-    -- if should also check :isStopped() once pd.timer:pause() is fixed
-    if currentTimer:isPaused() then
-        d.log("current timer " .. currentTimer.name .. " is already paused")
-    else
-        c_pauses = c_pauses + 1
-        currentTimer:pause()
-    end
-end
-
---- Unpause current timer.
-function unpause()
-    if not currentTimer:isPaused() then d.log("current timer " .. currentTimer.name .. " is not paused; can't unpause")
-    else currentTimer:start() end
-end
-
---- Get the (un)paused status of the current timer
----@return boolean true iff the current timer is paused
-function timerIsPaused()
-    return currentTimer:isPaused()
-end
-
---- Get the number of times the current timer has been paused
----@return integer
-function getPauseCount() return c_pauses end
 
 --- Get the number of times the current timer has been snoozed
 ---@return integer

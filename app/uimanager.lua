@@ -71,13 +71,11 @@ local pomCountDisplay = nil
 local menuInst = nil -- instructions shown in MENU --TODO move to init
 
 local toMenuButton = nil -- return to timer-select menu
-local pauseButton = nil -- pause active timer
-local unpauseButton = nil -- unpause active timer
 local runInst = nil -- instructions shown in RUN_TIMER state --TODO move to init
 
 local snoozeButton = nil -- invisible snooze button --TODO move to init
 local doneInst = nil -- instructions shown in DONE_TIMER state --TODO move to init
-local scoreboard = nil -- visualizes pause and snooze scores for this timer session
+local scoreboard = nil -- visualizes snooze score for this timer session
 
 local function bakeSwitchAnimation()
     local w_frame = SWITCH_LENGTH + 10
@@ -412,24 +410,6 @@ local function init(timers)
     end)
     toMenuButton:offsetPositions({}, { pressed = { reverses = true }})
 
-    pauseButton = makeABButton("pause", A)
-    pauseButton.pressedAction = function()
-        pause()
-    end
-    pauseButton:setEnablingCriteria(function() return
-        stateIsRUN_TIMER()
-        and not timerIsPaused()
-    end)
-
-    unpauseButton = makeABButton("unpause", A)
-    unpauseButton.pressedAction = function()
-        unpause()
-    end
-    unpauseButton:setEnablingCriteria(function() return
-        stateIsRUN_TIMER()
-        and timerIsPaused()
-    end)
-
     snoozeButton = makeABButton("snooze", A)
     snoozeButton.pressedAction = snooze
     snoozeButton:setEnablingCriteria(function() return
@@ -462,7 +442,6 @@ local function init(timers)
     scoreboard = List({"scoreboard", 100, 80})
     scoreboard:setEnablingCriteria(stateIsDONE_TIMER)
     makeScoreDisplays(scoreboard, {
-        pause = getPauseCount,
         snooze = getSnoozeCount
     })
     scoreboard:moveTo(300, 60)
