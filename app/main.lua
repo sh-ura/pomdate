@@ -56,18 +56,11 @@ local timers = {
     snooze = 'nil'
 }
 local currentTimer = nil
-local notifSound = nil
 local timerCompleted = false
 local c_poms = 0
 local c_pauses = 0
 local c_snoozes = 0
 local cachedState = nil -- state prior to entering configuration mode
-
---TODO move below asset path info to config or smth
-soundPathPrefix = "assets/sound/"
-local toWorkSoundPath = "01 Into the Maelstrom.mp3"
-local toBreakSoundPath = "06 When Your Eyes Meet From Across the Bar.mp3"
-local snoozeSoundPath = "03 Bittersweet.mp3"
 
 --TODO replace other calls to these functions
 function APressed() return pd.buttonJustPressed(A) end
@@ -108,10 +101,10 @@ local function init()
     timers.snooze = Timer("snooze")
     timers = utils.makeReadOnly(timers, "timers")
 
-    timers.work:setNotifSound(pd.sound.fileplayer.new(soundPathPrefix .. toBreakSoundPath))
-    timers.short:setNotifSound(pd.sound.fileplayer.new(soundPathPrefix .. toWorkSoundPath))
-    timers.long:setNotifSound(pd.sound.fileplayer.new(soundPathPrefix .. toWorkSoundPath))
-    timers.snooze:setNotifSound(pd.sound.fileplayer.new(soundPathPrefix .. snoozeSoundPath))
+    timers.work:setNotifSound(pd.sound.fileplayer.new(SOUND.notif_workToBreak.path))
+    timers.short:setNotifSound(pd.sound.fileplayer.new(SOUND.notif_breakToWork.path))
+    timers.long:setNotifSound(pd.sound.fileplayer.new(SOUND.notif_breakToWork.path))
+    timers.snooze:setNotifSound(pd.sound.fileplayer.new(SOUND.notif_fromSnooze.path))
     for _, t in pairs(timers) do t:setZIndex(50) end
     currentTimer = timers.work --TODO rm
 

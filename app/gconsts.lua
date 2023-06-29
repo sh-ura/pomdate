@@ -24,3 +24,95 @@ STATES = {
 UI_ANIM_DURATION = 1500
 UI_ANIM_DELAY = 0 -- base delay in msec on state-based animations after state change
 POMS_MAX = 7
+
+SOUND = {
+    notifPathPrefix = "assets/sound/notif/",
+    uiPathPrefix = "assets/sound/ui/"
+}
+SOUND.notif_workToBreak = {
+    path = SOUND.notifPathPrefix ..
+        "01 Into the Maelstrom.mp3",
+    vol = 1
+}
+SOUND.notif_breakToWork = {
+    path = SOUND.notifPathPrefix ..
+        "06 When Your Eyes Meet From Across the Bar.mp3",
+    vol = 1
+}
+SOUND.notif_fromSnooze = {
+    path = SOUND.notifPathPrefix ..
+        "03 Bittersweet.mp3",
+    vol = 1
+}
+SOUND.timerButtonSelected = {
+    path = SOUND.uiPathPrefix ..
+        "FUI Navigation Swipe Short-1",
+    vol = 1
+}
+SOUND.timerButtonPressed = {
+    paths = {
+        short = SOUND.uiPathPrefix ..
+            "click01",
+        work = SOUND.uiPathPrefix ..
+            "click02",
+        long = SOUND.uiPathPrefix ..
+            "click03"
+    },
+    vol = 1
+}
+SOUND.preSwitchLED = {
+    path = SOUND.uiPathPrefix ..
+        "tape_playback_02",
+    vol = 1
+}
+SOUND.crankDialSwitch = {
+    path = SOUND.uiPathPrefix ..
+        "",
+    vol = 1
+}
+SOUND.postSwitchLED = {
+    path = SOUND.uiPathPrefix ..
+        "",
+    vol = 1
+}
+SOUND.timerLoaded = {
+    paths = {
+        short = SOUND.uiPathPrefix ..
+            "",
+        work = SOUND.uiPathPrefix ..
+            "",
+        long = SOUND.uiPathPrefix ..
+            ""
+    },
+    vol = 1
+}
+SOUND.runToMenu = {
+    path = SOUND.uiPathPrefix ..
+        "",
+    vol = 1
+}
+SOUND.doneToMenu = {
+    path = SOUND.uiPathPrefix ..
+        "",
+    vol = 1
+}
+SOUND.backButton = {
+    path = SOUND.uiPathPrefix ..
+        "",
+    vol = 1
+}
+SOUND.nextButton = {
+    path = SOUND.uiPathPrefix ..
+        "",
+    vol = 1
+}
+SOUND.snoozeButton = {
+    path = SOUND.uiPathPrefix ..
+        "",
+    vol = 1
+}
+SOUND.pomsFull = {
+    path = SOUND.uiPathPrefix ..
+        "",
+    vol = 1
+}
