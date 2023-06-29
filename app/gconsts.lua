@@ -50,7 +50,7 @@ SOUND.notif_fromSnooze = {
 }
 SOUND.timerButtonSelected = {
     path = SOUND.uiPathPrefix ..
-        "FUI Navigation Swipe Short-1",
+        "FUI Navigation Swipe Short",
     vol = 1
 }
 SOUND.timerButtonPressed = {
