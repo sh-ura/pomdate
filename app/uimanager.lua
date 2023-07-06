@@ -226,6 +226,7 @@ local function initCrankDialCircuit()
         switch.fg_anim:play(-1, 1, animation.bookmarks.first)
         crankDialSwitchIsClosed = false
     end
+    switch:setSound(snd.sampleplayer.new(SOUND.crankDialSwitch.path), SOUND.crankDialSwitch.vol)
 
     local preSwitchLEDImagetable = gfx.imagetable.new(imgPathPrefix .. "preSwitchLED")
     local postSwitchLEDImagetable = gfx.imagetable.new(imgPathPrefix .. "postSwitchLED")
@@ -267,10 +268,6 @@ local function init(timers)
     local function fillTimersMenu (list, timers, cursor)
         local timerDialFont = gfx.font.new(fontPathPrefix .. timerDialFontPath)
         if not timerDialFont then d.log("no font at ".. fontPathPrefix .. timerDialFontPath) end
-        print("pre buttonselectsfx") --TODO rm all print() statements in this file
-        local button_select_sfx = snd.sampleplayer.new(SOUND.timerButtonSelected.path)
-        button_select_sfx:setVolume(SOUND.timerButtonSelected.vol)
-        print("post buttonselectsfx")
 
         local function makeTimerSelector(t, label)
             local name = t.name
@@ -291,9 +288,14 @@ local function init(timers)
             button:setFont(gfx.getFont())
             button:setText(label)
             button:offsetPositions({selected = newVector(-BUTTON_TRAVEL_DISTANCE, 0)})
+
+            print("pre buttonselectsfx") --TODO rm all print() statements in this file
+            local select_sfx = snd.sampleplayer.new(SOUND.timerButtonSelected.paths[name])
+            select_sfx:setVolume(SOUND.timerButtonSelected.vol)
+            print("post buttonselectsfx")
             ---[[ -- Toggle color inversion on selected button
             button.justSelectedAction = function()
-                button_select_sfx:play(1)
+                select_sfx:play(1)
                 button:setImageDrawMode(gfx.kDrawModeInverted)
             end
             button.justDeselectedAction = function()

@@ -48,19 +48,25 @@ SOUND.notif_fromSnooze = {
         .. SOUND.notifPathSuffix,
     vol = 0.9
 }
-SOUND.timerButtonSelected = {
-    path = SOUND.uiPathPrefix ..
-        "FUI Navigation Swipe Short",
-    vol = 1
+SOUND.timerButtonSelected = { -- TODO needs export
+    paths = {
+        short = SOUND.uiPathPrefix ..
+            "FUI Button Click-1",
+        work = SOUND.uiPathPrefix ..
+            "FUI Cursor Click",
+        long = SOUND.uiPathPrefix ..
+            "FUI Cursor Blunt"         --"FUI Button Pitch Jump"
+    },
+    vol = 0.7
 }
 SOUND.timerButtonPressed = {
     paths = {
         short = SOUND.uiPathPrefix ..
-            "click01",
+            "LOAD_CASSETTE_08",
         work = SOUND.uiPathPrefix ..
-            "click02",
+            "LOAD_CASSETTE_02",
         long = SOUND.uiPathPrefix ..
-            "click03"
+            "LOAD_CASSETTE_07"
     },
     vol = 1
 }
@@ -71,7 +77,7 @@ SOUND.preSwitchLED = {
 }
 SOUND.crankDialSwitch = {
     path = SOUND.uiPathPrefix ..
-        "",
+        "BUTTON_STOP_05",
     vol = 1
 }
 SOUND.postSwitchLED = {

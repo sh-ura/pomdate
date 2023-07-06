@@ -69,7 +69,7 @@ function BPressed() return pd.buttonJustPressed(B) end
 --- If a state save file exists, it will be loaded here.
 local function init()
     utils.disableReadOnly()
-    --debugger.disable() --TODO uncomment
+    debugger.disable() --TODO uncomment
     drawFPS = true --TODO comment out
 
     -- snooze duration is in the confs data file
@@ -113,6 +113,7 @@ local function init()
         {t = timers.long, label = "long break"}
     })
     ui.selectNextTimer() -- autoselects the 2nd timer, 'work'
+    d.log("main.init COMPLETE")
 end
 
 --TODO replace with a launchImage, configurable in pdxinfo
@@ -268,20 +269,28 @@ function getPomCount() return c_poms end
 --- Reset the pom cycle by resetting the completed-pomodoro count
 function resetPomCount() c_poms = 0 end
 
+local frame = 0
 -- pd.update() is called right before every frame is drawn onscreen.
 function pd.update()
+    frame = frame + 1
+    d.log("begin frame "..frame)
+    d.log("pd.update: check stateIsLoading")
     --TODO replace this with playdate's builtin init screen system
     if stateIsLOADING() then
-        pd.ui.crankIndicator:update() --TODO why isnt this working??
+        --d.log("hit stateIsLOADING")
+        pd.ui.crankIndicator:update()
+        d.log("updated crankIndicator")
         if pd.buttonJustPressed(A) then
             splashSprite:remove()
             toMenu()
         end
     end
 
-    
+    d.log("pd.update: ui")
     ui.update()
-    pd.timer.updateTimers()
+    d.log("pd.update: timers")
+    pd.timer.updateTimers() --TODO rename to update()
+    d.log("pd.update: sprites")
     gfx.sprite.update()
 end
 
