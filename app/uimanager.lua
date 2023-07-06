@@ -218,15 +218,19 @@ local function initCrankDialCircuit()
     switch:setForeground(switchImagetable)
     switch:setPosition(X_B_BUTTON - BUTTON_HEIGHT_L/4, h_circuit - switch.height)
     switch.isPressed = function() return pd.buttonIsPressed(B) end
-    switch.pressedAction = function ()
-        switch.fg_anim:play(1, 0, animation.bookmarks.last,
-        function () crankDialSwitchIsClosed = true end)
-    end
     switch.justReleasedAction = function ()
         switch.fg_anim:play(-1, 1, animation.bookmarks.first)
         crankDialSwitchIsClosed = false
     end
-    switch:setSound("held", snd.sampleplayer.new(SOUND.crankDialSwitch.path), SOUND.crankDialSwitch.vol)
+    switch:setSound("held", snd.sampleplayer.new(SOUND.crankDialSwitch.closing.path), SOUND.crankDialSwitch.closing.vol)
+    switch:setSound("locked", snd.sampleplayer.new(SOUND.crankDialSwitch.closed.path), SOUND.crankDialSwitch.closed.vol)
+    switch.pressedAction = function ()
+        switch.fg_anim:play(1, 0, animation.bookmarks.last,
+        function ()
+            if not crankDialSwitchIsClosed then switch.sounds.locked:play(1) end -- play click sound iff switch was previously open
+            crankDialSwitchIsClosed = true
+        end)
+    end
 
     local preSwitchLEDImagetable = gfx.imagetable.new(imgPathPrefix .. "preSwitchLED")
     local postSwitchLEDImagetable = gfx.imagetable.new(imgPathPrefix .. "postSwitchLED")
