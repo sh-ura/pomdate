@@ -226,7 +226,7 @@ local function initCrankDialCircuit()
         switch.fg_anim:play(-1, 1, animation.bookmarks.first)
         crankDialSwitchIsClosed = false
     end
-    switch:setSound(snd.sampleplayer.new(SOUND.crankDialSwitch.path), SOUND.crankDialSwitch.vol)
+    switch:setSound("held", snd.sampleplayer.new(SOUND.crankDialSwitch.path), SOUND.crankDialSwitch.vol)
 
     local preSwitchLEDImagetable = gfx.imagetable.new(imgPathPrefix .. "preSwitchLED")
     local postSwitchLEDImagetable = gfx.imagetable.new(imgPathPrefix .. "postSwitchLED")
@@ -239,7 +239,7 @@ local function initCrankDialCircuit()
     preSwitchLED.isSelected = function() return true end
     preSwitchLED.getDialChange = crankhandler.subscribe()
     preSwitchLED:setMode(dial.visualizers.animation)
-    preSwitchLED:setSound(snd.fileplayer.new(SOUND.preSwitchLED.path), SOUND.preSwitchLED.vol)
+    preSwitchLED:setSound("dialing", snd.fileplayer.new(SOUND.preSwitchLED.path), SOUND.preSwitchLED.vol) --would prefer a sampleplayer here
     postSwitchLED:setForeground(postSwitchLEDImagetable, 16)
     postSwitchLED:setPosition(10, 34)
     postSwitchLED.isSelected = getCrankDialCircuitClosure
@@ -274,9 +274,8 @@ local function init(timers)
 
             local button = Button({name .. "Button", BUTTON_WIDTH_L, BUTTON_HEIGHT_M})
             timerSelectButtons[name] = button
-            print("pre setSound")
-            button:setSound(snd.sampleplayer.new(SOUND.timerButtonPressed.paths[name]), SOUND.timerButtonPressed.vol)
-            print("post setSound")
+            button:setSound("touched", snd.sampleplayer.new(SOUND.timerButtonPressed.paths[name]), SOUND.timerButtonPressed.vol)
+            button:setSound("selected", snd.sampleplayer.new(SOUND.timerButtonSelected.paths[name]), SOUND.timerButtonSelected.vol)
             button.isPressed = function() return pd.buttonJustPressed(A) end
             button:setBackground(function(width, height)
                 local w_line = 8 -- must be even
@@ -289,13 +288,9 @@ local function init(timers)
             button:setText(label)
             button:offsetPositions({selected = newVector(-BUTTON_TRAVEL_DISTANCE, 0)})
 
-            print("pre buttonselectsfx") --TODO rm all print() statements in this file
-            local select_sfx = snd.sampleplayer.new(SOUND.timerButtonSelected.paths[name])
-            select_sfx:setVolume(SOUND.timerButtonSelected.vol)
-            print("post buttonselectsfx")
             ---[[ -- Toggle color inversion on selected button
             button.justSelectedAction = function()
-                select_sfx:play(1)
+                button.sounds.selected:play(1)
                 button:setImageDrawMode(gfx.kDrawModeInverted)
             end
             button.justDeselectedAction = function()

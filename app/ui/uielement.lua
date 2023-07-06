@@ -118,8 +118,9 @@ function UIElement:init(coreProps)
     self._scale = 1         -- sprite scale
 
     -- sound props
-    self.sampleplayer = nil
-    self.fileplayer = nil
+    self.sounds = {
+        -- name = sampleplayer_or_fileplayer
+    }
 
     --TODO _isConfigured should be a table of checks since many things need configuring
     self._isConfigured = false
@@ -349,22 +350,20 @@ function UIElement:setBackground(drawable, framesDelay)
 end
 
 ---TODO might be nice to use sound.sample more and recycle sampleplayers
---- Associate a sound effect to this UIElement.
+---TODO use enum instead of string for name
+--- Associate sound effect to this UIElement.
+--- Multiple sound effects supported; just use different names.
 --- Sound-play will need to be triggered manually or configured elsewhere.
+---@param name string name to index the sound by, ex. "selected". Becomes: uielement.sound[name]
 ---@param soundplayer pd.sound.sampleplayer
 ---             or pd.sound.fileplayer
----@param volume float
-function UIElement:setSound(soundplayer, volume)
-    if soundplayer and soundplayer.play then
-        if soundplayer.pause then
-            self.fileplayer = soundplayer
-            if volume then self.fileplayer:setVolume(volume) end
-        else
-            self.sampleplayer = soundplayer
-            if volume then self.sampleplayer:setVolume(volume) end
-        end
-    else d.log("attempted to set invalid soundplayer for " .. self.name)
-    end
+---@param volume float (optional)
+function UIElement:setSound(name, soundplayer, volume)
+    if not name or not soundplayer then d.log("missing args for "..self.name..":setSound()") end
+    if not soundplayer.play then d.log("attempted to set invalid soundplayer for " .. self.name) end
+
+    if volume then soundplayer:setVolume(volume) end
+    self.sounds[name] = soundplayer
 end
 
 --- Convenience function returns element's current position as a Point

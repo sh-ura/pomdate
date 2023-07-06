@@ -145,17 +145,18 @@ function Dial:setMode(mode)
             self:setForeground(gfx.image.new(self.width, self.height, COLOR_CLEAR))
         end
         self._renderValue = function()
-            local sound = self.fileplayer
+            local sound = self.sounds.dialing
             ---[[
             if self.value == 0 then
-                if sound then sound:pause() end
+                if sound then sound:pause() end -- sampleplayer: sound:setPaused(true)
+                
                 return
             elseif self.value > 0 then
                 self.fg_anim:play(1, 0, 1)
             elseif self.value < 0 then
                 self.fg_anim:play(-1, 0, 1)
             end
-            if sound then sound:play() end
+            if sound then sound:play() end -- sampleplayer: sound:setPaused(false)
             --]]
             --[[
             local step = 1
@@ -165,6 +166,20 @@ function Dial:setMode(mode)
             self.value = 0
         end
     end
+end
+
+function Dial:setSound(name, soundplayer, volume)
+    if name == "dialing" and not soundplayer.pause then
+        d.log("Dialing sfx must be fileplayer")
+        return
+    end
+    Dial.super.setSound(self, name, soundplayer, volume)
+    --[[ -- This sampleplayer code doesn't work due to an SDK bug
+    if name == "dialing" then
+        soundplayer:play(0)
+        soundplayer:setPaused(true)
+    end
+    --]]
 end
 
 --- Add the dial to the global sprite list.
