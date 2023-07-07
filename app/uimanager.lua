@@ -434,12 +434,7 @@ local function init(timers)
         display:setUnit(unit)
 
         local prevScore = 0
-        display.getDialChange = function()
-            local currentScore = scoringFunc()
-            local scoreDiff = currentScore - prevScore
-            prevScore = currentScore
-            return scoreDiff
-        end
+        display.getDialValue = scoringFunc
         return display
     end
 

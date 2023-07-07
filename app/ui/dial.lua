@@ -69,12 +69,12 @@ function Dial:init(coreProps, lowerLimit, upperLimit, step)
     self._spacing = 2    -- pixels between counter images, if applicable
     self._direction = 1  -- direction to increment counter images in, if applicable
 
-    --- Declare dial behaviour, to be configured elsewhere, prob by UI Manager
-    ---@return integer amount to dial. pos for forward, neg for backward, 0 for no change
-    self.getDialChange = function ()
-        d.log("dial '" .. self.name .. "' dial-change measures not configured")
-        return 0
-    end
+    --- set a getDialChange function to have the dial visualize value in terms of change in value.
+    ---@return number amount to dial. pos for forward, neg for backward, 0 for no change
+    self.getDialChange = nil
+    --- set a getDialValue function to have the dial visualize value straight from a data source.
+    ---@return number value to show
+    self.getDialValue = nil
     
     --- Mode for visualizing value defaults to numeral.
     self:setMode(visualizers.numeral)
@@ -90,9 +90,16 @@ function Dial:update()
     if self.isSelected() then
         local low = self._lowLimit
         local upp = self._uppLimit
-
         self._prevValue = self.value
-        self.value = self.value + self.getDialChange() * self._step
+
+        if self.getDialChange then
+            self.value = self.value + self.getDialChange() * self._step
+        elseif self.getDialValue then
+            self.value = self.getDialValue()
+        elseif not self._isConfigured then
+            d.log("dial "..self.name.." lacks getDialValue or getDialChange function")
+        end
+        
         if low and self.value <= low then
             self.value = low
         elseif upp and self.value >= upp then
