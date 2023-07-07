@@ -240,7 +240,6 @@ function toRun(t, duration)
 end
 
 function toDone()
-    currentTimer:notify()
     currentTimer:stop() --currentTimer:remove()
     
     timerCompleted = true
@@ -285,7 +284,6 @@ function pd.update()
     if stateIsLOADING() then
         --d.log("hit stateIsLOADING")
         pd.ui.crankIndicator:update()
-        d.log("updated crankIndicator")
         if pd.buttonJustPressed(A) then
             splashSprite:remove()
             toMenu()

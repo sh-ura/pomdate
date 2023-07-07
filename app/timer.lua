@@ -36,14 +36,6 @@ local function convertToClock(msec)
     return min, sec
 end
 
----[[
---- Notifies user that timer is complete
-function Timer:notify()
-    --d.log("notification pushed")
-    if self._notifSound then self._notifSound:play(0) end
-end
---]]
-
 --- Initializes, but does not start, a Timer.
 ---@param name string timer's name for graybox and debugging
 function Timer:init(name)
@@ -57,7 +49,6 @@ function Timer:init(name)
     
     self._timer = nil -- "value-based" pd timer w linear interpolation
     self._isPaused = false -- true iff the timer is paused
-    self._notifSound = nil -- sound to play when notifying
 
     self:setCenter(0, 0) --anchor top-left
 end
@@ -72,7 +63,7 @@ end
 -- Timer:update() draws the current time in the timer countdown
 function Timer:update()
     --TODO rm
-    if _G.stateIsRUN_TIMER() then self:setVisible(true)
+    if stateIsRUN_TIMER() then self:setVisible(true)
     else self:setVisible(false)
     end
 
@@ -115,7 +106,6 @@ end
 --- Stop a Timer.
 --- Stopped timers can be restarted by calling start().
 function Timer:stop()
-    if self._notifSound then self._notifSound:stop() end
     self._timer = nil
     self._isPaused = false
 end
@@ -172,21 +162,6 @@ function Timer:isStopped()
 end
 --]]
 
----[[
---- Set the sound to be played when a timer finishes
----@param sound pd.sound.sampleplayer or pd.sound.fileplayer
----@param volume (optional) float
-function Timer:setNotifSound(sound, volume)
-    if not sound then
-        d.log("missing sound arg for timer.setNotifSound")
-    elseif not sound.play or not sound.stop then
-        d.log("attempting to set unplayable notif sound", sound)
-    else
-        self._notifSound = sound
-    end
-    if volume and self._notifSound then self._notifSound:setVolume(volume) end
-end
---]]
 
 --- Set the duration the timer should run for (in minutes).
 ---@param mins integer duration
