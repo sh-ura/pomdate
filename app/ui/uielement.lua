@@ -254,6 +254,7 @@ local function renderDrawable(self, drawable)
     local w, h = self:getSize()
     local draw = function(width, height) end
     local imagetable = gfx.imagetable.new(1)
+    imagetable:setImage(1, gfx.image.new(1,1)) -- needed to prevent crash: https://devforum.play.date/t/e0-crash-shortly-after-launch-requires-factory-reset/11859
 
     if type(drawable) == 'function' then
         draw = drawable
