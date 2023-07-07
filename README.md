@@ -40,7 +40,7 @@ The app is now useable in the simulator, if you would like to use it as a deskto
 ### Replace notification sound
 
 1. Create and export your sound according to [playdate specs for sound **samples**](https://sdk.play.date/1.13.1/Inside%20Playdate.html#M-sound).
-2. In `app/gconsts.lua`, modify the relevant `SOUND.notif_[timer type].path` string to point to your sound. You can modify the sound's volume here as well: set `SOUND.notif_[timer type].vol` to a float value in [0,1].
+2. In `app/gconsts.lua`, modify the relevant `SOUND.notif_[timer type].path` string to point to your sound. You can modify the sound's volume here as well: set `SOUND.notif_[timer type].volume` to a float value in [0,1].
 3. Compile and run the app as per the installation instructions above.
 
 Note that some samples may sound significantly different, even *bad*, on the playdate hardware. Lowering sound volume can help.

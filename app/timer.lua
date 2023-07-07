@@ -22,8 +22,6 @@ local Timer <const> = Timer
 local MSEC_PER_SEC <const> = 1000
 local SEC_PER_MIN <const> = 60
 
-local notifSound = nil
-
 local _ENV = P
 name = "timer"
 
@@ -38,11 +36,13 @@ local function convertToClock(msec)
     return min, sec
 end
 
+---[[
 --- Notifies user that timer is complete
 function Timer:notify()
     --d.log("notification pushed")
     if self._notifSound then self._notifSound:play(0) end
 end
+--]]
 
 --- Initializes, but does not start, a Timer.
 ---@param name string timer's name for graybox and debugging
@@ -71,38 +71,36 @@ end
 --]]
 -- Timer:update() draws the current time in the timer countdown
 function Timer:update()
+    --TODO rm
+    if _G.stateIsRUN_TIMER() then self:setVisible(true)
+    else self:setVisible(false)
+    end
+
     --TODO refactor when pd.timer.pause() is fixed
-    if stateIsRUN_TIMER() then
-        local msec
-        if self._isPaused then msec = self._duration --TODO rm workaround
-        elseif self._timer then msec = self._timer.value
-        else
-            d.log(self.name .. "._timer is nil on RUN")
-            return
-        end
+    local msec
+    if self._isPaused then msec = self._duration --TODO rm workaround
+    elseif self._timer then msec = self._timer.value
+    else
+        d.log(self.name .. "._timer is nil on RUN")
+        return
+    end
 
-        -- if timer has completed
-        if msec <= 0 then
-            _G.toDone()
-        else
-            local min, sec = convertToClock(msec)
-            -- debugger.log("min: " .. min .. " sec: " .. sec)
-            -- debugger.log(self._timer.value)
-            local timeString = ""
-            if min < 10 then timeString = "0" end
-            timeString = timeString .. min .. ":"
-            if sec < 10 then timeString = timeString .. "0" end
-            timeString = timeString .. sec
+    -- if timer has completed
+    if msec <= 0 then
+        _G.toDone()
+    else
+        local min, sec = convertToClock(msec)
+        -- debugger.log("min: " .. min .. " sec: " .. sec)
+        -- debugger.log(self._timer.value)
+        local timeString = ""
+        if min < 10 then timeString = "0" end
+        timeString = timeString .. min .. ":"
+        if sec < 10 then timeString = timeString .. "0" end
+        timeString = timeString .. sec
 
-            gfx.pushContext(self._img)
-                gfx.clear(COLOR_CLEAR)
-                gfx.drawText("*"..timeString.."*", 0, 0)
-            gfx.popContext()
-        end
-    elseif stateIsDONE_TIMER() then --TODO actually this doesn't need to be done by timer.lua! refactor this whole if/else out.
         gfx.pushContext(self._img)
-        gfx.clear()
-        gfx.drawText("*DONE*", 0, 0)
+            gfx.clear(COLOR_CLEAR)
+            gfx.drawText("*"..timeString.."*", 0, 0)
         gfx.popContext()
     end
 
@@ -174,6 +172,7 @@ function Timer:isStopped()
 end
 --]]
 
+---[[
 --- Set the sound to be played when a timer finishes
 ---@param sound pd.sound.sampleplayer or pd.sound.fileplayer
 ---@param volume (optional) float
@@ -187,6 +186,7 @@ function Timer:setNotifSound(sound, volume)
     end
     if volume and self._notifSound then self._notifSound:setVolume(volume) end
 end
+--]]
 
 --- Set the duration the timer should run for (in minutes).
 ---@param mins integer duration

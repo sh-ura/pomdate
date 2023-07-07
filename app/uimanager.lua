@@ -222,8 +222,8 @@ local function initCrankDialCircuit()
         switch.fg_anim:play(-1, 1, animation.bookmarks.first)
         crankDialSwitchIsClosed = false
     end
-    switch:setSound("held", snd.sampleplayer.new(SOUND.crankDialSwitch.closing.path), SOUND.crankDialSwitch.closing.vol)
-    switch:setSound("locked", snd.sampleplayer.new(SOUND.crankDialSwitch.closed.path), SOUND.crankDialSwitch.closed.vol)
+    switch:setSound("held", snd.sampleplayer.new(SOUND.crankDialSwitch.closing.path), SOUND.crankDialSwitch.closing.volume)
+    switch:setSound("locked", snd.sampleplayer.new(SOUND.crankDialSwitch.closed.path), SOUND.crankDialSwitch.closed.volume)
     switch.pressedAction = function ()
         switch.fg_anim:play(1, 0, animation.bookmarks.last,
         function ()
@@ -243,7 +243,7 @@ local function initCrankDialCircuit()
     preSwitchLED.isSelected = function() return true end
     preSwitchLED.getDialChange = crankhandler.subscribe()
     preSwitchLED:setMode(dial.visualizers.animation)
-    preSwitchLED:setSound("dialing", snd.fileplayer.new(SOUND.preSwitchLED.path), SOUND.preSwitchLED.vol) --would prefer a sampleplayer here
+    preSwitchLED:setSound("dialing", snd.fileplayer.new(SOUND.preSwitchLED.path), SOUND.preSwitchLED.volume) --would prefer a sampleplayer here
     postSwitchLED:setForeground(postSwitchLEDImagetable, 16)
     postSwitchLED:setPosition(10, 34)
     postSwitchLED.isSelected = getCrankDialCircuitClosure
@@ -278,8 +278,8 @@ local function init(timers)
 
             local button = Button({name .. "Button", BUTTON_WIDTH_L, BUTTON_HEIGHT_M})
             timerSelectButtons[name] = button
-            button:setSound("touched", snd.sampleplayer.new(SOUND.timerButtonPressed.paths[name]), SOUND.timerButtonPressed.vol)
-            button:setSound("selected", snd.sampleplayer.new(SOUND.timerButtonSelected.paths[name]), SOUND.timerButtonSelected.vol)
+            button:setSound("touched", snd.sampleplayer.new(SOUND.timerButtonPressed.paths[name]), SOUND.timerButtonPressed.volume)
+            button:setSound("selected", snd.sampleplayer.new(SOUND.timerButtonSelected.paths[name]), SOUND.timerButtonSelected.volume)
             button.isPressed = function() return pd.buttonJustPressed(A) end
             button:setBackground(function(width, height)
                 local w_line = 8 -- must be even
@@ -375,6 +375,11 @@ local function init(timers)
 
     fillTimersMenu(timersMenu, timers, cursor)
 
+    local timerDoneSign = UIElement({"timerDoneSign", 300, 100}) -- simple textbox
+    timerDoneSign:setText("NEXT")
+    timerDoneSign:setPosition(MARGIN, MARGIN)
+    timerDoneSign:setEnablingCriteria(stateIsDONE_TIMER)
+    timerDoneSign:forceConfigured()
 
     --- Initialize a button that sits directly above the A or B buttons
     ---@param name string button name
