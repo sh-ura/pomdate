@@ -39,7 +39,6 @@ local SOUND <const> = SOUND
 local imgPathPrefix <const> = "assets/ui/"
 local fontPathPrefix <const> = "assets/fonts/"
 local timerDialFontPath <const> = "Blades of Steel"
-local DIAL_FONT_SCALE <const> = 10
 
 local CRANKS_REVOLS_PER_HOUR <const> = 3
 local WIRE_WIDTH <const> = 13
@@ -51,6 +50,10 @@ local BUTTON_HEIGHT_M <const> = 32
 local BUTTON_TRAVEL_DISTANCE <const> = 60
 local DIAL_WIDTH <const> = 220
 local DIAL_HEIGHT <const> = 130
+local DIAL_FONT_SCALE <const> = 10
+local TIMER_FACE_WIDTH <const> = 220
+local TIMER_FACE_HEIGHT <const> = 130
+local TIMER_FACE_FONT_SCALE <const> = 5
 local COUNTER_DIAMETER <const> = 15
 local LINE_CAP_STYLE <const> = gfx.kLineCapStyleRound
 
@@ -269,13 +272,14 @@ local function init(timers)
     ---                 in {t, label} k-v tuples,
     ---                 in the sequence they should appear.
     ---@param cursor Cursor (optional) to point to the buttons
-    local function fillTimersMenu (list, timers, cursor)
+    local function makeTimerUI (list, timers, cursor)
         local timerDialFont = gfx.font.new(fontPathPrefix .. timerDialFontPath)
         if not timerDialFont then d.log("no font at ".. fontPathPrefix .. timerDialFontPath) end
 
         local function makeTimerSelector(t, label)
             local name = t.name
 
+            -- timer-selecting button
             local button = Button({name .. "Button", BUTTON_WIDTH_L, BUTTON_HEIGHT_M})
             timerSelectButtons[name] = button
             button:setSound("touched", snd.sampleplayer.new(SOUND.timerButtonPressed.paths[name]), SOUND.timerButtonPressed.volume)
@@ -308,7 +312,8 @@ local function init(timers)
                 end)
             end
 
-            local dial = Dial({name .. "Dial", DIAL_WIDTH/DIAL_FONT_SCALE, DIAL_HEIGHT/DIAL_FONT_SCALE}, 1, 60)
+            -- timer-setting dial
+            local dial = Dial({name .. "SettingDial", DIAL_WIDTH/DIAL_FONT_SCALE, DIAL_HEIGHT/DIAL_FONT_SCALE}, 1, 60)
             durationDials[name] = dial
             dial:setEnablingCriteria(function() return
                 button:isEnabled()
@@ -330,10 +335,26 @@ local function init(timers)
                 if string.len(dial.text) == 1 then dial.text = " " .. dial.text end
                 renderText()
             end
-
             dial:setZIndex(timersMenu:getZIndex() - 10)
+
+            -- timer's clock face
+            local face = Dial({name .. "FaceDial", TIMER_FACE_WIDTH // TIMER_FACE_FONT_SCALE, TIMER_FACE_HEIGHT // TIMER_FACE_FONT_SCALE})
+            face.getDialValue = function () return t:getClockTime() end
+            face:setEnablingCriteria(function () return t:isActive() end)
+            face.isSelected(function () return true end)
+            face:setScale(TIMER_FACE_FONT_SCALE)
+            face:setPosition(MARGIN * 2, MARGIN * 2)
+            --[[ -- Check timer face sprite location
+            local update = face.update
+            face.update = function (self)
+                d.illustrateBounds(self)
+                update(self)
+            end
+            --]]
+
             -- TODO move func def below to be local func more visible at root of this file
             button.pressedAction = function ()
+                face:setValue(dial.value)
                 toRun(t, dial.value)
             end
             return button
@@ -373,7 +394,7 @@ local function init(timers)
     cursor:forceConfigured()
     --]]
 
-    fillTimersMenu(timersMenu, timers, cursor)
+    makeTimerUI(timersMenu, timers, cursor)
 
     local timerDoneSign = UIElement({"timerDoneSign", 300, 100}) -- simple textbox
     timerDoneSign:setText("NEXT")

@@ -71,7 +71,7 @@ function BPressed() return pd.buttonJustPressed(B) end
 --- If a state save file exists, it will be loaded here.
 local function init()
     utils.disableReadOnly()
-    --debugger.disable() --TODO uncomment
+    debugger.disable() --TODO uncomment
     drawFPS = true --TODO comment out
 
     -- snooze duration is in the confs data file
@@ -96,13 +96,11 @@ local function init()
         if not c_poms then c_poms = 0 end
     end
 
-    timers.work = Timer("work")
-    timers.short = Timer("short")
-    timers.long = Timer("long")
-    timers.snooze = Timer("snooze")
+    timers.work = Timer("work", toDone)
+    timers.short = Timer("short", toDone)
+    timers.long = Timer("long", toDone)
+    timers.snooze = Timer("snooze", toDone)
     timers = utils.makeReadOnly(timers, "timers")
-
-    for _, t in pairs(timers) do t:setZIndex(50) end
     currentTimer = timers.work --TODO rm
 
     music.init()
@@ -180,14 +178,14 @@ end
 --- Pauses currently running timer.
 local function pause()
     -- if should also check :isStopped() once pd.timer:pause() is fixed
-    if currentTimer:isPaused() then
-        d.log("current timer " .. currentTimer.name .. " is already paused")
+    if currentTimer:isActive() then
+        d.log("current timer " .. currentTimer.name .. " is not active, may already be paused")
     else currentTimer:pause() end
 end
 
 --- Unpause current timer.
 local function unpause()
-    if not currentTimer:isPaused() then d.log("current timer " .. currentTimer.name .. " is not paused; can't unpause")
+    if currentTimer:isActive() then d.log("current timer " .. currentTimer.name .. " is not paused; can't unpause")
     else currentTimer:start() end
 end
 
@@ -212,7 +210,7 @@ end
 -- TODO need to transition run -> select sometimes; refactor
 -- TODO rename to toMENU
 function toMenu()
-    currentTimer:remove()
+    currentTimer:stop()
     c_snoozes = 0
 
     if timerCompleted then
@@ -231,8 +229,6 @@ end
 function toRun(t, duration)
     currentTimer = t
     currentTimer:setDuration(duration)
-    currentTimer:moveTo(50, 70)
-    currentTimer:add()
     currentTimer:start()
     
     pd.setAutoLockDisabled(true)
@@ -259,7 +255,7 @@ function snooze()
         --d.log("current timer " .. currentTimer.name .. " is not stopped; can't snooze yet")
     --else
         c_snoozes = c_snoozes + 1
-        currentTimer:remove()
+        currentTimer:stop()
         toRun(timers.snooze, confs.snoozeDuration)
     --end
 end
@@ -290,8 +286,8 @@ function pd.update()
         end
     end
 
+    timer.update()
     ui.update()
-    pd.timer.updateTimers() --TODO rename to update()
     music.update()
     gfx.sprite.update() --TODO rm once all sprites are from ui lib
 end
