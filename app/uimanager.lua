@@ -61,15 +61,17 @@ local SETTING_DIAL <const> = {
     WIDTH = 220,
     HEIGHT = 130,
     FONT = {
-        PATH = "Blades of Steel",
+        PATH = fontPathPrefix .. "Blades of Steel",
         SCALE = 10
     }
 }
 local FACE_DIAL <const> = {
-    WIDTH = 220,
-    HEIGHT = 130,
+    WIDTH = W_SCREEN - 2 * MARGIN,
+    HEIGHT = H_SCREEN - 4 * MARGIN,
+    Y = 2 * MARGIN,
     FONT = {
-        SCALE = 5
+        PATH = fontPathPrefix .. "Ace Attacker",
+        SCALE = 24
     }
 }
 local POM_COUNTER <const> = {
@@ -293,9 +295,8 @@ local function init(timers)
     ---                 in the sequence they should appear.
     ---@param cursor Cursor (optional) to point to the buttons
     local function makeTimerUI (list, timers, cursor)
-        local timerDialFont = gfx.font.new(fontPathPrefix .. SETTING_DIAL.FONT.PATH)
-        if not timerDialFont then d.log("no font at ".. fontPathPrefix .. SETTING_DIAL.FONT.PATH) end
-
+        local font_settingDial = gfx.font.new(SETTING_DIAL.FONT.PATH)
+        local font_faceDial = gfx.font.new(FACE_DIAL.FONT.PATH)
         local function makeTimerSelector(t, label)
             local name = t.name
 
@@ -347,7 +348,7 @@ local function init(timers)
                 gfx.setColor(COLOR_1)
                 gfx.fillRect(0, 0, width, height)
             end)
-            dial:setFont(timerDialFont, gfx.kDrawModeInverted)
+            dial:setFont(font_settingDial, gfx.kDrawModeInverted)
             dial:setScale(SETTING_DIAL.FONT.SCALE)
             dial:setPosition(MARGIN, MARGIN)
             local renderText = dial.renderText
@@ -362,8 +363,9 @@ local function init(timers)
             face.getDialValue = function () return t:getClockTime() end
             face:setEnablingCriteria(function () return t:isActive() end)
             face.isSelected(function () return true end)
+            face:setFont(font_faceDial)
             face:setScale(FACE_DIAL.FONT.SCALE)
-            face:setPosition(MARGIN * 2, MARGIN * 2)
+            face:setPosition(W_CENTRE - face.width / 2, FACE_DIAL.Y)
             --[[ -- Check timer face sprite location
             local update = face.update
             face.update = function (self)
