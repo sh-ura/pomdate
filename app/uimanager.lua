@@ -38,24 +38,43 @@ local SOUND <const> = SOUND
 
 local imgPathPrefix <const> = "assets/ui/"
 local fontPathPrefix <const> = "assets/fonts/"
-local timerDialFontPath <const> = "Blades of Steel"
 
-local CRANKS_REVOLS_PER_HOUR <const> = 3
-local WIRE_WIDTH <const> = 13
-local SWITCH_LENGTH <const> = 80
-local BUTTON_WIDTH_L <const> = 126        -- for a Large *horizontal* button. Use as height for vertical button
-local BUTTON_HEIGHT_L <const> = 46        -- for a Large *horizontal* button. Use as width for vertical button
-local BUTTON_WIDTH_M <const> = 60
-local BUTTON_HEIGHT_M <const> = 32
-local BUTTON_TRAVEL_DISTANCE <const> = 60
-local DIAL_WIDTH <const> = 220
-local DIAL_HEIGHT <const> = 130
-local DIAL_FONT_SCALE <const> = 10
-local TIMER_FACE_WIDTH <const> = 220
-local TIMER_FACE_HEIGHT <const> = 130
-local TIMER_FACE_FONT_SCALE <const> = 5
-local COUNTER_DIAMETER <const> = 15
-local LINE_CAP_STYLE <const> = gfx.kLineCapStyleRound
+-- Configure appearance params
+local CRANK_DIAL_CIRCUIT <const> = {
+    REVOLS_PER_HOUR = 3,
+    WIRE = { WIDTH = 13 },
+    SWITCH = { LENGTH = 80 },
+    LINE_CAP_STYLE = gfx.kLineCapStyleRound
+}
+local BUTTONS <const> = {
+    L = {
+        WIDTH = 126,         -- for a Large *horizontal* button. Use as height for vertical button
+        HEIGHT = 46          -- for a Large *horizontal* button. Use as width for vertical button
+    },
+    M = {
+        WIDTH = 60,
+        HEIGHT = 32
+    },
+    TRAVEL_DISTANCE = 60
+}
+local SETTING_DIAL <const> = {
+    WIDTH = 220,
+    HEIGHT = 130,
+    FONT = {
+        PATH = "Blades of Steel",
+        SCALE = 10
+    }
+}
+local FACE_DIAL <const> = {
+    WIDTH = 220,
+    HEIGHT = 130,
+    FONT = {
+        SCALE = 5
+    }
+}
+local POM_COUNTER <const> = {
+    DIAMETER = 15
+}
 
 local crankDialSwitchIsClosed = false
 --- Get the open/closed status of the crank-dial circuit.
@@ -81,16 +100,17 @@ local doneInst = nil -- instructions shown in DONE_TIMER state --TODO move to in
 local scoreboard = nil -- visualizes snooze score for this timer session
 
 local function bakeSwitchAnimation()
-    local w_frame = SWITCH_LENGTH + 10
-    local h_frame = SWITCH_LENGTH + MARGIN + BUTTON_WIDTH_M/2
+    local len_switch = CRANK_DIAL_CIRCUIT.SWITCH.LENGTH
+    local w_frame = len_switch + 10
+    local h_frame = len_switch + MARGIN + BUTTONS.M.WIDTH/2
     local n_frames = 20
     local C = 3/4 * pi                  -- phase shift
-    local x_button = 0.1 * SWITCH_LENGTH
-    local y_button = SWITCH_LENGTH + MARGIN + 2
+    local x_button = 0.1 * len_switch
+    local y_button = len_switch + MARGIN + 2
 
-    local Amp = 0.8 * SWITCH_LENGTH       -- amplitude
+    local Amp = 0.8 * len_switch       -- amplitude
     local radPerFrame = pi/4 / (n_frames - 1)
-    local buttonTravelPerFrame = BUTTON_TRAVEL_DISTANCE / n_frames
+    local buttonTravelPerFrame = BUTTONS.TRAVEL_DISTANCE / n_frames
 
     local switchImagetable = gfx.imagetable.new(n_frames)
     local theta     local x     local y     local i_frame
@@ -101,21 +121,21 @@ local function bakeSwitchAnimation()
         y = Amp * sin(-theta - C)
         gfx.pushContext(frame)
             gfx.setColor(COLOR_1)
-            gfx.setLineWidth(WIRE_WIDTH)
+            gfx.setLineWidth(CRANK_DIAL_CIRCUIT.WIRE.WIDTH)
             gfx.setLineCapStyle(gfx.kLineCapStyleRound)
-            -- draw wire from (x,y) to the unit-circle origin, transposed by (SWITCH_LENGTH, SWITCH_LENGTH)
-            gfx.drawLine(x + SWITCH_LENGTH, y + SWITCH_LENGTH, SWITCH_LENGTH, SWITCH_LENGTH)
+            -- draw wire from (x,y) to the unit-circle origin, transposed by (len_switch, len_switch)
+            gfx.drawLine(x + len_switch, y + len_switch, len_switch, len_switch)
             gfx.setLineWidth(4)
             -- draw tether from the switch wire to the B button
-            x = x_button + BUTTON_HEIGHT_L/2
-            y = y + SWITCH_LENGTH + 5
+            x = x_button + BUTTONS.L.HEIGHT/2
+            y = y + len_switch + 5
             gfx.drawLine(x, y, x, 242)
             -- draw B button
             x = x_button
             y = y_button + j*buttonTravelPerFrame
-            gfx.fillRoundRect(x, y, BUTTON_HEIGHT_L, BUTTON_WIDTH_M, BUTTON_HEIGHT_L/2)
+            gfx.fillRoundRect(x, y, BUTTONS.L.HEIGHT, BUTTONS.M.WIDTH, BUTTONS.L.HEIGHT/2)
             gfx.setImageDrawMode(gfx.kDrawModeInverted)
-            gfx.drawTextAligned("B", x + BUTTON_HEIGHT_L/2, y + 10, kTextAlignment.center)
+            gfx.drawTextAligned("B", x + BUTTONS.L.HEIGHT/2, y + 10, kTextAlignment.center)
         gfx.popContext()
 
         i_frame = j + 1
@@ -192,7 +212,7 @@ local function initCrankDialCircuit()
     
     local p = { -- wire junctures to draw, in crank -> dial face order
         {x=410, y=100},
-        {x = X_B_BUTTON + SWITCH_LENGTH - 8},
+        {x = X_B_BUTTON + CRANK_DIAL_CIRCUIT.SWITCH.LENGTH - 8},
         {x = X_B_BUTTON},
         {x=54},
         {x=40, y=86},
@@ -200,8 +220,8 @@ local function initCrankDialCircuit()
     }
     wire:setForeground(function(x, y, width, height)
         gfx.setColor(COLOR_1)
-        gfx.setLineWidth(WIRE_WIDTH)
-        gfx.setLineCapStyle(LINE_CAP_STYLE)
+        gfx.setLineWidth(CRANK_DIAL_CIRCUIT.WIRE.WIDTH)
+        gfx.setLineCapStyle(CRANK_DIAL_CIRCUIT.LINE_CAP_STYLE)
         gfx.drawLine(p[1].x, p[1].y, p[2].x, p[1].y)
         gfx.drawLine(p[3].x, p[1].y, p[4].x, p[1].y)
         gfx.drawLine(p[4].x, p[1].y, p[5].x, p[5].y)
@@ -219,7 +239,7 @@ local function initCrankDialCircuit()
         switchImagetable = bakeSwitchAnimation()
     end
     switch:setForeground(switchImagetable)
-    switch:setPosition(X_B_BUTTON - BUTTON_HEIGHT_L/4, h_circuit - switch.height)
+    switch:setPosition(X_B_BUTTON - BUTTONS.L.HEIGHT/4, h_circuit - switch.height)
     switch.isPressed = function() return pd.buttonIsPressed(B) end
     switch.justReleasedAction = function ()
         switch.fg_anim:play(-1, 1, animation.bookmarks.first)
@@ -273,14 +293,14 @@ local function init(timers)
     ---                 in the sequence they should appear.
     ---@param cursor Cursor (optional) to point to the buttons
     local function makeTimerUI (list, timers, cursor)
-        local timerDialFont = gfx.font.new(fontPathPrefix .. timerDialFontPath)
-        if not timerDialFont then d.log("no font at ".. fontPathPrefix .. timerDialFontPath) end
+        local timerDialFont = gfx.font.new(fontPathPrefix .. SETTING_DIAL.FONT.PATH)
+        if not timerDialFont then d.log("no font at ".. fontPathPrefix .. SETTING_DIAL.FONT.PATH) end
 
         local function makeTimerSelector(t, label)
             local name = t.name
 
             -- timer-selecting button
-            local button = Button({name .. "Button", BUTTON_WIDTH_L, BUTTON_HEIGHT_M})
+            local button = Button({name .. "Button", BUTTONS.L.WIDTH, BUTTONS.M.HEIGHT})
             timerSelectButtons[name] = button
             button:setSound("touched", snd.sampleplayer.new(SOUND.timerButtonPressed.paths[name]), SOUND.timerButtonPressed.volume)
             button:setSound("selected", snd.sampleplayer.new(SOUND.timerButtonSelected.paths[name]), SOUND.timerButtonSelected.volume)
@@ -294,7 +314,7 @@ local function init(timers)
             end)
             button:setFont(gfx.getFont())
             button:setText(label)
-            button:offsetPositions({selected = newVector(-BUTTON_TRAVEL_DISTANCE, 0)})
+            button:offsetPositions({selected = newVector(-BUTTONS.TRAVEL_DISTANCE, 0)})
 
             ---[[ -- Toggle color inversion on selected button
             button.justSelectedAction = function()
@@ -313,14 +333,14 @@ local function init(timers)
             end
 
             -- timer-setting dial
-            local dial = Dial({name .. "SettingDial", DIAL_WIDTH/DIAL_FONT_SCALE, DIAL_HEIGHT/DIAL_FONT_SCALE}, 1, 60)
+            local dial = Dial({name .. "SettingDial", SETTING_DIAL.WIDTH/SETTING_DIAL.FONT.SCALE, SETTING_DIAL.HEIGHT/SETTING_DIAL.FONT.SCALE}, 1, 60)
             durationDials[name] = dial
             dial:setEnablingCriteria(function() return
                 button:isEnabled()
                 and button.isSelected()
             end)
             dial.isSelected = getCrankDialCircuitClosure
-            dial.getDialChange = crankhandler.subscribe(60//CRANKS_REVOLS_PER_HOUR)
+            dial.getDialChange = crankhandler.subscribe(60//CRANK_DIAL_CIRCUIT.REVOLS_PER_HOUR)
             --dial:setUnit("min")
             dial:setValue(initialDurations[name])
             dial:setBackground(function(width, height)
@@ -328,7 +348,7 @@ local function init(timers)
                 gfx.fillRect(0, 0, width, height)
             end)
             dial:setFont(timerDialFont, gfx.kDrawModeInverted)
-            dial:setScale(DIAL_FONT_SCALE)
+            dial:setScale(SETTING_DIAL.FONT.SCALE)
             dial:setPosition(MARGIN, MARGIN)
             local renderText = dial.renderText
             dial.renderText = function () -- render 1-digit values with a space in the tens position
@@ -338,11 +358,11 @@ local function init(timers)
             dial:setZIndex(timersMenu:getZIndex() - 10)
 
             -- timer's clock face
-            local face = Dial({name .. "FaceDial", TIMER_FACE_WIDTH // TIMER_FACE_FONT_SCALE, TIMER_FACE_HEIGHT // TIMER_FACE_FONT_SCALE})
+            local face = Dial({name .. "FaceDial", FACE_DIAL.WIDTH // FACE_DIAL.FONT.SCALE, FACE_DIAL.HEIGHT // FACE_DIAL.FONT.SCALE})
             face.getDialValue = function () return t:getClockTime() end
             face:setEnablingCriteria(function () return t:isActive() end)
             face.isSelected(function () return true end)
-            face:setScale(TIMER_FACE_FONT_SCALE)
+            face:setScale(FACE_DIAL.FONT.SCALE)
             face:setPosition(MARGIN * 2, MARGIN * 2)
             --[[ -- Check timer face sprite location
             local update = face.update
@@ -368,19 +388,19 @@ local function init(timers)
     local ntimers = #timers
     timersMenu = List(
         {"timersMenu",
-        BUTTON_WIDTH_L + MARGIN * 2,
-        (BUTTON_HEIGHT_L + MARGIN) * ntimers + MARGIN},
+        BUTTONS.L.WIDTH + MARGIN * 2,
+        (BUTTONS.L.HEIGHT + MARGIN) * ntimers + MARGIN},
         list.orientations.vertical,
         MARGIN
     )
     timersMenu:setEnablingCriteria(stateIsMENU)
     timersMenu.isSelected = stateIsMENU
-    timersMenu:setPosition(W_SCREEN - (BUTTON_WIDTH_L + MARGIN*2), MARGIN)
-    timersMenu:offsetPositions({disabled = newVector(BUTTON_TRAVEL_DISTANCE, 0)})
+    timersMenu:setPosition(W_SCREEN - (BUTTONS.L.WIDTH + MARGIN*2), MARGIN)
+    timersMenu:offsetPositions({disabled = newVector(BUTTONS.TRAVEL_DISTANCE, 0)})
 
     local cursor = nil
     --[[ -- toggle timers-menu-navigating cursor
-    cursor = Cursor({"timerSelectCursor", BUTTON_TRAVEL_DISTANCE - MARGIN, BUTTON_HEIGHT_M})
+    cursor = Cursor({"timerSelectCursor", BUTTONS.TRAVEL_DISTANCE - MARGIN, BUTTONS.M.HEIGHT})
     cursor:setEnablingCriteria(stateIsMENU)
     cursor:setBackground(function(width, height)
         gfx.setColor(COLOR_1)
@@ -389,7 +409,7 @@ local function init(timers)
     cursor:setFont(gfx.getFont(), gfx.kDrawModeInverted)
     cursor:setText("A")
     cursor:setPosition(250, MARGIN)
-    cursor:offsetPositions({disabled = newVector(BUTTON_TRAVEL_DISTANCE * 2, 0)})
+    cursor:offsetPositions({disabled = newVector(BUTTONS.TRAVEL_DISTANCE * 2, 0)})
     cursor:setZIndex(timersMenu:getZIndex() + 10)
     cursor:forceConfigured()
     --]]
@@ -407,7 +427,7 @@ local function init(timers)
     ---@param input A or B from the global namespace
     ---@return Button
     local function makeABButton (name, input)
-        local button = Button({name .. "Button", BUTTON_HEIGHT_L, BUTTON_TRAVEL_DISTANCE - MARGIN})
+        local button = Button({name .. "Button", BUTTONS.L.HEIGHT, BUTTONS.TRAVEL_DISTANCE - MARGIN})
         
         button.isPressed = function () return pd.buttonIsPressed(input) end
         button:setBackground(function(width, height)
@@ -422,7 +442,7 @@ local function init(timers)
             button:setPosition(X_B_BUTTON, H_SCREEN - button.height * 2/3)
         end
         button:offsetPositions({ disabled = newVector(0,50),
-                            pressed = newVector(0, BUTTON_TRAVEL_DISTANCE)})
+                            pressed = newVector(0, BUTTONS.TRAVEL_DISTANCE)})
         button:forceConfigured()
         return button
     end
@@ -471,13 +491,13 @@ local function init(timers)
     --]]
 
     local spacing = 4
-    local pomCounter = gfx.image.new(COUNTER_DIAMETER, COUNTER_DIAMETER, COLOR_CLEAR)
+    local pomCounter = gfx.image.new(POM_COUNTER.DIAMETER, POM_COUNTER.DIAMETER, COLOR_CLEAR)
     gfx.pushContext(pomCounter)
         gfx.setColor(COLOR_1)
-        gfx.fillCircleAtPoint(COUNTER_DIAMETER//2, COUNTER_DIAMETER//2, COUNTER_DIAMETER//2)
+        gfx.fillCircleAtPoint(POM_COUNTER.DIAMETER//2, POM_COUNTER.DIAMETER//2, POM_COUNTER.DIAMETER//2)
     gfx.popContext()
     pomCountDisplay = makeScoreDisplay("pom", getPomCount,
-        confs.pomsPerCycle * (COUNTER_DIAMETER + spacing), COUNTER_DIAMETER)
+        confs.pomsPerCycle * (POM_COUNTER.DIAMETER + spacing), POM_COUNTER.DIAMETER)
     pomCountDisplay:setEnablingCriteria(function () return
         stateIsMENU()
         and getPomCount() ~= 0
@@ -485,7 +505,7 @@ local function init(timers)
     d.log("setting mode")
     pomCountDisplay:setMode(dial.visualizers.horiCounter) -- visualize poms as counters
     pomCountDisplay:setCounter(pomCounter, spacing)
-    pomCountDisplay:setPosition(MARGIN + DIAL_WIDTH - pomCountDisplay.width, MARGIN*2 + DIAL_HEIGHT)
+    pomCountDisplay:setPosition(MARGIN + SETTING_DIAL.WIDTH - pomCountDisplay.width, MARGIN*2 + SETTING_DIAL.HEIGHT)
     pomCountDisplay:setZIndex(80)
 
     initCrankDialCircuit()
