@@ -1,4 +1,4 @@
--- timer provides value-based timers, rendered as sprites
+-- pkg Timer provides value-based timers that work around the pausing bug in the Playdate SDK
 local P = {}; local _G = _G
 timer = {}
 
@@ -8,132 +8,67 @@ import "CoreLibs/easing" --TODO rm
 
 local pd <const> = playdate
 local d <const> = debugger
-local gfx <const> = pd.graphics
+local tmr <const> = pd.timer
 local utils <const> = utils
 local floor <const> = math.floor -- TODO may be able to replace this w // floor division lua operator?
-local stateIsRUN_TIMER <const> = stateIsRUN_TIMER
-local stateIsDONE_TIMER <const> = stateIsDONE_TIMER
-local COLOR_CLEAR <const> = COLOR_CLEAR
+local pairs <const> = pairs
 
 -- Timer packs a timer with its UI.
-class('Timer').extends(gfx.sprite)
+class('Timer').extends()
 local Timer <const> = Timer
+local _ENV = P
+name = "timer"
 
 local MSEC_PER_SEC <const> = 1000
 local SEC_PER_MIN <const> = 60
 
-local notifSound = nil
+local activeTimers = {}
 
-local _ENV = P
-name = "timer"
-
---- Converts the msec argument into the clock time, rounded down
----@param msec integer milliseconds
----@return integer minutes
----@return integer seconds remaining after msec is converted to min 
-local function convertToClock(msec)
-    local sec = msec / MSEC_PER_SEC
-    local min = floor(sec / SEC_PER_MIN)
-    sec = floor(sec - min * SEC_PER_MIN)
-    return min, sec
-end
-
---- Notifies user that timer is complete
-function Timer:notify()
-    --d.log("notification pushed")
-    if self._notifSound then self._notifSound:play(0) end
+function update()
+    tmr.updateTimers()
+    for _, timer in pairs(activeTimers) do
+        timer:update()
+    end
 end
 
 --- Initializes, but does not start, a Timer.
 ---@param name string timer's name for graybox and debugging
-function Timer:init(name)
+---@param callback function (optional) to call when timer completes
+function Timer:init(name, callback)
     -- TODO give each timer a name
     Timer.super.init(self)
     self.name = name
+    self._callback = callback
 
     self._duration = 0.0 -- float timer duration in msec
-    self._img = gfx.image.new(200, 150, COLOR_CLEAR)
-    self:setImage(self.img)
-    
+
     self._timer = nil -- "value-based" pd timer w linear interpolation
     self._isPaused = false -- true iff the timer is paused
-    self._notifSound = nil -- sound to play when notifying
-
-    self:setCenter(0, 0) --anchor top-left
 end
 
---[[
-    :update() is called before :draw is called on all sprites
-    Suspected conditions for redrawing a sprite if getAlwaysRedraw() == false
-        - associated gfx.image has changed
-        - sprite has had some transform applied to it
-    So if we need to update a sprite every frame, do something in its :update()
---]]
--- Timer:update() draws the current time in the timer countdown
+--TODO desc
+--TODO how to drive updates now that we don't inherit from sprite
 function Timer:update()
-    --TODO refactor when pd.timer.pause() is fixed
-    if stateIsRUN_TIMER() then
-        local msec
-        if self._isPaused then msec = self._duration --TODO rm workaround
-        elseif self._timer then msec = self._timer.value
-        else
-            d.log(self.name .. "._timer is nil on RUN")
-            return
-        end
-
-        -- if timer has completed
-        if msec <= 0 then
-            _G.toDone()
-        else
-            local min, sec = convertToClock(msec)
-            -- debugger.log("min: " .. min .. " sec: " .. sec)
-            -- debugger.log(self._timer.value)
-            local timeString = ""
-            if min < 10 then timeString = "0" end
-            timeString = timeString .. min .. ":"
-            if sec < 10 then timeString = timeString .. "0" end
-            timeString = timeString .. sec
-
-            gfx.pushContext(self._img)
-                gfx.clear(COLOR_CLEAR)
-                gfx.drawText("*"..timeString.."*", 0, 0)
-            gfx.popContext()
-        end
-    elseif stateIsDONE_TIMER() then --TODO actually this doesn't need to be done by timer.lua! refactor this whole if/else out.
-        gfx.pushContext(self._img)
-        gfx.clear()
-        gfx.drawText("*DONE*", 0, 0)
-        gfx.popContext()
+    -- if timer has completed
+    if self._timer and self._timer.value <= 0 then
+        self:stop()
+        self._callback()
     end
-
-    --DEBUG doing this prevents the sprite from auto-refreshing when self._img changes
-    --TODO set a larger font instead of upscaling default text
-    self:setImage(self._img:scaledImage(4))
-
-    Timer.super.update(self)
-    --d.illustrateBounds(self)
 end
 
 --- Stop a Timer.
 --- Stopped timers can be restarted by calling start().
 function Timer:stop()
-    if self._notifSound then self._notifSound:stop() end
+    activeTimers[self.name] = nil
     self._timer = nil
     self._isPaused = false
-end
-
---- Stop a Timer and remove its sprite.
---- Removed timers must be added back with add() before they can start().
-function Timer:remove()
-    d.log("removing timer "..self.name)
-    self:stop()
-    Timer.super.remove(self)
 end
 
 --- Pause a Timer.
 --- Paused timers can be continued with start().
 function Timer:pause()
     if self._timer then
+        activeTimers[self.name] = nil
         -- self._timer:pause() -- doesn't work; when started the value 'fast-forwards' according to the current time
         self._isPaused = true
 
@@ -151,14 +86,10 @@ function Timer:start()
     if self._timer then
         d.log("forbidden to reset timer " .. self.name)
     else
-        self._timer = pd.timer.new(self._duration, self._duration, 0)
+        self._timer = tmr.new(self._duration, self._duration, 0)
         self._isPaused = false
+        activeTimers[self.name] = self
     end
-end
-
---- Returns true if this timer is paused.
-function Timer:isPaused()
-    return self._isPaused
 end
 
 --[[ Won't work while pd.timer:pause() is buggy
@@ -174,25 +105,36 @@ function Timer:isStopped()
 end
 --]]
 
---- Set the sound to be played when a timer finishes
----@param sound pd.sound.sampleplayer or pd.sound.fileplayer
----@param volume (optional) float
-function Timer:setNotifSound(sound, volume)
-    if not sound then
-        d.log("missing sound arg for timer.setNotifSound")
-    elseif not sound.play or not sound.stop then
-        d.log("attempting to set unplayable notif sound", sound)
-    else
-        self._notifSound = sound
-    end
-    if volume and self._notifSound then self._notifSound:setVolume(volume) end
-end
 
 --- Set the duration the timer should run for (in minutes).
 ---@param mins integer duration
 function Timer:setDuration(mins)
     self._duration = (mins + 0.0) * SEC_PER_MIN * MSEC_PER_SEC
 end
+
+--- Returns true if this timer is active (ie. has been started and is not paused)
+function Timer:isActive()
+    if activeTimers[self.name] == self then return true
+    else return false end
+end
+
+--- Get the time remaining in clock time
+---@param msec integer milliseconds
+---@return integer minutes
+---@return integer seconds remainder
+function Timer:getClockTime()
+    --TODO refactor when pd.timer.pause() is fixed
+    local msec = 0
+    if self._isPaused then msec = self._duration --TODO rm workaround
+    elseif self._timer then msec = self._timer.value
+    end
+    
+    local sec = msec / MSEC_PER_SEC
+    local min = floor(sec / SEC_PER_MIN)
+    sec = floor(sec - min * SEC_PER_MIN)
+    return min, sec
+end
+
 
 local _ENV = _G
 timer = utils.makeReadOnly(P)

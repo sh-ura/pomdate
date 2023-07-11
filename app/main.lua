@@ -31,11 +31,13 @@ function stateIsDONE_TIMER() return state == STATES.DONE_TIMER end
 import "timer"
 import "confmanager"
 import "uimanager"
+import "musicmanager"
 
 local pd <const> = playdate
 local d <const> = debugger
 local gfx <const> = pd.graphics
 local ui <const> = uimanager
+local music <const> = musicmanager
 local A <const> = pd.kButtonA
 local B <const> = pd.kButtonB
 
@@ -94,18 +96,20 @@ local function init()
         if not c_poms then c_poms = 0 end
     end
 
-    timers.work = Timer("work")
-    timers.short = Timer("short")
-    timers.long = Timer("long")
-    timers.snooze = Timer("snooze")
+    timers.work = Timer("work", toDone)
+    timers.short = Timer("short", toDone)
+    timers.long = Timer("long", toDone)
+    timers.snooze = Timer("snooze", toDone)
     timers = utils.makeReadOnly(timers, "timers")
-
-    timers.work:setNotifSound(pd.sound.fileplayer.new(SOUND.notif_workToBreak.path), SOUND.notif_workToBreak.vol)
-    timers.short:setNotifSound(pd.sound.fileplayer.new(SOUND.notif_breakToWork.path), SOUND.notif_breakToWork.vol)
-    timers.long:setNotifSound(pd.sound.fileplayer.new(SOUND.notif_breakToWork.path), SOUND.notif_breakToWork.vol)
-    timers.snooze:setNotifSound(pd.sound.fileplayer.new(SOUND.notif_fromSnooze.path), SOUND.notif_fromSnooze.vol)
-    for _, t in pairs(timers) do t:setZIndex(50) end
     currentTimer = timers.work --TODO rm
+
+    music.init()
+    music.add({
+        work = SOUND.notif_workToBreak,
+        short = SOUND.notif_breakToWork,
+        long = SOUND.notif_breakToWork,
+        snooze = SOUND.notif_fromSnooze
+    })
 
     ui.init({
         {t = timers.short, label = "short break"},
@@ -113,6 +117,7 @@ local function init()
         {t = timers.long, label = "long break"}
     })
     ui.selectNextTimer() -- autoselects the 2nd timer, 'work'
+
     d.log("main.init COMPLETE")
 end
 
@@ -173,14 +178,14 @@ end
 --- Pauses currently running timer.
 local function pause()
     -- if should also check :isStopped() once pd.timer:pause() is fixed
-    if currentTimer:isPaused() then
-        d.log("current timer " .. currentTimer.name .. " is already paused")
+    if currentTimer:isActive() then
+        d.log("current timer " .. currentTimer.name .. " is not active, may already be paused")
     else currentTimer:pause() end
 end
 
 --- Unpause current timer.
 local function unpause()
-    if not currentTimer:isPaused() then d.log("current timer " .. currentTimer.name .. " is not paused; can't unpause")
+    if currentTimer:isActive() then d.log("current timer " .. currentTimer.name .. " is not paused; can't unpause")
     else currentTimer:start() end
 end
 
@@ -205,7 +210,7 @@ end
 -- TODO need to transition run -> select sometimes; refactor
 -- TODO rename to toMENU
 function toMenu()
-    currentTimer:remove()
+    currentTimer:stop()
     c_snoozes = 0
 
     if timerCompleted then
@@ -224,8 +229,6 @@ end
 function toRun(t, duration)
     currentTimer = t
     currentTimer:setDuration(duration)
-    currentTimer:moveTo(50, 70)
-    currentTimer:add()
     currentTimer:start()
     
     pd.setAutoLockDisabled(true)
@@ -233,8 +236,7 @@ function toRun(t, duration)
 end
 
 function toDone()
-    currentTimer:stop()
-    currentTimer:notify()
+    currentTimer:stop() --currentTimer:remove()
     
     timerCompleted = true
     if currentTimer == timers.long then
@@ -253,10 +255,13 @@ function snooze()
         --d.log("current timer " .. currentTimer.name .. " is not stopped; can't snooze yet")
     --else
         c_snoozes = c_snoozes + 1
-        currentTimer:remove()
+        currentTimer:stop()
         toRun(timers.snooze, confs.snoozeDuration)
     --end
 end
+
+--- Get the name of the current, or most recent, timer
+function getTimerName() return currentTimer.name end
 
 --- Get the number of times the current timer has been snoozed
 ---@return integer
@@ -269,29 +274,22 @@ function getPomCount() return c_poms end
 --- Reset the pom cycle by resetting the completed-pomodoro count
 function resetPomCount() c_poms = 0 end
 
-local frame = 0
 -- pd.update() is called right before every frame is drawn onscreen.
 function pd.update()
-    frame = frame + 1
-    d.log("begin frame "..frame)
-    d.log("pd.update: check stateIsLoading")
     --TODO replace this with playdate's builtin init screen system
     if stateIsLOADING() then
         --d.log("hit stateIsLOADING")
         pd.ui.crankIndicator:update()
-        d.log("updated crankIndicator")
         if pd.buttonJustPressed(A) then
             splashSprite:remove()
             toMenu()
         end
     end
 
-    d.log("pd.update: ui")
+    timer.update()
     ui.update()
-    d.log("pd.update: timers")
-    pd.timer.updateTimers() --TODO rename to update()
-    d.log("pd.update: sprites")
-    gfx.sprite.update()
+    music.update()
+    gfx.sprite.update() --TODO rm once all sprites are from ui lib
 end
 
 pd.cranked = crankhandler.cranked
