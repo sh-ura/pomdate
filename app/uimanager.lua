@@ -103,7 +103,7 @@ local function bakeSwitchAnimation()
     local len_switch = CRANK_DIAL_CIRCUIT.SWITCH.LENGTH
     local w_frame = len_switch + 10
     local h_frame = len_switch + MARGIN + BUTTONS.M.WIDTH/2
-    local n_frames = 20
+    local n_frames = 10
     local C = 3/4 * pi                  -- phase shift
     local x_button = 0.1 * len_switch
     local y_button = len_switch + MARGIN + 2

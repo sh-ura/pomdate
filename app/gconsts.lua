@@ -78,13 +78,13 @@ SOUND.preSwitchLED = {
 SOUND.crankDialSwitch = {
     closing = {
         path = SOUND.uiPathPrefix ..
-            "Mechanical Motion Short slow",
+            "switch-held/Target Lock",
         volume = 1
     },
     closed = {
         path = SOUND.uiPathPrefix ..
             "BUTTON_STOP_05",
-        volume = 0.7
+        volume = 0.4
     }
 }
 SOUND.postSwitchLED = {
