@@ -257,12 +257,14 @@ function snooze()
         --d.log("current timer " .. currentTimer.name .. " is not stopped; can't snooze yet")
     --else
         currentTimer:stop()
-        c_snoozes = c_snoozes + 1
-        if c_snoozes < SNOOZE_LVL_UP then
-            toRun(timers.snooze1, confs.snoozeDuration)
+        if c_snoozes < SNOOZE_LVL[1] then
+            toRun(currentTimer, confs.snoozeDuration) -- replays normal notif music
+        elseif c_snoozes < SNOOZE_LVL[2] then
+            toRun(timers.snooze1, confs.snoozeDuration) -- distinct snooze music
         else
-            toRun(timers.snooze2, confs.snoozeDuration)
+            toRun(timers.snooze2, confs.snoozeDuration) -- distinct snooze music
         end
+        c_snoozes = c_snoozes + 1
     --end
 end
 

@@ -24,11 +24,11 @@ STATES = {
 UI_ANIM_DURATION = 1500
 UI_ANIM_DELAY = 0 -- base delay in msec on state-based animations after state change
 POMS_MAX = 7
-SNOOZE_LVL_UP = 3
+SNOOZE_LVL = {1,2}
 
 SOUND = {
     notifPathPrefix = "assets/sound/notif-wav/",
-    notifPathSuffix = "",
+    notifPathSuffix = "", -- TODO should become ".adpcm"
     uiPathPrefix = "assets/sound/ui/"
 }
 SOUND.notif_workToBreak = {
