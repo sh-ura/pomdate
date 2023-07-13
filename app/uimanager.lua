@@ -75,7 +75,8 @@ local FACE_DIAL <const> = {
     }
 }
 local POM_COUNTER <const> = {
-    DIAMETER = 15
+    DIAMETER = 15,
+    REEL = { LINE_WIDTH = 5 }
 }
 
 local crankDialSwitchIsClosed = false
@@ -100,6 +101,49 @@ local runInst = nil -- instructions shown in RUN_TIMER state --TODO move to init
 local snoozeButton = nil -- invisible snooze button --TODO move to init
 local doneInst = nil -- instructions shown in DONE_TIMER state --TODO move to init
 local scoreboard = nil -- visualizes snooze score for this timer session
+
+local function bakePomReelAnimation()
+    local n_frames = 20
+    local n_spokes = 6
+    local diameter_out = POM_COUNTER.DIAMETER * 3
+
+    local lineWidth = POM_COUNTER.REEL.LINE_WIDTH
+    local radPerSpoke = 2 * pi / n_spokes
+    local radPerFrame = radPerSpoke / n_frames
+    local x_centre = diameter_out / 2
+    local y_centre = diameter_out / 2
+
+    local imageTable = gfx.imagetable.new(n_frames)
+    local theta     local x     local y      local i_frame
+    for j = 0, n_frames - 1 do
+        local frame = gfx.image.new(diameter_out + 2, diameter_out + 2)
+        gfx.pushContext(frame)
+            gfx.setColor(COLOR_1)
+            gfx.fillCircleAtPoint(x_centre, y_centre, diameter_out / 2)
+            gfx.setColor(COLOR_CLEAR)
+            gfx.fillCircleAtPoint(x_centre, y_centre, (diameter_out - lineWidth * 2) / 2)
+            gfx.setColor(COLOR_1)
+        
+            for k = 0, (n_spokes - 1)/2 do -- TODO can draw from -x,-y instead of 0,0 to save 1/2 loops
+                theta = k*radPerSpoke + j*radPerFrame
+                x = (diameter_out - lineWidth)/2 * cos(theta)
+                y = (diameter_out - lineWidth)/2 * sin(theta)
+                gfx.setLineWidth(lineWidth)
+                gfx.drawLine(x_centre - x, y_centre - y, x_centre + x, y_centre + y)
+            end
+
+            gfx.setColor(COLOR_CLEAR)
+            gfx.fillCircleAtPoint(x_centre, y_centre, (diameter_out - lineWidth * 3) / 2)
+            gfx.setColor(COLOR_1)
+        gfx.popContext()
+
+        i_frame = j + 1
+        pd.datastore.writeImage(frame, imgPathPrefix .. "pom-reel-table-" .. i_frame)
+        imageTable:setImage(i_frame, frame)
+    end
+
+    return imageTable
+end
 
 local function bakeSwitchAnimation()
     local len_switch = CRANK_DIAL_CIRCUIT.SWITCH.LENGTH
@@ -145,7 +189,6 @@ local function bakeSwitchAnimation()
         switchImagetable:setImage(i_frame, frame)
     end
     
-
     return switchImagetable
 end
 
@@ -521,6 +564,21 @@ local function init(timers)
     pomCountDisplay:setCounter(pomCounter, spacing)
     pomCountDisplay:setPosition(MARGIN + SETTING_DIAL.WIDTH - pomCountDisplay.width, MARGIN*2 + SETTING_DIAL.HEIGHT)
     pomCountDisplay:setZIndex(80)
+
+    local pomReel = UIElement({"pomReel"})
+        -- TODO we're searching for these files in the wrong place.
+    -- They'll be saved in the app's folder in Data on the device.
+    local pomReelImagetable = gfx.imagetable.new(imgPathPrefix .. "pom-reel")
+    if not pomReelImagetable then
+        d.log("pom-reel images not found; baking")
+        pomReelImagetable = bakePomReelAnimation()
+    end
+    pomReel:setForeground(pomReelImagetable)
+    pomReel:setPosition(MARGIN * 2, H_SCREEN - MARGIN * 5)
+    pomReel:setEnablingCriteria(stateIsRUN_TIMER)
+    pomReel:setZIndex(120)
+    pomReel.fg_anim:play(1, 0)
+    pomReel:forceConfigured()
 
     initCrankDialCircuit()
 end
