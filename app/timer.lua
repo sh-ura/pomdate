@@ -1,6 +1,6 @@
 -- pkg Timer provides value-based timers that work around the pausing bug in the Playdate SDK
-local P = {}; local _G = _G
 timer = {}
+local _G = _G
 
 import "CoreLibs/sprites"
 import "CoreLibs/timer"
@@ -16,7 +16,7 @@ local pairs <const> = pairs
 -- Timer packs a timer with its UI.
 class('Timer').extends()
 local Timer <const> = Timer
-local _ENV = P
+local _ENV = timer
 name = "timer"
 
 local MSEC_PER_SEC <const> = 1000
@@ -137,5 +137,4 @@ end
 
 
 local _ENV = _G
-timer = utils.makeReadOnly(P)
 return timer

@@ -1,7 +1,6 @@
 --- pkg debugger provides a Debugger for drawing and logging debugging messages
 
 local P = {}; local _G = _G
-debugger = {}
 
 local pd <const> = playdate -- _G.playdate etc
 local gfx <const> = pd.graphics
@@ -119,7 +118,6 @@ local _ENV = _G
 --      P:        the package contents, and
 --      mt:       the metatable configuring access to those contents
 -- This permits the disabling of all debugger functions.
-P = utils.makeReadOnly(P)
 --TODO when debugger is class-ified: write utils.makeDisableable
 debugger = {
     disable = function()

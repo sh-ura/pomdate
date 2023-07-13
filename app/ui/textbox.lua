@@ -1,13 +1,9 @@
 ---TODO pkg 'textbox' provides a simple textbox UIElement,
 ---     useful for tooltips etc.
-
 --TODO rn this has no distinguishing features from UIElement. rm?
+textbox = {}; local _G = _G
 
 import 'ui/uielement'
-
--- pkg header: define pkg namespace
-local P = {}; local _G = _G
-textbox = {}
 
 local pd <const> = playdate
 local d <const> = debugger
@@ -20,7 +16,7 @@ local COLOR_CLEAR <const> = COLOR_CLEAR
 ---TODO Textbox desc
 class('Textbox').extends(UIElement)
 local Textbox <const> = Textbox
-local _ENV = P      -- enter pkg namespace
+local _ENV = textbox      -- enter pkg namespace
 name = "textbox"
 
 --local localstatic <const> = val --TODO non-imported statics go here
@@ -42,8 +38,6 @@ function Textbox:init(coreProps, text)
     if text then self.text = text end
 
     --TODO override self.renderText()
-
-    self = utils.makeReadOnly(self, "Textbox instance")
 end
 
 ---TODO desc
@@ -54,5 +48,4 @@ end
 
 -- pkg footer: pack and export the namespace.
 local _ENV = _G
-textbox = utils.makeReadOnly(P)
 return textbox

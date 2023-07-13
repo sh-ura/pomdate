@@ -57,6 +57,4 @@ crankhandler = {
     subscribe = subscribe,
     cranked = cranked
 }
-
-crankhandler = utils.makeReadOnly(crankhandler)
 return crankhandler

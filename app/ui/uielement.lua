@@ -1,16 +1,11 @@
 --- pkg 'uielement' provides an abstract class for interactive
 --- UI sprites.
---- TODO may want to add justSelected and justDeselected to
----     improve efficiency and permit custom anims
+uielement = {}; local _G = _G
 
 import 'CoreLibs/easing'
 import 'CoreLibs/animator'
 import 'ui/switch'
 import 'ui/animation'
-
--- pkg header: define pkg namespace
-local P = {}; local _G = _G
-uielement = {}
 
 local pd <const> = playdate
 local gfx <const> = pd.graphics
@@ -48,7 +43,7 @@ local ease <const> = pd.easingFunctions.linear
 ---     be the template for simple UIElement objects such as groups/"folders".
 class('UIElement').extends(gfx.sprite)
 local UIElement <const> = UIElement
-local _ENV = P -- enter pkg namespace
+local _ENV = uielement -- enter pkg namespace
 name = "uielement"
 
 --- Initializes a new UIElement sprite.
@@ -457,14 +452,14 @@ end
 ---@return table of successfully added child UIElements
 ---SPEC EFFECT  overrides each child's ZIndex to be relative to parent above its new parent
 function UIElement:addChildren(e, parentEnables)
-    if not e or type(e) == 'boolean' then
+    if not e or type(e) == 'boolean' or type(e) == 'string' then
         d.log("no children to add to " .. self.name)
         return {}
     end
 
     local newChildren = {}
     local function addChild(element)
-        if not element:isa(UIElement) then
+        if not (element.isa and element:isa(UIElement)) then
             local name = element.name
             if not name then name = 'no_name' end
             d.log("element " .. name .. " is not a UIElement; can't be child to " .. self.name)
@@ -484,7 +479,7 @@ function UIElement:addChildren(e, parentEnables)
     if e.isa then
         addChild(e)           -- a single playdate Object
     else
-        for _, element in pairs(e) do
+        for _, element in pairs(e) do --TODO shouldn't this be ipairs
             addChild(element)
         end
     end
@@ -575,5 +570,4 @@ end
 
 -- pkg footer: pack and export the namespace.
 local _ENV = _G
-uielement = utils.makeReadOnly(P)
 return uielement

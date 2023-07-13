@@ -6,10 +6,9 @@
 --]]
 
 ---TODO pkg 'package' DESC
-
 -- pkg header: define pkg namespace
-local P = {}; local _G = _G
 package = {}
+local _G = _G
 
 local pd <const> = playdate
 local d <const> = debugger
@@ -20,7 +19,7 @@ local utils <const> = utils
 ---TODO Class desc
 class('Class').extends(gfx.sprite)
 local Class <const> = Class
-local _ENV = P      -- enter pkg namespace
+local _ENV = package      -- enter pkg namespace
 name = "package"
 
 --local localstatic <const> = val --TODO non-imported statics go here
@@ -38,7 +37,6 @@ function Class:init(name)
 --    self.property = val   -- TODO instance properties. Public
 
     self:setCenter(0, 0) --anchor top-left
-    self = utils.makeReadOnly(self, "Class instance")
 end
 
 ---TODO desc
@@ -51,5 +49,4 @@ end
 
 -- pkg footer: pack and export the namespace.
 local _ENV = _G
-package = utils.makeReadOnly(P)
 return package

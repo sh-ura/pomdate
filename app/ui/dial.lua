@@ -1,11 +1,9 @@
 --- pkg 'dial' provides a dial UIElement that
---- visualizes a continuous value for the user to configure.
+--- visualizes a numerical/countable value.
+dial = {}
+local _G = _G
 
 import 'ui/uielement'
-
--- pkg header: define pkg namespace
-local P = {}; local _G = _G
-dial = {}
 
 local pd <const> = playdate
 local d <const> = debugger
@@ -19,7 +17,7 @@ local COLOR_CLEAR <const> = COLOR_CLEAR
 ---TODO Dial desc
 class('Dial').extends(UIElement)
 local Dial <const> = Dial
-local _ENV = P      -- enter pkg namespace
+local _ENV = dial     -- enter pkg namespace
 name = "dial"
 
 visualizers = {
@@ -80,7 +78,6 @@ function Dial:init(coreProps, lowerLimit, upperLimit, step)
     self:setMode(visualizers.numeral)
 
     self._isConfigured = true
-    self = utils.makeReadOnly(self, "Dial instance")
 end
 
 ---TODO desc
@@ -234,5 +231,4 @@ end
 
 -- pkg footer: pack and export the namespace.
 local _ENV = _G
-dial = utils.makeReadOnly(P)
 return dial

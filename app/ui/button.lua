@@ -1,10 +1,9 @@
 --- pkg 'button' provides a button UIElement that
 --- triggers an action when selected and pressed.
+button = {}
+local _G = _G
 
 import 'ui/uielement'
-
-local P = {}; local _G = _G
-button = {}
 
 local pd <const> = playdate
 local gfx <const> = pd.graphics
@@ -21,10 +20,7 @@ local pairs = pairs
 --- The scope of what it knows should otherwise be limited.
 class('Button').extends(UIElement)
 local Button <const> = Button
-
--- local consts go here
-
-local _ENV = P
+local _ENV = button
 name = "button"
 
 --- Initializes a button UIElement.
@@ -57,7 +53,6 @@ function Button:init(coreProps, invisible)
     self.justReleasedAction = function () end -- optional action to take when button is released, one time per press
 
     self._isConfigured = true
-    self = utils.makeReadOnly(self, "button instance")
 end
 
 --- Updates the button UIElement.
@@ -97,5 +92,4 @@ function Button:update()
 end
 
 local _ENV = _G
-button = utils.makeReadOnly(P)
 return button

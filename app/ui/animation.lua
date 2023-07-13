@@ -1,10 +1,7 @@
 ---pkg 'animation' provides an animation object that can draw images
 ---     from an imagetable.
-
-
--- pkg header: define pkg namespace
-local P = {}; local _G = _G
 animation = {}
+local _G = _G
 
 local pd <const> = playdate
 local d <const> = debugger
@@ -18,7 +15,7 @@ local type <const> = type
 ---TODO Animation desc
 class('Animation').extends()
 local Animation <const> = Animation
-local _ENV = P      -- enter pkg namespace
+local _ENV = animation     -- enter pkg namespace
 name = "animation"
 
 local activeAnimations = {}
@@ -60,7 +57,6 @@ function Animation:init(name, imagetable)
 
     self._i = i_nextAnimation
     i_nextAnimation = i_nextAnimation + 1
-    self = utils.makeReadOnly(self, "Animation instance")
 end
 
 --- Set the default delay, in update frames rather than time, between animation frames.
@@ -169,5 +165,4 @@ end
 
 -- pkg footer: pack and export the namespace.
 local _ENV = _G
-animation = utils.makeReadOnly(P)
 return animation

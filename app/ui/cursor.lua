@@ -1,10 +1,8 @@
----TODO pkg 'cursor' DESC
+---pkg 'cursor' provides a cursor UIElement that points to target UIElements when they are selected.
+cursor = {}
+local _G = _G
 
 import 'ui/uielement' --TODO needed?
-
--- pkg header: define pkg namespace
-local P = {}; local _G = _G
-cursor = {}
 
 local pd <const> = playdate
 local d <const> = debugger
@@ -13,10 +11,10 @@ local utils <const> = utils
 local insert <const> = table.insert
 local ipairs <const> = ipairs
 
----TODO Cursor desc
+--- Cursor reads the isSelected status of its target UIElements and points to the positive result
 class('Cursor').extends(UIElement)
 local Cursor <const> = Cursor
-local _ENV = P      -- enter pkg namespace
+local _ENV = cursor     -- enter pkg namespace
 name = "cursor"
 
 --- Initializes a new Cursor instance.
@@ -30,8 +28,6 @@ function Cursor:init(coreProps)
     self._targetWas = nil -- what's currently being pointed to
     self._targets = {} -- array-indexed
     self.position.getTargetPoints = {} -- functions for getting target cursor-anchoring points. uses same array indices as self._targets
-
-    self = utils.makeReadOnly(self, "Cursor instance")
 end
 
 --- Add an element to this cursor's list of prospective targets, so that the cursor
@@ -74,5 +70,4 @@ end
 
 -- pkg footer: pack and export the namespace.
 local _ENV = _G
-cursor = utils.makeReadOnly(P)
 return cursor

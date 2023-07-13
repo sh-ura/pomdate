@@ -81,5 +81,4 @@ musicmanager = {
     add = add,
     update = update
 }
-musicmanager = utils.makeReadOnly(musicmanager)
 return musicmanager

@@ -1,10 +1,9 @@
 --- pkg 'list' provides a list UIElement, which can list other UIElements within it,
 ---     and may enable the user to select between items in the list.
+list = {}
+local _G = _G
 
 import 'ui/uielement'
-
-local P = {}; local _G = _G
-list = {}
 
 local pd <const> = playdate
 local gfx <const> = pd.graphics
@@ -25,10 +24,7 @@ local RIGHT <const> = pd.kButtonRight
 --- sequence that can be navigated with directional buttons.
 class('List').extends(UIElement)
 local List <const> = List
-
--- local consts go here
-
-local _ENV = P
+local _ENV = list
 name = "list"
 
 orientations = {
@@ -80,7 +76,6 @@ function List:init(coreProps, orientiation, spacing)
     end
 
     self._isConfigured = true
-    self = utils.makeReadOnly(self, "list instance")
 end
 
 --- Updates the list sprite.
@@ -214,5 +209,5 @@ function List:next()
 end
 
 local _ENV = _G
-list = utils.makeReadOnly(P)
+
 return list

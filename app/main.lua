@@ -70,8 +70,7 @@ function BPressed() return pd.buttonJustPressed(B) end
 --- Sets up the app environment.
 --- If a state save file exists, it will be loaded here.
 local function init()
-    utils.disableReadOnly()
-    debugger.disable() --TODO uncomment
+    --debugger.disable() --TODO uncomment
     drawFPS = true --TODO comment out
 
     -- snooze duration is in the confs data file
@@ -99,8 +98,8 @@ local function init()
     timers.work = Timer("work", toDone)
     timers.short = Timer("short", toDone)
     timers.long = Timer("long", toDone)
-    timers.snooze = Timer("snooze", toDone)
-    timers = utils.makeReadOnly(timers, "timers")
+    timers.snooze1 = Timer("snooze1", toDone)
+    timers.snooze2 = Timer("snooze2", toDone)
     currentTimer = timers.work --TODO rm
 
     music.init()
@@ -108,13 +107,16 @@ local function init()
         work = SOUND.notif_workToBreak,
         short = SOUND.notif_breakToWork,
         long = SOUND.notif_breakToWork,
-        snooze = SOUND.notif_fromSnooze
+        snooze1 = SOUND.notif_fromSnooze[1],
+        snooze2 = SOUND.notif_fromSnooze[2]
     })
-
+ 
     ui.init({
         {t = timers.short, label = "short break"},
         {t = timers.work, label = "work"},
-        {t = timers.long, label = "long break"}
+        {t = timers.long, label = "long break"},
+        {t = timers.snooze1},
+        {t = timers.snooze2}
     })
     ui.selectNextTimer() -- autoselects the 2nd timer, 'work'
 
@@ -254,9 +256,13 @@ function snooze()
     --if currentTimer:isStopped() then
         --d.log("current timer " .. currentTimer.name .. " is not stopped; can't snooze yet")
     --else
-        c_snoozes = c_snoozes + 1
         currentTimer:stop()
-        toRun(timers.snooze, confs.snoozeDuration)
+        c_snoozes = c_snoozes + 1
+        if c_snoozes < SNOOZE_LVL_UP then
+            toRun(timers.snooze1, confs.snoozeDuration)
+        else
+            toRun(timers.snooze2, confs.snoozeDuration)
+        end
     --end
 end
 

@@ -213,5 +213,4 @@ confmanager = {
     update = update,
     sav = sav
 }
-confmanager = utils.makeReadOnly(confmanager)
 return confmanager

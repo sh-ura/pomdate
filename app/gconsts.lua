@@ -24,6 +24,7 @@ STATES = {
 UI_ANIM_DURATION = 1500
 UI_ANIM_DELAY = 0 -- base delay in msec on state-based animations after state change
 POMS_MAX = 7
+SNOOZE_LVL_UP = 3
 
 SOUND = {
     notifPathPrefix = "assets/sound/notif-wav/",
@@ -32,21 +33,29 @@ SOUND = {
 }
 SOUND.notif_workToBreak = {
     path = SOUND.notifPathPrefix ..
-        "06 When Your Eyes Meet From Across the Bar"
+        "09 Blue Raspberry Flavoured Lip Gloss" -- TODO change
         .. SOUND.notifPathSuffix,
-    volume = 0.9
+    volume = 0.8
 }
 SOUND.notif_breakToWork = {
     path = SOUND.notifPathPrefix ..
         "01 Into the Maelstrom"
         .. SOUND.notifPathSuffix,
-    volume = 0.9
+    volume = 0.8
 }
 SOUND.notif_fromSnooze = {
-    path = SOUND.notifPathPrefix ..
-        "03 Bittersweet"
-        .. SOUND.notifPathSuffix,
-    volume = 0.9
+    {
+        path = SOUND.notifPathPrefix ..
+            "03 Bittersweet"
+            .. SOUND.notifPathSuffix,
+        volume = 0.8
+    },
+    {
+        path = SOUND.notifPathPrefix ..
+            "07 Confidence, Baby.adpcm"
+            .. SOUND.notifPathSuffix,
+        volume = 0.8
+    },
 }
 SOUND.timerButtonSelected = { -- TODO needs export
     paths = {

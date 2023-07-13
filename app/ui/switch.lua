@@ -1,11 +1,9 @@
 ---pkg 'switch' provides a Switch UI component, which can decorate a UIElement to
 ---     to turn it on and off according to some criteria.
+switch = {}
+local _G = _G
 
 import 'ui/uielement'
-
--- pkg header: define pkg namespace
-local P = {}; local _G = _G
-switch = {}
 
 local pd <const> = playdate
 local d <const> = debugger
@@ -23,7 +21,7 @@ local UIElement <const> = UIElement
 ---     *independently* of the UIManager or other UIElement parents.
 class('Switch').extends(Object)
 local Switch <const> = Switch
-local _ENV = P      -- enter pkg namespace
+local _ENV = switch      -- enter pkg namespace
 name = "switch"
 
 local activeSwitches = {}
@@ -63,8 +61,6 @@ function Switch:init(element)
             d.log(self.name .. " switch-close conditions not set")
         end
     end
-
-    self = utils.makeReadOnly(self, "Switch instance")
 end
 
 --- Add this Switch to the set of switches to be updated each frame
@@ -79,5 +75,4 @@ end
 
 -- pkg footer: pack and export the namespace.
 local _ENV = _G
-switch = utils.makeReadOnly(P)
 return switch

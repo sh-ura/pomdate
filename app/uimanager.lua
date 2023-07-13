@@ -286,6 +286,8 @@ end
 ---@param timers table all Timers that the UI should support selecting,
 ---                 in {t, label} k-v tuples,
 ---                 in the sequence they should appear.
+---                 param   t       Timer
+---                 param   label   string  to set to selector button. If not provided, timer is not selectable (ex. snooze)
 local function init(timers)
     --- Populate timersMenu with the timer-selecting/-configuring UIElements that are
     ---     to be displayed on the MENU screen.
@@ -297,69 +299,76 @@ local function init(timers)
     local function makeTimerUI (list, timers, cursor)
         local font_settingDial = gfx.font.new(SETTING_DIAL.FONT.PATH)
         local font_faceDial = gfx.font.new(FACE_DIAL.FONT.PATH)
-        local function makeTimerSelector(t, label)
+        local function makeOneTimerUI(t, label)
             local name = t.name
+            local isSelectable = false
+            if label then isSelectable = true end       -- timer can be selected from menu
+            local button = nil          -- timer-selecting button, if any
+            local dial = nil            -- timer-duration-setting dial, if any
+            local face = nil            -- timer clock-face
 
-            -- timer-selecting button
-            local button = Button({name .. "Button", BUTTONS.L.WIDTH, BUTTONS.M.HEIGHT})
-            timerSelectButtons[name] = button
-            button:setSound("touched", snd.sampleplayer.new(SOUND.timerButtonPressed.paths[name]), SOUND.timerButtonPressed.volume)
-            button:setSound("selected", snd.sampleplayer.new(SOUND.timerButtonSelected.paths[name]), SOUND.timerButtonSelected.volume)
-            button.isPressed = function() return pd.buttonJustPressed(A) end
-            button:setBackground(function(width, height)
-                local w_line = 8 -- must be even
-                gfx.setColor(COLOR_1)
-                gfx.fillRoundRect(0, 0, width, height, height//2)
-                gfx.setColor(COLOR_0)
-                gfx.fillRoundRect(w_line//2, w_line//2, width - w_line, height - w_line, (height - w_line)/2)
-            end)
-            button:setFont(gfx.getFont())
-            button:setText(label)
-            button:offsetPositions({selected = newVector(-BUTTONS.TRAVEL_DISTANCE, 0)})
-
-            ---[[ -- Toggle color inversion on selected button
-            button.justSelectedAction = function()
-                button.sounds.selected:play(1)
-                button:setImageDrawMode(gfx.kDrawModeInverted)
-            end
-            button.justDeselectedAction = function()
-                button:setImageDrawMode(gfx.kDrawModeCopy)
-            end
-            --]]
-
-            if cursor then
-                cursor:addTarget(button, function ()
-                    return button:getConfiguredPosition("selected") + newVector(button.width + MARGIN, 0)
+            if isSelectable then       -- selectable timer
+                -- timer-selecting button
+                button = Button({name .. "Button", BUTTONS.L.WIDTH, BUTTONS.M.HEIGHT})
+                timerSelectButtons[name] = button
+                button:setSound("touched", snd.sampleplayer.new(SOUND.timerButtonPressed.paths[name]), SOUND.timerButtonPressed.volume)
+                button:setSound("selected", snd.sampleplayer.new(SOUND.timerButtonSelected.paths[name]), SOUND.timerButtonSelected.volume)
+                button.isPressed = function() return pd.buttonJustPressed(A) end
+                button:setBackground(function(width, height)
+                    local w_line = 8 -- must be even
+                    gfx.setColor(COLOR_1)
+                    gfx.fillRoundRect(0, 0, width, height, height//2)
+                    gfx.setColor(COLOR_0)
+                    gfx.fillRoundRect(w_line//2, w_line//2, width - w_line, height - w_line, (height - w_line)/2)
                 end)
-            end
+                button:setFont(gfx.getFont())
+                button:setText(label)
+                button:offsetPositions({selected = newVector(-BUTTONS.TRAVEL_DISTANCE, 0)})
 
-            -- timer-setting dial
-            local dial = Dial({name .. "SettingDial", SETTING_DIAL.WIDTH/SETTING_DIAL.FONT.SCALE, SETTING_DIAL.HEIGHT/SETTING_DIAL.FONT.SCALE}, 1, 60)
-            durationDials[name] = dial
-            dial:setEnablingCriteria(function() return
-                button:isEnabled()
-                and button.isSelected()
-            end)
-            dial.isSelected = getCrankDialCircuitClosure
-            dial.getDialChange = crankhandler.subscribe(60//CRANK_DIAL_CIRCUIT.REVOLS_PER_HOUR)
-            --dial:setUnit("min")
-            dial:setValue(initialDurations[name])
-            dial:setBackground(function(width, height)
-                gfx.setColor(COLOR_1)
-                gfx.fillRect(0, 0, width, height)
-            end)
-            dial:setFont(font_settingDial, gfx.kDrawModeInverted)
-            dial:setScale(SETTING_DIAL.FONT.SCALE)
-            dial:setPosition(MARGIN, MARGIN)
-            local renderText = dial.renderText
-            dial.renderText = function () -- render 1-digit values with a space in the tens position
-                if string.len(dial.text) == 1 then dial.text = " " .. dial.text end
-                renderText()
+                ---[[ -- Toggle color inversion on selected button
+                button.justSelectedAction = function()
+                    button.sounds.selected:play(1)
+                    button:setImageDrawMode(gfx.kDrawModeInverted)
+                end
+                button.justDeselectedAction = function()
+                    button:setImageDrawMode(gfx.kDrawModeCopy)
+                end
+                --]]
+
+                if cursor then
+                    cursor:addTarget(button, function ()
+                        return button:getConfiguredPosition("selected") + newVector(button.width + MARGIN, 0)
+                    end)
+                end
+
+                -- timer-setting dial
+                dial = Dial({name .. "SettingDial", SETTING_DIAL.WIDTH/SETTING_DIAL.FONT.SCALE, SETTING_DIAL.HEIGHT/SETTING_DIAL.FONT.SCALE}, 1, 60)
+                durationDials[name] = dial
+                dial:setEnablingCriteria(function() return
+                    button:isEnabled()
+                    and button.isSelected()
+                end)
+                dial.isSelected = getCrankDialCircuitClosure
+                dial.getDialChange = crankhandler.subscribe(60//CRANK_DIAL_CIRCUIT.REVOLS_PER_HOUR)
+                --dial:setUnit("min")
+                dial:setValue(initialDurations[name])
+                dial:setBackground(function(width, height)
+                    gfx.setColor(COLOR_1)
+                    gfx.fillRect(0, 0, width, height)
+                end)
+                dial:setFont(font_settingDial, gfx.kDrawModeInverted)
+                dial:setScale(SETTING_DIAL.FONT.SCALE)
+                dial:setPosition(MARGIN, MARGIN)
+                local renderText = dial.renderText
+                dial.renderText = function () -- render 1-digit values with a space in the tens position
+                    if string.len(dial.text) == 1 then dial.text = " " .. dial.text end
+                    renderText()
+                end
+                dial:setZIndex(timersMenu:getZIndex() - 10)
             end
-            dial:setZIndex(timersMenu:getZIndex() - 10)
 
             -- timer's clock face
-            local face = Dial({name .. "FaceDial", FACE_DIAL.WIDTH // FACE_DIAL.FONT.SCALE, FACE_DIAL.HEIGHT // FACE_DIAL.FONT.SCALE})
+            face = Dial({name .. "FaceDial", FACE_DIAL.WIDTH // FACE_DIAL.FONT.SCALE, FACE_DIAL.HEIGHT // FACE_DIAL.FONT.SCALE})
             face.getDialValue = function () return t:getClockTime() end
             face:setEnablingCriteria(function () return t:isActive() end)
             face.isSelected(function () return true end)
@@ -375,15 +384,18 @@ local function init(timers)
             --]]
 
             -- TODO move func def below to be local func more visible at root of this file
-            button.pressedAction = function ()
-                face:setValue(dial.value)
-                toRun(t, dial.value)
+            if isSelectable then           -- selectable timer
+                button.pressedAction = function ()
+                    face:setValue(dial.value)
+                    toRun(t, dial.value)
+                end
             end
             return button
         end
 
         for _, timer in pairs(timers) do
-            list:addChildren(makeTimerSelector(timer.t, timer.label), 'parentEnables')
+            local button = makeOneTimerUI(timer.t, timer.label)
+            if button then list:addChildren(button, 'parentEnables') end
         end
     end
 
@@ -548,5 +560,4 @@ uimanager = {
     selectPrevTimer = selectPrevTimer,
     selectNextTimer = selectNextTimer
 }
-uimanager = utils.makeReadOnly(uimanager)
 return uimanager
