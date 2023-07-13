@@ -67,16 +67,19 @@ local SETTING_DIAL <const> = {
 }
 local FACE_DIAL <const> = {
     WIDTH = W_SCREEN - 2 * MARGIN,
-    HEIGHT = H_SCREEN - 4 * MARGIN,
+    HEIGHT = H_SCREEN - 8 * MARGIN,
     Y = 2 * MARGIN,
     FONT = {
         PATH = fontPathPrefix .. "Ace Attacker",
-        SCALE = 24
+        SCALE = 20
     }
 }
 local POM_COUNTER <const> = {
-    DIAMETER = 15,
-    REEL = { LINE_WIDTH = 5 }
+    DIAMETER = 16,
+    REEL = {
+        DIAMETER = 3 * 15,
+        LINE_WIDTH = 4
+    }
 }
 
 local crankDialSwitchIsClosed = false
@@ -92,7 +95,6 @@ local timersMenu = nil  -- contains the buttons for selecting timers --TODO move
 local durationDials = {} -- visualize/manipulate timer durations --TODO move to init
 -- TODO rm timerSelectButton when addTimerSelector() is implemented
 local timerSelectButtons = {} -- select timer to run --TODO move to init
-local pomCountDisplay = nil
 local menuInst = nil -- instructions shown in MENU --TODO move to init
 
 local toMenuButton = nil -- return to timer-select menu
@@ -105,35 +107,35 @@ local scoreboard = nil -- visualizes snooze score for this timer session
 local function bakePomReelAnimation()
     local n_frames = 20
     local n_spokes = 6
-    local diameter_out = POM_COUNTER.DIAMETER * 3
+    local diameter_out = POM_COUNTER.REEL.DIAMETER
+    local dim_frame = diameter_out + 2
 
+    local center = dim_frame / 2
     local lineWidth = POM_COUNTER.REEL.LINE_WIDTH
     local radPerSpoke = 2 * pi / n_spokes
     local radPerFrame = radPerSpoke / n_frames
-    local x_centre = diameter_out / 2
-    local y_centre = diameter_out / 2
 
     local imageTable = gfx.imagetable.new(n_frames)
     local theta     local x     local y      local i_frame
     for j = 0, n_frames - 1 do
-        local frame = gfx.image.new(diameter_out + 2, diameter_out + 2)
+        local frame = gfx.image.new(dim_frame, dim_frame)
         gfx.pushContext(frame)
             gfx.setColor(COLOR_1)
-            gfx.fillCircleAtPoint(x_centre, y_centre, diameter_out / 2)
+            gfx.fillCircleAtPoint(center, center, diameter_out / 2)
             gfx.setColor(COLOR_CLEAR)
-            gfx.fillCircleAtPoint(x_centre, y_centre, (diameter_out - lineWidth * 2) / 2)
+            gfx.fillCircleAtPoint(center, center, (diameter_out - lineWidth*2) / 2)
             gfx.setColor(COLOR_1)
         
-            for k = 0, (n_spokes - 1)/2 do -- TODO can draw from -x,-y instead of 0,0 to save 1/2 loops
+            for k = 0, (n_spokes - 1)/2 do
                 theta = k*radPerSpoke + j*radPerFrame
                 x = (diameter_out - lineWidth)/2 * cos(theta)
                 y = (diameter_out - lineWidth)/2 * sin(theta)
                 gfx.setLineWidth(lineWidth)
-                gfx.drawLine(x_centre - x, y_centre - y, x_centre + x, y_centre + y)
+                gfx.drawLine(center - x, center - y, center + x, center + y)
             end
 
             gfx.setColor(COLOR_CLEAR)
-            gfx.fillCircleAtPoint(x_centre, y_centre, (diameter_out - lineWidth * 3) / 2)
+            gfx.fillCircleAtPoint(center, center, (diameter_out - lineWidth * 4) / 2)
             gfx.setColor(COLOR_1)
         gfx.popContext()
 
@@ -553,19 +555,19 @@ local function init(timers)
         gfx.setColor(COLOR_1)
         gfx.fillCircleAtPoint(POM_COUNTER.DIAMETER//2, POM_COUNTER.DIAMETER//2, POM_COUNTER.DIAMETER//2)
     gfx.popContext()
-    pomCountDisplay = makeScoreDisplay("pom", getPomCount,
+
+    local pomCountDisplay_menu = makeScoreDisplay("pomMenu", getPomCount,
         confs.pomsPerCycle * (POM_COUNTER.DIAMETER + spacing), POM_COUNTER.DIAMETER)
-    pomCountDisplay:setEnablingCriteria(function () return
+    pomCountDisplay_menu:setEnablingCriteria(function () return
         stateIsMENU()
         and getPomCount() ~= 0
     end)
-    d.log("setting mode")
-    pomCountDisplay:setMode(dial.visualizers.horiCounter) -- visualize poms as counters
-    pomCountDisplay:setCounter(pomCounter, spacing)
-    pomCountDisplay:setPosition(MARGIN + SETTING_DIAL.WIDTH - pomCountDisplay.width, MARGIN*2 + SETTING_DIAL.HEIGHT)
-    pomCountDisplay:setZIndex(80)
+    pomCountDisplay_menu:setMode(dial.visualizers.horiCounter) -- visualize poms as counters
+    pomCountDisplay_menu:setCounter(pomCounter, spacing)
+    pomCountDisplay_menu:setPosition(MARGIN + SETTING_DIAL.WIDTH - pomCountDisplay_menu.width, MARGIN*2 + SETTING_DIAL.HEIGHT)
+    pomCountDisplay_menu:setZIndex(400)
 
-    local pomReel = UIElement({"pomReel"})
+    local pomReel = UIElement({"pomReel", POM_COUNTER.REEL.DIAMETER + 2, POM_COUNTER.REEL.DIAMETER + 2})
         -- TODO we're searching for these files in the wrong place.
     -- They'll be saved in the app's folder in Data on the device.
     local pomReelImagetable = gfx.imagetable.new(imgPathPrefix .. "pom-reel")
@@ -574,11 +576,24 @@ local function init(timers)
         pomReelImagetable = bakePomReelAnimation()
     end
     pomReel:setForeground(pomReelImagetable)
-    pomReel:setPosition(MARGIN * 2, H_SCREEN - MARGIN * 5)
+    pomReel:setPosition(MARGIN * 2, H_SCREEN - pomReel.height - MARGIN)
     pomReel:setEnablingCriteria(stateIsRUN_TIMER)
     pomReel:setZIndex(120)
     pomReel.fg_anim:play(1, 0)
     pomReel:forceConfigured()
+    local x_pomReel, y_pomReel = pomReel:getConfiguredPosition():unpack()
+
+    -- TODO refactor (or at least rename) duplicate pomCountDisplay
+    local pomCountDisplay_run = makeScoreDisplay("pomRun", getPomCount,
+        confs.pomsPerCycle * (POM_COUNTER.DIAMETER + spacing), POM_COUNTER.DIAMETER)
+    pomCountDisplay_run:setEnablingCriteria(function () return
+        stateIsRUN_TIMER()
+        and getPomCount() ~= 0
+    end)
+    pomCountDisplay_run:setMode(dial.visualizers.horiCounter) -- visualize poms as counters
+    pomCountDisplay_run:setCounter(pomCounter, spacing)
+    pomCountDisplay_run:setPosition(x_pomReel + pomReel.width + spacing, y_pomReel + (pomReel.height/2 - pomCountDisplay_run.height/2))
+    pomCountDisplay_run:setZIndex(80)
 
     initCrankDialCircuit()
 end

@@ -70,7 +70,7 @@ function BPressed() return pd.buttonJustPressed(B) end
 --- Sets up the app environment.
 --- If a state save file exists, it will be loaded here.
 local function init()
-    debugger.disable() --TODO uncomment
+    --debugger.disable() --TODO uncomment
     drawFPS = true --TODO comment out
 
     -- snooze duration is in the confs data file

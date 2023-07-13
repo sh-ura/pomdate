@@ -372,6 +372,8 @@ end
 ---@param name string (optional) name of the position offset type, ex. 'disabled', 'selected'
 ---@return gfx.geometry.point
 function UIElement:getConfiguredPosition(name)
+    if not name then return self.position.default end
+    
     local offset = self.position.offsets[name]
     if not offset then offset = newVector(0, 0) end
     return self.position.default + offset
