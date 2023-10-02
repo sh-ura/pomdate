@@ -40,7 +40,7 @@ local metaconfs = {
         end
     },
     pomsPerCycle = {
-        default = 4,
+        default = 3,
         min = 2,
         max = POMS_MAX,
         get = function()
