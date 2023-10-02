@@ -97,7 +97,9 @@ local durationDials = {} -- visualize/manipulate timer durations --TODO move to 
 local timerSelectButtons = {} -- select timer to run --TODO move to init
 local menuInst = nil -- instructions shown in MENU --TODO move to init
 
-local toMenuButton = nil -- return to timer-select menu
+local backButton = nil -- return to timer-select menu, without completing current timer
+local skipButton = nil -- early end to current timer, skip to the next step in the cycle
+local nextButton = nil -- return to timer-select menu, having completed current timer
 local runInst = nil -- instructions shown in RUN_TIMER state --TODO move to init
 
 local snoozeButton = nil -- invisible snooze button --TODO move to init
@@ -500,29 +502,46 @@ local function init(timers)
         elseif input == B then
             button:setPosition(X_B_BUTTON, H_SCREEN - button.height * 2/3)
         end
-        button:offsetPositions({ disabled = newVector(0,50),
-                            pressed = newVector(0, BUTTONS.TRAVEL_DISTANCE)})
+        button:offsetPositions({
+                disabled = newVector(0,50),
+                pressed = newVector(0, BUTTONS.TRAVEL_DISTANCE)
+            },
+            { pressed = { reverses = true } })
         button:forceConfigured()
         return button
     end
     
-    toMenuButton = makeABButton("toMenu", B)
-    toMenuButton.pressedAction = function ()
+    backButton = makeABButton("back", B)
+    backButton.pressedAction = function ()
         toMenu()
     end
-    toMenuButton:setEnablingCriteria(function() return
+    backButton:setEnablingCriteria(function() return
         stateIsRUN_TIMER()
         or stateIsDONE_TIMER()
     end)
-    toMenuButton:offsetPositions({}, { pressed = { reverses = true }})
 
-    snoozeButton = makeABButton("snooze", A)
+    skipButton = makeABButton("skip", A)
+    skipButton.pressedAction = function ()
+        toDone() --TODO should be a distinct function in main
+    end
+    skipButton:setEnablingCriteria(function() return
+        stateIsRUN_TIMER()
+    end)
+
+    nextButton = makeABButton("next", A)
+    nextButton.pressedAction = function ()
+        toMenu()
+    end
+    nextButton:setEnablingCriteria(function() return
+        stateIsDONE_TIMER()
+    end)
+
+    snoozeButton = makeABButton("snooze", B)
     snoozeButton.pressedAction = snooze
     snoozeButton:setEnablingCriteria(function() return
         stateIsDONE_TIMER()
         and confs.snoozeOn
     end)
-    snoozeButton:offsetPositions({}, { pressed = { reverses = true }})
 
 
     --- Initialize a score display.
