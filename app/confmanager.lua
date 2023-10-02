@@ -140,7 +140,8 @@ local function init(savestate)
     --- Populate a On/Off toggle setter
     ---@param setter List obtained from initConfItem (above)
     ---@param init initial value, true or false
-    local function fillONFSetter(setter, init)
+    ---@return function that yields the current value
+    local function fillONFSetterGetter(setter, init)
         local w, h = setter:getMaxContentDim(2)
         local switch = init
         local OnBtn = Button({setter.name.."OnBtn", w, h})
@@ -157,7 +158,14 @@ local function init(savestate)
         return function() return switch end
     end
 
-    local function fillDialSetter(setter, unit, min, max, init)
+    --- Populate a dial-type setter
+    ---@param setter List obtained from initConfItem (above)
+    ---@param unit string
+    ---@param min number minimum value
+    ---@param max number maximum value
+    ---@param init number initial value
+    ---@return function that yields the current value
+    local function fillDialSetterGetter(setter, unit, min, max, init)
         local w, h = setter:getMaxContentDim()
         local dial = Dial({setter.name.."Dial", w, h}, min, max)
         dial.getDialChange = crankhandler.subscribe(max)
@@ -169,25 +177,25 @@ local function init(savestate)
         return function() return dial.value end
     end
 
-    metaconfs.snoozeOn.get = fillONFSetter(
+    metaconfs.snoozeOn.get = fillONFSetterGetter(
         initConfItem("snoozeONF", "Timers can be snoozed"),
         confs.snoozeOn
     )
-    metaconfs.snoozeDuration.get = fillDialSetter(
+    metaconfs.snoozeDuration.get = fillDialSetterGetter(
         initConfItem("snoozeDuration", "Snooze duration"),
         "min",
         metaconfs.snoozeDuration.min,
         metaconfs.snoozeDuration.max,
         confs.snoozeDuration
     )
-    metaconfs.pomsPerCycle.get = fillDialSetter(
+    metaconfs.pomsPerCycle.get = fillDialSetterGetter(
         initConfItem("pomsPerCycle", "Poms per long break"),
         "pom",
         metaconfs.pomsPerCycle.min,
         metaconfs.pomsPerCycle.max,
         confs.pomsPerCycle
     )
-    metaconfs.pomSavingOn.get = fillONFSetter(
+    metaconfs.pomSavingOn.get = fillONFSetterGetter(
         initConfItem("pomSavingOn", "Save elapsed poms on quit"),
         confs.pomSavingOn
     )
