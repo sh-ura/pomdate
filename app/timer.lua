@@ -40,7 +40,9 @@ function Timer:init(name, callback)
     self.name = name
     self._callback = callback
 
-    self._duration = 0.0 -- float timer duration in msec
+    self._duration = 0.0            -- float timer duration in msec
+    self._pausedDuration = 0.0      -- float timer duration at recent pause
+    self._completedDurations = 0.0  -- float total completed timer durations since last time wipe() was called.
 
     self._timer = nil -- "value-based" pd timer w linear interpolation
     self._isPaused = false -- true iff the timer is paused
@@ -51,6 +53,7 @@ end
 function Timer:update()
     -- if timer has completed
     if self._timer and self._timer.value <= 0 then
+        self._completedDurations = self._completedDurations + self._timer.startValue
         self:stop()
         self._callback()
     end
@@ -62,6 +65,7 @@ function Timer:stop()
     activeTimers[self.name] = nil
     self._timer = nil
     self._isPaused = false
+    self._pausedDuration = 0.0
 end
 
 --- Pause a Timer.
@@ -74,7 +78,7 @@ function Timer:pause()
 
         --TODO below is workaround for pd.timer:pause() being broken.
         -- Rm/refactor when bugfix
-        self._duration = self._timer.value -- cache time-at-pause as new duration
+        self._pausedDuration = self._timer.value -- cache time-at-pause as new duration
         self._timer = nil
     else d.log(self.name .. " timer is nil; can't pause") end
 end
@@ -82,14 +86,27 @@ end
 --- Start a timer from a paused *or* stopped state.
 --- Supports starting from both states to mimic pd.timer's docs.
 --- However running timers cannot be started. Call reset() instead.
-function Timer:start()
+---@param duration number (optional) minutes to run for, or the duration set by setDuration() if not provided.
+function Timer:start(duration)
+    if not duration then
+        if self._isPaused then
+            duration = self._pausedDuration
+            self._pausedDuration = 0.0
+        else
+            duration = self._duration
+        end
+    end
     if self._timer then
         d.log("forbidden to reset timer " .. self.name)
     else
-        self._timer = tmr.new(self._duration, self._duration, 0)
+        self._timer = tmr.new(duration, duration, 0)
         self._isPaused = false
         activeTimers[self.name] = self
     end
+end
+
+function Timer:wipe()
+    self._completedDurations = 0.0
 end
 
 --[[ Won't work while pd.timer:pause() is buggy
@@ -112,6 +129,19 @@ function Timer:setDuration(mins)
     self._duration = (mins + 0.0) * SEC_PER_MIN * MSEC_PER_SEC
 end
 
+-- Get the total amount of elapsed milliseconds since the last time wipe() was called
+---@return float msec
+function Timer:getNetElapsedMSec()
+    return self._completedDurations
+end
+
+--- Get the msec default duration of the current timer. Not necessarily equal to the duration it's currently running for (see start() arg options)
+---@param float msec
+function Timer:getDurationMSec()
+    return self._duration
+end
+
+
 --- Returns true if this timer is active (ie. has been started and is not paused)
 function Timer:isActive()
     if activeTimers[self.name] == self then return true
@@ -125,7 +155,7 @@ end
 function Timer:getClockTime()
     --TODO refactor when pd.timer.pause() is fixed
     local msec = 0
-    if self._isPaused then msec = self._duration --TODO rm workaround
+    if self._isPaused then msec = self._pausedDuration --TODO rm workaround
     elseif self._timer then msec = self._timer.value
     end
     
@@ -134,7 +164,6 @@ function Timer:getClockTime()
     sec = floor(sec - min * SEC_PER_MIN)
     return min, sec
 end
-
 
 local _ENV = _G
 return timer

@@ -228,10 +228,16 @@ function toMenu()
 end
 
 ---TODO desc
-function toRun(t, duration)
+---@param snoozing boolean true iff snoozing
+function toRun(t, duration, snoozing)
     currentTimer = t
-    currentTimer:setDuration(duration)
-    currentTimer:start()
+    if snoozing then
+        currentTimer(start, duration)
+    else
+        currentTimer:wipe()
+        currentTimer:setDuration(duration)
+        currentTimer:start()
+    end
     
     pd.setAutoLockDisabled(true)
     state = STATES.RUN_TIMER
@@ -258,11 +264,11 @@ function snooze()
     --else
         currentTimer:stop()
         if c_snoozes < SNOOZE_LVL[1] then
-            toRun(currentTimer, confs.snoozeDuration) -- replays normal notif music
+            toRun(currentTimer, confs.snoozeDuration, 'snoozing') -- replays normal notif music
         elseif c_snoozes < SNOOZE_LVL[2] then
-            toRun(timers.snooze1, confs.snoozeDuration) -- distinct snooze music
+            toRun(timers.snooze1, confs.snoozeDuration, 'snoozing') -- distinct snooze music
         else
-            toRun(timers.snooze2, confs.snoozeDuration) -- distinct snooze music
+            toRun(timers.snooze2, confs.snoozeDuration, 'snoozing') -- distinct snooze music
         end
         c_snoozes = c_snoozes + 1
     --end
