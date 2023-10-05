@@ -11,6 +11,7 @@ import 'ui/textbox'
 import 'ui/cursor'
 import 'ui/uielement'
 import 'ui/animation'
+import 'rendering/spinner'
 
 --[[
     TODO 
@@ -35,9 +36,8 @@ local pi <const> = math.pi
 local sin <const> = math.sin
 local cos <const> = math.cos
 local SOUND <const> = SOUND
-
-local imgPathPrefix <const> = "assets/ui/"
-local fontPathPrefix <const> = "assets/fonts/"
+local imgPathPrefix <const> = GFX.GEN.pathPrefix --TODO rm? or rename the var
+local fontPathPrefix <const> = FONT.pathPrefix
 
 -- Configure appearance params
 local CRANK_DIAL_CIRCUIT <const> = {
@@ -196,58 +196,6 @@ local function bakeSwitchAnimation()
     return switchImagetable
 end
 
---- Make and write the frames for the LED animations
----@return gfx.imagetable containing the preSwitchLED frames
----@return gfx.imagetable containing the postSwitchLED frames
-local function bakeLEDAnimations()
-    local period = 60                       -- period in terms of frames, rather than seconds
-    local n_spokes = 5
-    local w_frame = 60
-    local h_frame = 60
-    local lineWidth = 1.3                   -- scales the lineWidth
-    local Amp = 22                            -- amplitude/scale of the graphic
-    local C = pi/2                          -- phase shift
-
-    local n_frames = (period / 2) // n_spokes  -- only show the front-facing half of the cycle
-    local radPerFrame = 2 * pi / period
-    local radPerSpoke = pi / n_spokes
-
-    local preSwitchLEDImagetable = gfx.imagetable.new(n_frames)
-    local postSwitchLEDImagetable = gfx.imagetable.new(n_frames)
-    local theta     local x     local y     local i_frame
-    for j = 0, n_frames-1 do
-        local frame = gfx.image.new(w_frame, h_frame, COLOR_CLEAR)
-        
-        for k = 0, n_spokes-1 do
-            theta = k*radPerSpoke + j*radPerFrame
-            x = 6 * cos(theta - C)
-            y = Amp * sin(theta - C) + h_frame//2
-            gfx.pushContext(frame)
-                gfx.setColor(COLOR_1)
-                gfx.setLineCapStyle(gfx.kLineCapStyleRound)
-                gfx.setLineWidth(x * lineWidth)
-                gfx.drawLine((w_frame - x*3)/2, y, (w_frame + x*3)/2, y)
-                -- Other unit circle-visualizers below
-                --gfx.setLineWidth(6)
-                --gfx.drawLine(2.5*w_frame - x*1.5, y, 2.5*w_frame + x*1.5, y)
-                --x = Amp * cos(theta - C) + w_frame//2
-                --gfx.drawLine(w_frame//2, h_frame//2, x, y)
-                --gfx.fillCircleAtPoint(x + w_frame, y, 4)
-            gfx.popContext()
-        end
-        
-        local rotatedFrame = frame:rotatedImage(90)
-        --TODO which direction should be forward?? reconfigure all dials if needed
-        -- frames are saved in backwards order to match CW forwards motion
-        i_frame = n_frames - j
-        pd.datastore.writeImage(frame, imgPathPrefix .. "preSwitchLED-table-" .. i_frame)
-        preSwitchLEDImagetable:setImage(i_frame, frame)
-        pd.datastore.writeImage(rotatedFrame, imgPathPrefix .. "postSwitchLED-table-" .. i_frame)
-        postSwitchLEDImagetable:setImage(i_frame, rotatedFrame)
-    end
-    return preSwitchLEDImagetable, postSwitchLEDImagetable
-end
-
 local function initCrankDialCircuit()
     local w_circuit = 400
     local h_circuit = 140
@@ -304,19 +252,15 @@ local function initCrankDialCircuit()
         end)
     end
 
-    local preSwitchLEDImagetable = gfx.imagetable.new(imgPathPrefix .. "preSwitchLED")
-    local postSwitchLEDImagetable = gfx.imagetable.new(imgPathPrefix .. "postSwitchLED")
-    if not preSwitchLEDImagetable or not postSwitchLEDImagetable then
-        d.log("pre- or postSwitchLED images not found; baking")
-        preSwitchLEDImagetable, postSwitchLEDImagetable = bakeLEDAnimations()
-    end
-    preSwitchLED:setForeground(preSwitchLEDImagetable, 16)
+    local preSwitchLEDRender = Spinner("preSwitchLED", spinner.orientations.vertical, spinner.motions.cw)
+    local postSwitchLEDRender = Spinner("postSwitchLED", spinner.orientations.horizontal, spinner.motions.cw)
+    preSwitchLED:setForeground(preSwitchLEDRender.imagetable, 16)
     preSwitchLED:setPosition(w_circuit - 50, h_circuit - 70)
     preSwitchLED.isSelected = function() return true end
     preSwitchLED.getDialChange = crankhandler.subscribe()
     preSwitchLED:setMode(dial.visualizers.animation)
     preSwitchLED:setSound("dialing", snd.fileplayer.new(SOUND.preSwitchLED.path), SOUND.preSwitchLED.volume) --would prefer a sampleplayer here
-    postSwitchLED:setForeground(postSwitchLEDImagetable, 16)
+    postSwitchLED:setForeground(postSwitchLEDRender.imagetable, 16)
     postSwitchLED:setPosition(10, 34)
     postSwitchLED.isSelected = getCrankDialCircuitClosure
     postSwitchLED.getDialChange = crankhandler.subscribe()

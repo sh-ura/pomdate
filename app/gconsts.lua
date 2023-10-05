@@ -26,6 +26,22 @@ UI_ANIM_DELAY = 0 -- base delay in msec on state-based animations after state ch
 POMS_MAX = 7
 SNOOZE_LVL = {1,2}
 
+GFX = {
+    -- TODO move W_SCREEN, COLOR_0 etc. into here and rm above
+    COLOR = {
+        neg = playdate.graphics.kColorWhite,
+        pos = playdate.graphics.kColorBlack,     -- "positive color", ie. standard color to draw in
+        clear = playdate.graphics.kColorClear
+    },
+    GEN = {
+        pathPrefix = "assets/gen/" -- parent: Data folder
+    }
+}
+
+FONT = {
+    pathPrefix = "assets/fonts/"
+}
+
 SOUND = {
     notifPathPrefix = "assets/sound/notif-wav/",
     notifPathSuffix = "", -- TODO should become ".adpcm"
