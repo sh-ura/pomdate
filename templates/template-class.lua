@@ -1,6 +1,6 @@
 --[[TODO rm
     This is a template class.
-    Features a class namespace + pseudo-readonly access control on pkg and instances
+    Features a class namespace
     Find+Replace (case-sensitive) 'Class' with the Classname
     Find+Replace 'package' with the classname (lowercase)
 --]]
