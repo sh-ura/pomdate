@@ -12,6 +12,7 @@ import 'ui/cursor'
 import 'ui/uielement'
 import 'ui/animation'
 import 'rendering/spinner'
+import 'rendering/reel'
 
 --[[
     TODO 
@@ -105,49 +106,6 @@ local runInst = nil -- instructions shown in RUN_TIMER state --TODO move to init
 local snoozeButton = nil -- invisible snooze button --TODO move to init
 local doneInst = nil -- instructions shown in DONE_TIMER state --TODO move to init
 local scoreboard = nil -- visualizes snooze score for this timer session
-
-local function bakePomReelAnimation()
-    local n_frames = 20
-    local n_spokes = 6
-    local diameter_out = POM_COUNTER.REEL.DIAMETER
-    local dim_frame = diameter_out + 2
-
-    local center = dim_frame / 2
-    local lineWidth = POM_COUNTER.REEL.LINE_WIDTH
-    local radPerSpoke = 2 * pi / n_spokes
-    local radPerFrame = radPerSpoke / n_frames
-
-    local imageTable = gfx.imagetable.new(n_frames)
-    local theta     local x     local y      local i_frame
-    for j = 0, n_frames - 1 do
-        local frame = gfx.image.new(dim_frame, dim_frame)
-        gfx.pushContext(frame)
-            gfx.setColor(COLOR_1)
-            gfx.fillCircleAtPoint(center, center, diameter_out / 2)
-            gfx.setColor(COLOR_CLEAR)
-            gfx.fillCircleAtPoint(center, center, (diameter_out - lineWidth*2) / 2)
-            gfx.setColor(COLOR_1)
-        
-            for k = 0, (n_spokes - 1)/2 do
-                theta = k*radPerSpoke + j*radPerFrame
-                x = (diameter_out - lineWidth)/2 * cos(theta)
-                y = (diameter_out - lineWidth)/2 * sin(theta)
-                gfx.setLineWidth(lineWidth)
-                gfx.drawLine(center - x, center - y, center + x, center + y)
-            end
-
-            gfx.setColor(COLOR_CLEAR)
-            gfx.fillCircleAtPoint(center, center, (diameter_out - lineWidth * 4) / 2)
-            gfx.setColor(COLOR_1)
-        gfx.popContext()
-
-        i_frame = j + 1
-        pd.datastore.writeImage(frame, imgPathPrefix .. "pom-reel-table-" .. i_frame)
-        imageTable:setImage(i_frame, frame)
-    end
-
-    return imageTable
-end
 
 local function bakeSwitchAnimation()
     local len_switch = CRANK_DIAL_CIRCUIT.SWITCH.LENGTH
@@ -531,14 +489,8 @@ local function init(timers)
     pomCountDisplay_menu:setZIndex(400)
 
     local pomReel = UIElement({"pomReel", POM_COUNTER.REEL.DIAMETER + 2, POM_COUNTER.REEL.DIAMETER + 2})
-        -- TODO we're searching for these files in the wrong place.
-    -- They'll be saved in the app's folder in Data on the device.
-    local pomReelImagetable = gfx.imagetable.new(imgPathPrefix .. "pom-reel")
-    if not pomReelImagetable then
-        d.log("pom-reel images not found; baking")
-        pomReelImagetable = bakePomReelAnimation()
-    end
-    pomReel:setForeground(pomReelImagetable)
+    local pomReelRender = Reel("pomReel", reel.motions.cw, POM_COUNTER.REEL.DIAMETER, POM_COUNTER.REEL.LINE_WIDTH)
+    pomReel:setForeground(pomReelRender.imagetable)
     pomReel:setPosition(MARGIN * 2, H_SCREEN - pomReel.height - MARGIN)
     pomReel:setEnablingCriteria(stateIsRUN_TIMER)
     pomReel:setZIndex(120)

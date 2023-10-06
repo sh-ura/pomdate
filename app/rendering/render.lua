@@ -42,7 +42,10 @@ end
 
 --- Default bake function - should be overridden by inheriting class.
 function Render:bake()
-    if not self.imagetable then return end
+    if not self.imagetable then
+        d.log("no imagetable for " .. self.name)
+        return
+    end
     self:write()
 end
 

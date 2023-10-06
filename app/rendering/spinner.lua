@@ -14,7 +14,7 @@ local pi <const> = math.pi
 local sin <const> = math.sin
 local cos <const> = math.cos
 
----TODO Spinner desc
+--- Spinner renders a animation that spins along an invisible axle located on the 2D plane of the screen.
 class('Spinner').extends(Render)
 local Spinner <const> = Spinner
 local _ENV = spinner      -- enter pkg namespace
@@ -30,6 +30,9 @@ motions = {
     ccw = -1
 }
 
+--- Creates a render of a spinner.
+---@param orientation enum, one of spinner.orientations
+---@param motion enum, one of spinner.motions
 function Spinner:init(name, orientation, motion)
     if not orientation then
         d.log("Spinner " .. name .. " orientation not valid. Defaulting to vert")
@@ -46,6 +49,7 @@ function Spinner:init(name, orientation, motion)
     Spinner.super.init(self, name)
 end
 
+--- (Re)bakes the spinner animation
 function Spinner:bake()
     local period = 60                       -- period in terms of frames, rather than seconds
     local n_spokes = 5
