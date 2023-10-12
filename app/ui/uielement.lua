@@ -19,7 +19,7 @@ local type <const> = type
 local pairs <const> = pairs
 local ipairs <const> = ipairs
 local insert <const> = table.insert
-local centered = kTextAlignment.center
+local centered <const> = kTextAlignment.center
 
 local W_SCREEN <const> = W_SCREEN
 local H_SCREEN <const> = H_SCREEN

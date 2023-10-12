@@ -13,6 +13,7 @@ import 'ui/uielement'
 import 'ui/animation'
 import 'rendering/spinner'
 import 'rendering/reel'
+import 'rendering/buttonswitch'
 
 --[[
     TODO 
@@ -107,51 +108,14 @@ local snoozeButton = nil -- invisible snooze button --TODO move to init
 local doneInst = nil -- instructions shown in DONE_TIMER state --TODO move to init
 local scoreboard = nil -- visualizes snooze score for this timer session
 
-local function bakeSwitchAnimation()
-    local len_switch = CRANK_DIAL_CIRCUIT.SWITCH.LENGTH
-    local w_frame = len_switch + 10
-    local h_frame = len_switch + MARGIN + BUTTONS.M.WIDTH/2
-    local n_frames = 10
-    local C = 3/4 * pi                  -- phase shift
-    local x_button = 0.1 * len_switch
-    local y_button = len_switch + MARGIN + 2
-
-    local Amp = 0.8 * len_switch       -- amplitude
-    local radPerFrame = pi/4 / (n_frames - 1)
-    local buttonTravelPerFrame = BUTTONS.TRAVEL_DISTANCE / n_frames
-
-    local switchImagetable = gfx.imagetable.new(n_frames)
-    local theta     local x     local y     local i_frame
-    for j = 0, n_frames - 1 do
-        local frame = gfx.image.new(w_frame, h_frame, COLOR_CLEAR)
-        theta = j * radPerFrame
-        x = Amp * cos(-theta - C)
-        y = Amp * sin(-theta - C)
-        gfx.pushContext(frame)
-            gfx.setColor(COLOR_1)
-            gfx.setLineWidth(CRANK_DIAL_CIRCUIT.WIRE.WIDTH)
-            gfx.setLineCapStyle(gfx.kLineCapStyleRound)
-            -- draw wire from (x,y) to the unit-circle origin, transposed by (len_switch, len_switch)
-            gfx.drawLine(x + len_switch, y + len_switch, len_switch, len_switch)
-            gfx.setLineWidth(4)
-            -- draw tether from the switch wire to the B button
-            x = x_button + BUTTONS.L.HEIGHT/2
-            y = y + len_switch + 5
-            gfx.drawLine(x, y, x, 242)
-            -- draw B button
-            x = x_button
-            y = y_button + j*buttonTravelPerFrame
-            gfx.fillRoundRect(x, y, BUTTONS.L.HEIGHT, BUTTONS.M.WIDTH, BUTTONS.L.HEIGHT/2)
-            gfx.setImageDrawMode(gfx.kDrawModeInverted)
-            gfx.drawTextAligned("B", x + BUTTONS.L.HEIGHT/2, y + 10, kTextAlignment.center)
-        gfx.popContext()
-
-        i_frame = j + 1
-        pd.datastore.writeImage(frame, imgPathPrefix .. "switch-table-" .. i_frame)
-        switchImagetable:setImage(i_frame, frame)
+--- Draws the basic shape for a button UI indicator placed above the A or B key on the playdate.
+local function drawButtonShapeAB(width, height, x, y)
+    if not (x and y) then
+        x = 0
+        y = 0
     end
-    
-    return switchImagetable
+    gfx.setColor(COLOR_1)
+    gfx.fillRoundRect(x, y, width, height, width/2)
 end
 
 local function initCrankDialCircuit()
@@ -188,12 +152,17 @@ local function initCrankDialCircuit()
 
     -- TODO we're searching for these files in the wrong place.
     -- They'll be saved in the app's folder in Data on the device.
-    local switchImagetable = gfx.imagetable.new(imgPathPrefix .. "switch")
-    if not switchImagetable then
-        d.log("switch images not found; baking")
-        switchImagetable = bakeSwitchAnimation()
-    end
-    switch:setForeground(switchImagetable)
+    local switchRender = ButtonSwitch("crankDialCircuitSwitch",
+        drawButtonShapeAB,
+        BUTTONS.L.HEIGHT,
+        BUTTONS.M.WIDTH,
+        "B",
+        BUTTONS.TRAVEL_DISTANCE,
+        CRANK_DIAL_CIRCUIT.SWITCH.LENGTH,
+        CRANK_DIAL_CIRCUIT.WIRE.WIDTH,
+        MARGIN
+    )
+    switch:setForeground(switchRender.imagetable)
     switch:setPosition(X_B_BUTTON - BUTTONS.L.HEIGHT/4, h_circuit - switch.height)
     switch.isPressed = function() return pd.buttonIsPressed(B) end
     switch.justReleasedAction = function ()
@@ -393,10 +362,7 @@ local function init(timers)
         local button = Button({name .. "Button", BUTTONS.L.HEIGHT, BUTTONS.TRAVEL_DISTANCE - MARGIN})
         
         button.isPressed = function () return pd.buttonIsPressed(input) end
-        button:setBackground(function(width, height)
-            gfx.setColor(COLOR_1)
-            gfx.fillRoundRect(0, 0, width, height, width/2)
-        end)
+        button:setBackground(drawButtonShapeAB)
         button:setFont(gfx.getFont(), gfx.kDrawModeInverted)
         button:setText(string.sub(name, 1, 1))
         if input == A then
