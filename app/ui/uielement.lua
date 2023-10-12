@@ -211,7 +211,17 @@ function UIElement:redraw()
     gfx.pushContext(self._img)
         gfx.clear(COLOR_CLEAR)
         if self.bg_anim then self.bg_anim:draw(0, 0) end
-        if self.fg_anim then self.fg_anim:draw(0,0) end
+        if self.fg_anim then
+            local x = 0
+            local y = 0
+            local proportionalPosn = self._posn_fg_anim
+            if proportionalPosn then
+                local w_fg, h_fg = self.fg_anim:getSize()
+                x = self.width * proportionalPosn.x - w_fg//2
+                y = self.height * proportionalPosn.y - h_fg//2
+            end
+            self.fg_anim:draw(x,y)
+        end
         if self.text then
             self.renderText()
             self._fg_text:draw(0, 0)
@@ -304,15 +314,30 @@ function UIElement:setForeground(drawable, framesDelay)
     self.fg_anim:add()
     local w, h = self.fg_anim:image():getSize()
     if w > self.width then
-        d.log(self.name .. " background wide; resizing sprite")
+        d.log(self.name .. " foreground wide; resizing sprite")
         self._img = gfx.image.new(w, self.height)
         self:setImage(self._img)
     end
     if h > self.height then
-        d.log(self.name .. " background tall; resizing sprite")
+        d.log(self.name .. " foreground tall; resizing sprite")
         self._img = gfx.image.new(self.width, h)
         self:setImage(self._img)
     end
+    self:redraw()
+end
+
+--- Reposition the CENTER of the foreground animation/image on the UIElement.
+---@param proportionX float in [0,1], where 0 is on the left edge and 1 is the right edge of this UIElement sprite.
+---@param proportionY float in [0,1], where 0 is on the top edge and 1 is the bottom edge of this UIElement sprite.
+function UIElement:repositionForeground(proportionX, proportionY)
+    if not (proportionX and proportionY) then
+        d.log("missing args for " .. name .. ":repositionForeground")
+        return
+    end
+    self._posn_fg_anim = {
+        x = proportionX,
+        y = proportionY
+    }
     self:redraw()
 end
 

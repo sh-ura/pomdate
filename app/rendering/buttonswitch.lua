@@ -6,10 +6,8 @@ local _G = _G
 local pd <const> = playdate
 local d <const> = debugger
 local gfx <const> = pd.graphics
-local utils <const> = utils
 local Render <const> = Render
 local COLOR = GFX.COLOR
-local pathPrefix = GFX.GEN.pathPrefix
 local pi <const> = math.pi
 local sin <const> = math.sin
 local cos <const> = math.cos
@@ -36,28 +34,28 @@ name = "buttonswitch"
 function ButtonSwitch:init(name, drawButtonShape, buttonWidth, buttonHeight, buttonLabel, buttonTravel, switchLength, switchThickness,
                            spacing)
     --TODO test that all of these inputs are actually given
-    self.drawButtonShape = drawButtonShape
-    self.buttonWidth = buttonWidth
-    self.buttonHeight = buttonHeight
-    self.buttonLabel = buttonLabel
-    self.buttonTravel = buttonTravel
-    self.switchLength = switchLength
-    self.switchThickness = switchThickness
-    self.spacing = spacing
+    self._drawButtonShape = drawButtonShape
+    self._buttonWidth = buttonWidth
+    self._buttonHeight = buttonHeight
+    self._buttonLabel = buttonLabel
+    self._buttonTravel = buttonTravel
+    self._switchLength = switchLength
+    self._switchThickness = switchThickness
+    self._spacing = spacing
 
     ButtonSwitch.super.init(self, name)
 end
 
 --- (Re)bakes the buttonswitch animation
 function ButtonSwitch:bake()
-    local drawButtonShape = self.drawButtonShape
-    local buttonWidth = self.buttonWidth
-    local buttonHeight = self.buttonHeight
-    local buttonLabel = self.buttonLabel
-    local buttonTravel = self.buttonTravel
-    local switchLength = self.switchLength
-    local switchThickness = self.switchThickness
-    local spacing = self.spacing
+    local drawButtonShape = self._drawButtonShape
+    local buttonWidth = self._buttonWidth
+    local buttonHeight = self._buttonHeight
+    local buttonLabel = self._buttonLabel
+    local buttonTravel = self._buttonTravel
+    local switchLength = self._switchLength
+    local switchThickness = self._switchThickness
+    local spacing = self._spacing
 
     local w_frame = switchLength + 10
     local h_frame = switchLength + spacing + buttonHeight / 2

@@ -14,6 +14,7 @@ import 'ui/animation'
 import 'rendering/spinner'
 import 'rendering/reel'
 import 'rendering/buttonswitch'
+import 'rendering/backicon'
 
 --[[
     TODO 
@@ -371,7 +372,6 @@ local function init(timers)
         button.isPressed = function () return pd.buttonIsPressed(input) end
         button:setBackground(drawButtonShapeAB)
         button:setFont(gfx.getFont(), gfx.kDrawModeInverted)
-        button:setText(string.sub(name, 1, 1))
         if input == A then
             button:setPosition(X_A_BUTTON, H_SCREEN - button.height * 2/3)
         elseif input == B then
@@ -382,6 +382,7 @@ local function init(timers)
                 pressed = newVector(0, BUTTONS.TRAVEL_DISTANCE)
             },
             { pressed = { reverses = true } })
+        button:repositionForeground(0.5, 0.4)
         button:forceConfigured()
         return button
     end
@@ -394,6 +395,8 @@ local function init(timers)
         stateIsRUN_TIMER()
         or stateIsDONE_TIMER()
     end)
+    local backIconRender = BackIcon("backButtonIcon", 20, 20, COLOR_0)
+    backButton:setForeground(backIconRender.imagetable)
 
     skipButton = makeABButton("skip", A)
     skipButton.pressedAction = function ()

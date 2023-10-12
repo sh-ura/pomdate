@@ -7,7 +7,6 @@ local pd <const> = playdate
 local d <const> = debugger
 local gfx <const> = pd.graphics
 local insert <const> = table.insert
-local COLOR_CLEAR <const> = COLOR_CLEAR
 local pathPrefix <const> = GFX.GEN.pathPrefix
 local ipairs <const> = ipairs
 

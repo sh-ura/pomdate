@@ -163,6 +163,13 @@ function Animation:play(step, delay, ending, callback, beginning)
     self._isPaused = false
 end
 
+--- Returns the dimensions of the current frame.
+---@return integer width
+---@return integer height
+function Animation:getSize()
+    return self._imagetable[self._frame]:getSize()
+end
+
 -- pkg footer: pack and export the namespace.
 local _ENV = _G
 return animation
