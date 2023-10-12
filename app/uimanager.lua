@@ -109,6 +109,10 @@ local doneInst = nil -- instructions shown in DONE_TIMER state --TODO move to in
 local scoreboard = nil -- visualizes snooze score for this timer session
 
 --- Draws the basic shape for a button UI indicator placed above the A or B key on the playdate.
+---@param width integer button width
+---@param height integer button height
+---@param x integer (optional) where to draw shape, defaults to 0
+---@param y integer (optional) where to draw shape, defaults to 0
 local function drawButtonShapeAB(width, height, x, y)
     if not (x and y) then
         x = 0
@@ -118,6 +122,9 @@ local function drawButtonShapeAB(width, height, x, y)
     gfx.fillRoundRect(x, y, width, height, width/2)
 end
 
+--- Draws the crank-dial circuit UI for setting the pomodoro timer with the crank.
+--- The purpose of this UI is to show the user that they should hold B while cranking to modify the timer dial face.
+--- The purpose of holding B is to prevent unintentional time-changing when the crank is bumped.
 local function initCrankDialCircuit()
     local w_circuit = 400
     local h_circuit = 140
