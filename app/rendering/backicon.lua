@@ -23,7 +23,7 @@ name = "backicon"
 ---@param height number
 ---@param color enum one of gfx.kColor
 function BackIcon:init(name, width, height, color)
-    if not width or height then
+    if not (width and height) then
         d.log("defaulting dimensions for " .. name .. " icon")
         width = 20
         height = 20
@@ -48,7 +48,11 @@ function BackIcon:bake()
     local img = gfx.image.new(w, h)
     gfx.pushContext(img)
         gfx.setColor(self._color)
-        gfx.fillCircleAtPoint(w//2, h//2, w//2)
+        local r = w//4
+        gfx.setLineWidth(r)
+        gfx.setLineCapStyle(gfx.kLineCapStyleRound)
+        gfx.drawLine(r//2, 0, r//2, h)
+        gfx.fillTriangle(w//4, h//2, w, 0, w, h)
     gfx.popContext()
 
     local imagetable = gfx.imagetable.new(1)

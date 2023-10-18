@@ -395,7 +395,7 @@ local function init(timers)
         stateIsRUN_TIMER()
         or stateIsDONE_TIMER()
     end)
-    local backIconRender = BackIcon("backButtonIcon", 20, 20, COLOR_0)
+    local backIconRender = BackIcon("backButtonIcon", 14, 14, COLOR_0)
     backButton:setForeground(backIconRender.imagetable)
 
     skipButton = makeABButton("skip", A)

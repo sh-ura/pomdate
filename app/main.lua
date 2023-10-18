@@ -71,7 +71,7 @@ function BPressed() return pd.buttonJustPressed(B) end
 --- Sets up the app environment.
 --- If a state save file exists, it will be loaded here.
 local function init()
-    --debugger.disable() --TODO uncomment
+    debugger.disable() --TODO uncomment
     --render.bakeAll("force bake all future renders")
     render.disableWriting() --TODO once all renders are refactored, go into data folder and delete the assets subfolder
     drawFPS = true --TODO comment out
