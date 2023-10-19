@@ -132,7 +132,7 @@ function Dial:setMode(mode)
                 end
             gfx.popContext()
         end
-    elseif mode == visualizers.numeral then --TODO refactor to use self.text instead
+    elseif mode == visualizers.numeral then
         self._renderValue = function()
             -- only redraw if val has changed
             if self.value == self._prevValue then return end

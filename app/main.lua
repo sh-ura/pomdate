@@ -216,7 +216,7 @@ end
 -- TODO rename to toMENU
 function toMenu()
     currentTimer:stop()
-    c_snoozes = 0
+    c_snoozes = 0 --TODO for some reason we are landing here when snoozing
 
     if timerCompleted then
         cycleTimers()

@@ -1,4 +1,5 @@
----pkg BackIcon renders an icon of the back/restart button on a CD player.
+---pkg BackIcon renders an icon of the back/restart button on a CD player. NOT IN USE.
+--TODO rm this file
 -- pkg header: define pkg namespace
 backicon = {}
 local _G = _G

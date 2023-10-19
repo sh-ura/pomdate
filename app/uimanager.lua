@@ -365,13 +365,16 @@ local function init(timers)
     --- Initialize a button that sits directly above the A or B buttons
     ---@param name string button name
     ---@param input A or B from the global namespace
+    ---@param invisible boolean true iff button should be invisible
     ---@return Button
-    local function makeABButton (name, input)
+    local function makeABButton (name, input, invisible)
         local button = Button({name .. "Button", BUTTONS.L.HEIGHT, BUTTONS.TRAVEL_DISTANCE - MARGIN})
         
         button.isPressed = function () return pd.buttonIsPressed(input) end
-        button:setBackground(drawButtonShapeAB)
-        button:setFont(gfx.getFont(), gfx.kDrawModeInverted)
+        if not invisible then
+            button:setBackground(drawButtonShapeAB)
+            button:setFont(gfx.getFont(), gfx.kDrawModeInverted)
+        end
         if input == A then
             button:setPosition(X_A_BUTTON, H_SCREEN - button.height * 2/3)
         elseif input == B then
@@ -398,7 +401,6 @@ local function init(timers)
     --local backIconRender = BackIcon("backButtonIcon", 14, 14, COLOR_0)
     --backButton:setForeground(backIconRender.imagetable)
     backButton:setForeground(gfx.image.new(ICON.backPath))
-    backButton:repositionForeground(0.5, 0.4)
 
     skipButton = makeABButton("skip", A)
     skipButton.pressedAction = function ()
@@ -408,17 +410,6 @@ local function init(timers)
         stateIsRUN_TIMER()
     end)
     skipButton:setForeground(gfx.image.new(ICON.skipPath))
-    skipButton:repositionForeground(0.5, 0.4)
-
-    nextButton = makeABButton("next", A)
-    nextButton.pressedAction = function ()
-        toMenu()
-    end
-    nextButton:setEnablingCriteria(function() return
-        stateIsDONE_TIMER()
-    end)
-    nextButton:setForeground(gfx.image.new(ICON.nextPath))
-    nextButton:repositionForeground(0.55, 0.4)
 
     snoozeButton = makeABButton("snooze", B)
     snoozeButton.pressedAction = snooze
@@ -427,8 +418,20 @@ local function init(timers)
         and confs.snoozeOn
     end)
     snoozeButton:setForeground(gfx.image.new(ICON.snoozePath))
-    snoozeButton:repositionForeground(0.5, 0.4)
 
+    -- The next button is an invisible button parenting a dial that makes up the appearance of the button.
+    -- This dial-button grows in size as the user snoozes, encouraging the user to press it instead of continuing to snooze.
+    nextButton = makeABButton("next", A) --TODO "invisible"
+    nextButton.pressedAction = function ()
+        toMenu()
+    end
+    nextButton:setEnablingCriteria(function() return
+        stateIsDONE_TIMER()
+    end)
+    nextButton:setForeground(gfx.image.new(ICON.nextPath)) --TODO rm
+    local nextButtonVisualizer = Dial({"nextButtonVisualizer", BUTTONS.L.HEIGHT,BUTTONS.TRAVEL_DISTANCE - MARGIN})
+    nextButton:addChildren(nextButtonVisualizer, "parentEnables")
+    nextButtonVisualizer.getDialValue = getSnoozeCount
 
     --- Initialize a score display.
     ---@param scoringFunc function that returns the score when called
