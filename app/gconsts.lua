@@ -34,7 +34,10 @@ GFX = {
         clear = playdate.graphics.kColorClear
     },
     GEN = {
-        pathPrefix = "assets/gen/" -- parent: Data folder
+        pathPrefix = "assets/gen/" -- parent: Data folder?
+    },
+    ICON = {
+        pathPrefix = "assets/icons/"
     }
 }
 

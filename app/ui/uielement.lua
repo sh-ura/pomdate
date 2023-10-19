@@ -276,6 +276,9 @@ local function renderDrawable(self, drawable)
         end
         draw = function (width, height) return drawable.drawInRect(0, 0, width, height) end
     else -- is an image, a sprite, a tilemap, or custom class with a .draw
+        if drawable.getSize then
+            w, h = drawable:getSize()
+        end
         draw = function (width, height) return drawable:draw(0,0) end
     end
 
