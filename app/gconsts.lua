@@ -40,6 +40,14 @@ GFX = {
         pathPrefix = "assets/icons/"
     }
 }
+GFX.ICON.backPath = GFX.ICON.pathPrefix ..
+    "back-button.png"
+GFX.ICON.skipPath = GFX.ICON.pathPrefix ..
+    "skip-button.png"
+GFX.ICON.nextPath = GFX.ICON.pathPrefix ..
+    "next-button.png"
+GFX.ICON.snoozePath = GFX.ICON.pathPrefix ..
+    "snooze-button.png"
 
 FONT = {
     pathPrefix = "assets/fonts/"

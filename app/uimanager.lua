@@ -39,7 +39,7 @@ local pi <const> = math.pi
 local sin <const> = math.sin
 local cos <const> = math.cos
 local SOUND <const> = SOUND
-local iconPathPrefix <const> = GFX.ICON.pathPrefix
+local ICON <const> = GFX.ICON
 local fontPathPrefix <const> = FONT.pathPrefix
 
 -- Configure appearance params
@@ -397,7 +397,7 @@ local function init(timers)
     end)
     --local backIconRender = BackIcon("backButtonIcon", 14, 14, COLOR_0)
     --backButton:setForeground(backIconRender.imagetable)
-    backButton:setForeground(gfx.image.new(iconPathPrefix.."back-button.png"))
+    backButton:setForeground(gfx.image.new(ICON.backPath))
     backButton:repositionForeground(0.5, 0.4)
 
     skipButton = makeABButton("skip", A)
@@ -407,7 +407,7 @@ local function init(timers)
     skipButton:setEnablingCriteria(function() return
         stateIsRUN_TIMER()
     end)
-    skipButton:setForeground(gfx.image.new(iconPathPrefix.."skip-button.png"))
+    skipButton:setForeground(gfx.image.new(ICON.skipPath))
     skipButton:repositionForeground(0.5, 0.4)
 
     nextButton = makeABButton("next", A)
@@ -417,7 +417,7 @@ local function init(timers)
     nextButton:setEnablingCriteria(function() return
         stateIsDONE_TIMER()
     end)
-    nextButton:setForeground(gfx.image.new(iconPathPrefix.."next-button.png"))
+    nextButton:setForeground(gfx.image.new(ICON.nextPath))
     nextButton:repositionForeground(0.55, 0.4)
 
     snoozeButton = makeABButton("snooze", B)
@@ -426,7 +426,7 @@ local function init(timers)
         stateIsDONE_TIMER()
         and confs.snoozeOn
     end)
-    snoozeButton:setForeground(gfx.image.new(iconPathPrefix.."snooze-button.png"))
+    snoozeButton:setForeground(gfx.image.new(ICON.snoozePath))
     snoozeButton:repositionForeground(0.5, 0.4)
 
 
