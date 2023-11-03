@@ -91,12 +91,12 @@ local function init(savestate)
     sysmenu:removeMenuItem(backMenuItem)
 
     local backButton = Button({"backFromConfButton"}, 'invisible')
-    backButton:setEnablingCriteria(stateIsCONF)
+    backButton:setOnScreenCriteria(stateIsCONF)
     backButton.isPressed = function() return pd.buttonJustPressed(B) end
     backButton.pressedAction = back
     backButton:forceConfigured()
     local inst = Textbox({"backFromConfInst", 300, 20}, "_B returns to app_")
-    inst:setEnablingCriteria(function () return backButton:isEnabled() end)
+    inst:setOnScreenCriteria(function () return backButton:isOnScreen() end)
     inst:moveTo(MARGIN, H_SCREEN - MARGIN - inst.height) -- bottom of screen
 
     local c_confs = 0
@@ -112,7 +112,7 @@ local function init(savestate)
     )
     confList:moveTo(MARGIN, MARGIN)
     w_setting, h_setting = confList:getMaxContentDim(c_confs)
-    confList:setEnablingCriteria(stateIsCONF)
+    confList:setOnScreenCriteria(stateIsCONF)
 
     --- Creates a list item, label, and setter for a configurable setting
     ---@param name string setting name to be used in debugging
@@ -126,13 +126,13 @@ local function init(savestate)
         w_setter = w_setter - w_labelBonus
         local label = Button({name.."Desc", w_label, h_label})
         local setter = List({name.."Setter", w_setter, h_setter}, hori, 0)
-        item:addChildren({label, setter}, 'parentEnables')
-        confList:addChildren(item, 'parentEnables')
+        item:addChildren({label, setter}, 'alwaysOnScreenWithParent')
+        confList:addChildren(item, 'alwaysOnScreenWithParent')
 
         label:setText(description)
-        label.isSelected = function() return item.isSelected() end
+        label.isSelected = item.isSelected
         label:forceConfigured() -- label only needs to hilight like a button
-        setter.isSelected = function() return item.isSelected() end
+        setter:setInteractivityCriteria(item.isSelected)
 
         return setter
     end
@@ -152,7 +152,7 @@ local function init(savestate)
         OffBtn:setText("Off")
         OffBtn.isPressed = OffBtn.isSelected
         OffBtn.pressedAction = function() switch = false end
-        setter:addChildren({OnBtn, OffBtn}, 'parentEnables')
+        setter:addChildren({OnBtn, OffBtn}, 'alwaysOnScreenWithParent')
 
         if not init then setter:next() end
         return function() return switch end
@@ -170,8 +170,8 @@ local function init(savestate)
         local dial = Dial({setter.name.."Dial", w, h}, min, max)
         dial.getDialChange = crankhandler.subscribe(max)
         dial:setUnit(unit)
-        setter:addChildren(dial, 'parentEnables')
-        dial.isSelected = function () return setter.isSelected() end
+        setter:addChildren(dial, 'alwaysOnScreenWithParent')
+        dial:setUpdatingCriteria(setter.isSelected)
         
         dial:setValue(init)
         return function() return dial.value end

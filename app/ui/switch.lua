@@ -26,33 +26,16 @@ name = "switch"
 
 local activeSwitches = {}
 
---- For all active switches,
----     turns the attached UIElement on or off
----     by adding/removing it from the global sprite list.
-function update()
-    for _, switch in pairs(activeSwitches) do
-        if not switch.isClosed and switch.shouldClose() then
-            --d.log("closing switch " .. switch.name)
-            switch._attachedTo:add()
-            switch.isClosed = true
-        elseif switch.isClosed and not switch.shouldClose() then
-            --d.log("opening switch " .. switch.name)
-            switch._attachedTo:remove()
-            switch.isClosed = false
-        end
-    end
-end
-
 --- Initializes a new Switch instance.
----@param element UIElement the element to switch
-function Switch:init(element)
+---@param uielement UIElement the element to switch
+function Switch:init(uielement)
     --TODO want to check element:isa(UIElement) but isa seems to be unstable in 1.12.3?
-    if not element then 
-        d.log("no UIElement to switch", element)
+    if not uielement then 
+        d.log("no UIElement to switch", uielement)
         return
     end
-    self.name = element.name .. "Switch"
-    self._attachedTo = element
+    self.name = uielement.name .. "Switch"
+    self._attachedTo = uielement
 
     self.isClosed = false
     --- The conditions under which to 'close the switch' and enable the attached UIElement
@@ -60,6 +43,36 @@ function Switch:init(element)
         if not self._isConfigured then
             d.log(self.name .. " switch-close conditions not set")
         end
+    end
+end
+
+function Switch:update()
+    local uielement = self._attachedTo
+
+    if uielement._isOnScreen then
+
+        if not self.shouldBeOnScreen() then
+            uielement:remove()
+        end
+
+        if self.shouldUpdate then
+            if uielement._isUpdating and not self.shouldUpdate() then
+                uielement._isUpdating = false
+            elseif not uielement._isUpdating and self.shouldUpdate() then
+                uielement._isUpdating = true
+            end
+        end
+
+        if self.shouldBeInteractable then --TODO first implement it like this, then with locks in a later commit
+            if uielement._isInteractable and not self.shouldBeInteractable() then
+                uielement._isInteractable = false
+            elseif not uielement._isInteractable and self.shouldBeInteractable() then
+                uielement._isInteractable = true
+            end
+        end
+
+    elseif self.shouldBeOnScreen() then
+        uielement:add()
     end
 end
 
@@ -71,6 +84,11 @@ end
 --- Remove this Switch to the set of switches to be updated each frame.
 function Switch:remove()
     activeSwitches[self.name] = nil
+end
+
+--- Drive updates for all active switches.
+function update()
+    for _, switch in pairs(activeSwitches) do switch:update() end
 end
 
 -- pkg footer: pack and export the namespace.

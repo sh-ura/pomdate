@@ -40,6 +40,18 @@ function Button:init(coreProps, invisible)
         self:setImage(self._img)
     end
 
+    --- Determines if this button is selected, ie. "focused on".
+    ---@return boolean true if the button's selection criteria are met
+    self.isSelected = function()
+        if not self._isConfigured then d.log("button '" .. self.name .. "' select criteria not set") end
+        return true
+    end
+    self._wasSelected = false -- isSelected() was true on previous update
+    --- Called once each time a deselected button becomes selected
+    self.justSelectedAction = function () end
+    --- Called once each time selected button becomes deselected
+    self.justDeselectedAction = function () end
+
     -- declare button behaviours, to be configured elsewhere, prob by UI Manager
     self.isPressed = function ()
         if not self._isConfigured then d.log("button '" .. self.name .. "' press criteria not set") end
@@ -58,16 +70,23 @@ end
 --- Updates the button UIElement.
 function Button:update()
     if not Button.super.update(self) then return end
-    
+
+    if not self._isInteractable then return end
     if self.isSelected() then
         local selectedPosition = self.position.default
         if self.position.offsets.selected then selectedPosition = selectedPosition + self.position.offsets.selected end
+
+        if not self._wasSelected then
+            self.justSelectedAction()
+            self:reposition(self:getPointPosition(), selectedPosition)
+        end
+        self._wasSelected = true
+
         if self.isPressed() then
             --d.log(self.name .. " is pressed")
 
             if not self._wasPressed then
                 if self.sounds.touched then self.sounds.touched:play(1) end
-                if self.sounds.held then self.sounds.held:play(1) end
             end
             
             local reverses = false
@@ -87,6 +106,12 @@ function Button:update()
             self:reposition(self:getPointPosition(), selectedPosition, self.justReleasedAction)
             self._wasPressed = false
         end
+    else
+        if self._wasSelected then
+            self.justDeselectedAction()
+            self:reposition(self:getPointPosition(), self.position.default)
+        end
+        self._wasSelected = false
     end
     --d.illustrateBounds(self)
 end

@@ -85,10 +85,9 @@ end
 function List:update()
     if not List.super.update(self) then return end
 
-    if self.isSelected() then
-        if pd.buttonJustPressed(self._inputPrev) then self:prev()
-        elseif pd.buttonJustPressed(self._inputNext) then self:next() end
-    end
+    if not self._isInteractable then return end
+    if pd.buttonJustPressed(self._inputPrev) then self:prev()
+    elseif pd.buttonJustPressed(self._inputNext) then self:next() end
     --d.illustrateBounds(self)
 end
 
@@ -97,11 +96,11 @@ end
 ---     since the list *must* control child layout.
 ---@specEffect overwrites children's isSelected method.
 ---@param e table of child UIElements, or a single UIElement
----@param parentEnables boolean (option) child is enabled/disabled when parent is enabled/disabled
+---@param alwaysOnScreenWithParent boolean (option) child is enabled/disabled when parent is enabled/disabled
 ---@return table of successfully added child UIElements
-function List:addChildren(e, parentEnables)
+function List:addChildren(e, alwaysOnScreenWithParent)
     d.log("spacing " .. self._spacing)
-    local newChildren = List.super.addChildren(self, e, parentEnables)
+    local newChildren = List.super.addChildren(self, e, alwaysOnScreenWithParent)
     local px1 = self.position.default.x
     local py1 = self.position.default.y
 

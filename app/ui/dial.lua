@@ -84,7 +84,7 @@ end
 function Dial:update()
     if not Dial.super.update(self) then return end
 
-    if self.isSelected() then
+    if self._isUpdating then
         local low = self._lowLimit
         local upp = self._uppLimit
         self._prevValue = self.value

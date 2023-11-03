@@ -89,6 +89,12 @@ function UIElement:init(coreProps)
     h = h // 1
     self.name = name
 
+    -- boolean props controlling the UIElement's visibility and interactivity
+    -- May be modified by the ui.switch package.
+    self._isOnScreen = false
+    self._isUpdating = true
+    self._isInteractable = false
+
     -- position props
     self.position = {
         default = newPoint(0, 0),
@@ -133,20 +139,8 @@ function UIElement:init(coreProps)
     self._children = {}     -- list of UIElements this panel parents
     self._i_selectChild = 1 -- index of currently selected child
 
-    --- Determines if this UIElement is selected, ie. "focused on".
-    ---@return boolean true if the element's selection criteria are met
-    self.isSelected = function()
-        if not self._isConfigured then d.log("uielement '" .. self.name .. "' select criteria not set") end
-        return true
-    end
-    self._wasSelected = false -- isSelected() was true on previous update
-    --- Called once each time a deselected element becomes selected
-    self.justSelectedAction = function () end
-    --- Called once each time selected element becomes deselected
-    self.justDeselectedAction = function () end
-
     --- Enables/disables this UIElement.
-    --- If setEnablingCriteria() is not called on this element, it will remain disabled by default.
+    --- If setOnScreenCriteria() is not called on this element, it will remain disabled by default.
     self._switch = Switch(self)
     self._switch.shouldClose = function()
         if not self._isConfigured then d.log("uielement '" .. self.name .. "' disabled! Set enabling conditions.") end
@@ -175,23 +169,9 @@ end
 
 --- Drives the element.
 ---@return boolean whether the element should take up user input this frame.
+--TODO ^^ this user input-preventing mechanism should be deprecated when self._isInteractable is introduced
 function UIElement:update()
     UIElement.super.update(self)
-
-    -- handle animation to position on screen, depending on state of UI
-    if self:isSelected() then
-        if not self._wasSelected then
-            self.justSelectedAction()
-            self:reposition(self:getPointPosition(), self.position.default + self.position.offsets.selected)
-        end
-        self._wasSelected = true
-    else
-        if self._wasSelected then
-            self.justDeselectedAction()
-            self:reposition(self:getPointPosition(), self.position.default)
-        end
-        self._wasSelected = false
-    end
 
     if self.fg_anim and not self.fg_anim.paused then
         self:redraw()
@@ -478,10 +458,10 @@ end
 
 --- Parents another UIElement.
 ---@param e table of child UIElements, or a single UIElement
----@param parentEnables boolean (option) child is enabled/disabled when parent is enabled/disabled
+---@param alwaysOnScreenWithParent boolean (option) child is enabled/disabled when parent is enabled/disabled
 ---@return table of successfully added child UIElements
 ---SPEC EFFECT  overrides each child's ZIndex to be relative to parent above its new parent
-function UIElement:addChildren(e, parentEnables)
+function UIElement:addChildren(e, alwaysOnScreenWithParent)
     if not e or type(e) == 'boolean' or type(e) == 'string' then
         d.log("no children to add to " .. self.name)
         return {}
@@ -499,8 +479,8 @@ function UIElement:addChildren(e, parentEnables)
         element._parent = self
         insert(self._children, element)
         insert(newChildren, element)
-        if parentEnables then
-            element:setEnablingCriteria(function() return self:isEnabled() end)
+        if alwaysOnScreenWithParent then
+            element:setOnScreenCriteria(function() return self:isOnScreen() end)
         end
         element:setPosition(element.position.default + newVector(self.position.default:unpack()))
         element:setZIndex(element:getZIndex() + self:getZIndex())
@@ -519,10 +499,14 @@ end
 --- Add element to global sprites list and animate it into position.
 function UIElement:add()
     UIElement.super.add(self)
+    self._isOnScreen = true
     self:reposition(self.position.default + self.position.offsets.disabled, self.position.default)
 end
 
+--- Remove element from global sprites list, first animating it offscreen.
+--- Also deselects the element.
 function UIElement:remove()
+    self._isOnScreen = false
     self:reposition(self:getPointPosition(), self.position.default + self.position.offsets.disabled, function()
         UIElement.super.remove(self)
         self._wasSelected = false
@@ -578,24 +562,55 @@ function UIElement:forceConfigured()
     self._isConfigured = true
 end
 
---- Set the conditions under which this UIElement should be visible and enabled
----@param conditions function that returns a boolean if the conditions have been met
-function UIElement:setEnablingCriteria(conditions)
+--- Set the conditions under which this UIElement should render onto the screen. 
+---@param conditions function that returns a boolean if the conditions for rendering have been met
+function UIElement:setOnScreenCriteria(conditions)
     if type(conditions) ~= 'function' then
-        d.log(self.name .. "-enabling conditions must be func", conditions)
+        d.log(self.name .. "-OnScreen conditions must be func", conditions)
         return
     end
 
-    -- existing switch will be garbage-collected
-    if self._switch then self._switch:remove() end
-    self._switch = Switch(self)
-    self._switch.shouldClose = conditions
-    self._switch:add()
+    if not self._switch then
+        self._switch = Switch(self)
+        self._switch:add()
+    end
+    self._switch.shouldBeOnScreen = conditions
 end
 
-function UIElement:isEnabled()
-    --if self._switch.isClosed then d.log(self.name .. " is enabled.") end
-    return self._switch.isClosed
+--- Check if the UIElement is being rendered onto the screen.
+---@return boolean
+function UIElement:isOnScreen()
+    return self._isOnScreen
+end
+
+--- Set the conditions under which this UIElement should run custom (ex dial-specific) update code. 
+---@param conditions function that returns a boolean if the conditions for custom updates have been met
+function UIElement:setUpdatingCriteria(conditions)
+    if type(conditions) ~= 'function' then
+        d.log(self.name .. "-Updating conditions must be func", conditions)
+        return
+    end
+
+    if not self._switch then
+        self._switch = Switch(self)
+        self._switch:add()
+    end
+    self._switch.shouldUpdate = conditions
+end
+
+--- Set the conditions under which this UIElement should be interactable. 
+---@param conditions function that returns a boolean if the conditions for interactivity have been met
+function UIElement:setInteractivityCriteria(conditions)
+    if type(conditions) ~= 'function' then
+        d.log(self.name .. "-Interactivity conditions must be func", conditions)
+        return
+    end
+
+    if not self._switch then
+        self._switch = Switch(self)
+        self._switch:add()
+    end
+    self._switch.shouldBeInteractable = conditions
 end
 
 -- pkg footer: pack and export the namespace.
