@@ -225,6 +225,7 @@ local function init(timers)
     local function makeTimerUI (list, timers, cursor)
         local font_settingDial = gfx.font.new(SETTING_DIAL.FONT.PATH)
         local font_faceDial = gfx.font.new(FACE_DIAL.FONT.PATH)
+
         local function makeOneTimerUI(t, label)
             local name = t.name
             local isSelectable = false

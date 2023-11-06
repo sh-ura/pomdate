@@ -5,12 +5,7 @@ local _G = _G
 
 import 'ui/uielement'
 
-local pd <const> = playdate
 local d <const> = debugger
-local gfx <const> = pd.graphics
-local utils <const> = utils
-local d <const> = debugger
-local insert <const> = table.insert
 local Object <const> = Object
 local pairs <const> = pairs
 local UIElement <const> = UIElement

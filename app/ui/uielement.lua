@@ -4,7 +4,7 @@ uielement = {}; local _G = _G
 
 import 'CoreLibs/easing'
 import 'CoreLibs/animator'
-import 'ui/switch'
+import 'ui/middleware/switch'
 import 'ui/animation'
 
 local pd <const> = playdate
@@ -46,6 +46,48 @@ local UIElement <const> = UIElement
 local _ENV = uielement -- enter pkg namespace
 name = "uielement"
 
+---Actions whose initiation/completion may be depended upon by UIElements.
+dependableActions = {
+    enteringScreen = "entering",
+    exitingScreen = "exiting"
+}
+---Check if an action is a member of uielement.dependableActions
+---@param str string
+---@return boolean true iff member
+local function isaDependableAction(str)
+    for _, v in pairs(dependableActions) do
+        if v == str then return true end
+    end
+    return false
+end
+---Lock a UIElement's relevant dependent locks while it does some action.
+---Remember to call unlockDependents (below) when action is done.
+---@param e UIElement
+---@param action string a member of uielement.dependableActions
+local function lockDependents(e, action)
+    if not (e and e.isaUIElement and e._locks) then return end -- class.isa() not working
+    if not (action and isaDependableAction(action)) then return end
+    local locks = e._locks[action]
+    if not locks then return end
+
+    for _, lock in ipairs(locks) do
+        lock:lock()
+    end
+end
+---Unlock a UIElement's relevant dependent locks upon completion of some action.
+---@param e UIElement
+---@param action string a member of uielement.dependableActions
+local function unlockDependents(e, action)
+    if not (e and e.isaUIElement and e._locks) then return end -- class.isa() not working
+    if not (action and isaDependableAction(action)) then return end
+    local locks = e._locks[action]
+    if not locks then return end
+
+    for _, lock in ipairs(locks) do
+        lock:unlock()
+    end
+end
+
 --- Initializes a new UIElement sprite.
 ---@param coreProps table containing the following core properties, named or array-indexed:
 ---         'name' or 1: (string) button name for debugging
@@ -54,6 +96,7 @@ name = "uielement"
 function UIElement:init(coreProps)
     UIElement.super.init(self)
     self:setCenter(0, 0) --anchor top-left
+    self.isaUIElement = true
 
     -- unpack coreProps
     local name, w, h
@@ -94,6 +137,9 @@ function UIElement:init(coreProps)
     self._isOnScreen = false
     self._isUpdating = true
     self._isInteractable = false
+
+    --- prop to contain dependent locks, which are to be locked while doing some task
+    self._locks = {}
 
     -- position props
     self.position = {
@@ -500,6 +546,7 @@ end
 function UIElement:add()
     UIElement.super.add(self)
     self._isOnScreen = true
+    lockDependents(self, dependableActions.enteringScreen)
     self:reposition(self.position.default + self.position.offsets.disabled, self.position.default)
 end
 
@@ -511,6 +558,7 @@ function UIElement:remove()
         UIElement.super.remove(self)
         self._wasSelected = false
     end)
+    unlockDependents(self, dependableActions.exitingScreen)
 end
 
 --- Moves the UIElement and its children
@@ -611,6 +659,21 @@ function UIElement:setInteractivityCriteria(conditions)
         self._switch:add()
     end
     self._switch.shouldBeInteractable = conditions
+end
+
+function UIElement:lockWhile(action, lock)
+    if not (action and isaDependableAction(action)) then
+        d.log("attempt to depend on invalid action for "..self.name)
+        return
+    end
+    if not (lock and lock.lock and lock.unlock) then
+        d.log("attempt to set invalid dependent lock for "..self.name)
+        return
+    end
+
+    local locks = self._locks
+    if not locks[action] then locks[action] = {} end
+    insert(locks[action], lock)
 end
 
 -- pkg footer: pack and export the namespace.

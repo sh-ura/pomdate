@@ -17,7 +17,7 @@ local utils <const> = utils
 --local externalfunc <const> = somepkg.func --TODO any other external vars go here
 
 ---TODO Class desc
-class('Class').extends(gfx.sprite)
+class('Class').extends()
 local Class <const> = Class
 local _ENV = package      -- enter pkg namespace
 name = "package"
