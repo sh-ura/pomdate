@@ -58,10 +58,12 @@ function Switch:update()
             end
         end
 
-        if self.shouldBeInteractable then --TODO first implement it like this, then with locks in a later commit
-            if uielement._isInteractable and not self.shouldBeInteractable() then
+        if self.shouldBeInteractable ~= nil then
+            local shouldBeInteractable = self.shouldBeInteractable()
+
+            if uielement._isInteractable and not shouldBeInteractable then
                 uielement._isInteractable = false
-            elseif not uielement._isInteractable and self.shouldBeInteractable() then
+            elseif not uielement._isInteractable and shouldBeInteractable then
                 uielement._isInteractable = true
             end
         end

@@ -45,7 +45,6 @@ end
 ---TODO desc
 function Cursor:update()
     Cursor.super.update(self)
-    --if not Cursor.super.update(self) then return end
 
     local selectedTargets = 0
 

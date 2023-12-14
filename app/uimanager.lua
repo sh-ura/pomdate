@@ -11,6 +11,7 @@ import 'ui/textbox'
 import 'ui/cursor'
 import 'ui/uielement'
 import 'ui/animation'
+import 'ui/middleware/lock'
 import 'rendering/spinner'
 import 'rendering/reel'
 import 'rendering/buttonswitch'
@@ -93,6 +94,22 @@ local function getCrankDialCircuitClosure()
     return crankDialSwitchIsClosed
 end
 
+-- Lock UIElement interactivity while other UIElements are transitioning on/offscreen
+local locks = {
+    menu = {
+        entering = nil,
+        exiting = nil
+    },
+    runTimer = {
+        entering = nil,
+        exiting = nil
+    },
+    doneTimer = {
+        entering = nil,
+        exiting = nil
+    }
+}
+
 --TODO rm most of these - those that are not needed outside of specific funcs
 local timersMenu = nil  -- contains the buttons for selecting timers --TODO move to init
 local durationDials = {} -- visualize/manipulate timer durations --TODO move to init
@@ -121,6 +138,15 @@ local function drawButtonShapeAB(width, height, x, y)
     end
     gfx.setColor(COLOR_1)
     gfx.fillRoundRect(x, y, width, height, width/2)
+end
+
+local function initLocks()
+    locks.menu.entering = Lock("enteringMenu")
+    locks.menu.exiting = Lock("exitingMenu")
+    locks.runTimer.entering = Lock("enteringRunTimer")
+    locks.runTimer.exiting = Lock("exitingRunTimer")
+    locks.doneTimer.entering = Lock("enteringRunTimer")
+    locks.doneTimer.exiting = Lock("exitingRunTimer")
 end
 
 --- Draws the crank-dial circuit UI for setting the pomodoro timer with the crank.
@@ -204,6 +230,119 @@ local function initCrankDialCircuit()
     wire:addChildren({switch, preSwitchLED, postSwitchLED}, 'alwaysOnScreenWithParent')
 end
 
+--- Populate timersMenu with the timer-selecting/-configuring UIElements that are
+---     to be displayed on the MENU screen.
+---@param list List to contain the timer-selecting buttons
+---@param timers table all Timers to make selectors for,
+---                 in {t, label} k-v tuples,
+---                 in the sequence they should appear.
+---@param cursor Cursor (optional) to point to the buttons
+local function makeTimerUI (list, timers, cursor)
+    local font_settingDial = gfx.font.new(SETTING_DIAL.FONT.PATH)
+    local font_faceDial = gfx.font.new(FACE_DIAL.FONT.PATH)
+
+    local function makeOneTimerUI(t, label)
+        local name = t.name
+        local isSelectable = false
+        if label then isSelectable = true end       -- timer can be selected from menu
+        local button = nil          -- timer-selecting button, if any
+        local dial = nil            -- timer-duration-setting dial, if any
+        local face = nil            -- timer clock-face
+
+        if isSelectable then       -- selectable timer
+            -- timer-selecting button
+            button = Button({name .. "Button", BUTTONS.L.WIDTH, BUTTONS.M.HEIGHT})
+            timerSelectButtons[name] = button
+            button:setSound("touched", snd.sampleplayer.new(SOUND.timerButtonPressed.paths[name]), SOUND.timerButtonPressed.volume)
+            button:setSound("selected", snd.sampleplayer.new(SOUND.timerButtonSelected.paths[name]), SOUND.timerButtonSelected.volume)
+            button:setInteractivityCriteria(stateIsMENU)
+            button.isPressed = function() return pd.buttonJustPressed(A) end
+            button:setBackground(function(width, height)
+                local w_line = 8 -- must be even
+                gfx.setColor(COLOR_1)
+                gfx.fillRoundRect(0, 0, width, height, height//2)
+                gfx.setColor(COLOR_0)
+                gfx.fillRoundRect(w_line//2, w_line//2, width - w_line, height - w_line, (height - w_line)/2)
+            end)
+            button:setFont(gfx.getFont())
+            button:setText(label)
+            button:offsetPositions({selected = newVector(-BUTTONS.TRAVEL_DISTANCE, 0)})
+            button:lockWhile(button.dependableActions.enteringScreen, locks.menu.entering)
+            button:setInteractivityCriteria(locks.menu.entering.checkIfUnlocked)
+
+            ---[[ -- Toggle color inversion on selected button
+            button.justSelectedAction = function()
+                button.sounds.selected:play(1)
+                button:setImageDrawMode(gfx.kDrawModeInverted)
+            end
+            button.justDeselectedAction = function()
+                button:setImageDrawMode(gfx.kDrawModeCopy)
+            end
+            --]]
+
+            if cursor then
+                cursor:addTarget(button, function ()
+                    return button:getConfiguredPosition("selected") + newVector(button.width + MARGIN, 0)
+                end)
+            end
+
+            -- timer-setting dial
+            dial = Dial({name .. "SettingDial", SETTING_DIAL.WIDTH/SETTING_DIAL.FONT.SCALE, SETTING_DIAL.HEIGHT/SETTING_DIAL.FONT.SCALE}, 1, 60)
+            durationDials[name] = dial
+            dial:setOnScreenCriteria(function() return
+                button:isOnScreen()
+                and button.isSelected()
+            end)
+            dial:setUpdatingCriteria(getCrankDialCircuitClosure)
+            dial.getDialChange = crankhandler.subscribe(60//CRANK_DIAL_CIRCUIT.REVOLS_PER_HOUR)
+            --dial:setUnit("min")
+            dial:setValue(initialDurations[name])
+            dial:setBackground(function(width, height)
+                gfx.setColor(COLOR_1)
+                gfx.fillRect(0, 0, width, height)
+            end)
+            dial:setFont(font_settingDial, gfx.kDrawModeInverted)
+            dial:setScale(SETTING_DIAL.FONT.SCALE)
+            dial:setPosition(MARGIN, MARGIN)
+            local renderText = dial.renderText
+            dial.renderText = function () -- render 1-digit values with a space in the tens position
+                if string.len(dial.text) == 1 then dial.text = " " .. dial.text end
+                renderText()
+            end
+            dial:setZIndex(timersMenu:getZIndex() - 10)
+        end
+
+        -- timer's clock face
+        face = Dial({name .. "FaceDial", FACE_DIAL.WIDTH // FACE_DIAL.FONT.SCALE, FACE_DIAL.HEIGHT // FACE_DIAL.FONT.SCALE})
+        face.getDialValue = function () return t:getClockTime() end
+        face:setOnScreenCriteria(function () return t:isActive() end)
+        face:setFont(font_faceDial)
+        face:setScale(FACE_DIAL.FONT.SCALE)
+        face:setPosition(W_CENTRE - face.width / 2, FACE_DIAL.Y)
+        --[[ -- Check timer face sprite location
+        local update = face.update
+        face.update = function (self)
+            d.illustrateBounds(self)
+            update(self)
+        end
+        --]]
+
+        -- TODO move func def below to be local func more visible at root of this file
+        if isSelectable then           -- selectable timer
+            button.pressedAction = function ()
+                face:setValue(dial.value)
+                toRun(t, dial.value)
+            end
+        end
+        return button
+    end
+
+    for _, timer in pairs(timers) do
+        local button = makeOneTimerUI(timer.t, timer.label)
+        if button then list:addChildren(button, 'alwaysOnScreenWithParent') end
+    end
+end
+
 --TODO much of this no longer needs to be in init
 -- ex. a addTimerSelector() could be called by main to add each timer selector
 --      the timersMenu.
@@ -215,117 +354,11 @@ end
 ---                 param   t       Timer
 ---                 param   label   string  to set to selector button. If not provided, timer is not selectable (ex. snooze)
 local function init(timers)
-    --- Populate timersMenu with the timer-selecting/-configuring UIElements that are
-    ---     to be displayed on the MENU screen.
-    ---@param list List to contain the timer-selecting buttons
-    ---@param timers table all Timers to make selectors for,
-    ---                 in {t, label} k-v tuples,
-    ---                 in the sequence they should appear.
-    ---@param cursor Cursor (optional) to point to the buttons
-    local function makeTimerUI (list, timers, cursor)
-        local font_settingDial = gfx.font.new(SETTING_DIAL.FONT.PATH)
-        local font_faceDial = gfx.font.new(FACE_DIAL.FONT.PATH)
+    -- initialize screen-transition interactivity locks
+    initLocks()
 
-        local function makeOneTimerUI(t, label)
-            local name = t.name
-            local isSelectable = false
-            if label then isSelectable = true end       -- timer can be selected from menu
-            local button = nil          -- timer-selecting button, if any
-            local dial = nil            -- timer-duration-setting dial, if any
-            local face = nil            -- timer clock-face
 
-            if isSelectable then       -- selectable timer
-                -- timer-selecting button
-                button = Button({name .. "Button", BUTTONS.L.WIDTH, BUTTONS.M.HEIGHT})
-                timerSelectButtons[name] = button
-                button:setSound("touched", snd.sampleplayer.new(SOUND.timerButtonPressed.paths[name]), SOUND.timerButtonPressed.volume)
-                button:setSound("selected", snd.sampleplayer.new(SOUND.timerButtonSelected.paths[name]), SOUND.timerButtonSelected.volume)
-                button:setInteractivityCriteria(stateIsMENU)
-                button.isPressed = function() return pd.buttonJustPressed(A) end
-                button:setBackground(function(width, height)
-                    local w_line = 8 -- must be even
-                    gfx.setColor(COLOR_1)
-                    gfx.fillRoundRect(0, 0, width, height, height//2)
-                    gfx.setColor(COLOR_0)
-                    gfx.fillRoundRect(w_line//2, w_line//2, width - w_line, height - w_line, (height - w_line)/2)
-                end)
-                button:setFont(gfx.getFont())
-                button:setText(label)
-                button:offsetPositions({selected = newVector(-BUTTONS.TRAVEL_DISTANCE, 0)})
-
-                ---[[ -- Toggle color inversion on selected button
-                button.justSelectedAction = function()
-                    button.sounds.selected:play(1)
-                    button:setImageDrawMode(gfx.kDrawModeInverted)
-                end
-                button.justDeselectedAction = function()
-                    button:setImageDrawMode(gfx.kDrawModeCopy)
-                end
-                --]]
-
-                if cursor then
-                    cursor:addTarget(button, function ()
-                        return button:getConfiguredPosition("selected") + newVector(button.width + MARGIN, 0)
-                    end)
-                end
-
-                -- timer-setting dial
-                dial = Dial({name .. "SettingDial", SETTING_DIAL.WIDTH/SETTING_DIAL.FONT.SCALE, SETTING_DIAL.HEIGHT/SETTING_DIAL.FONT.SCALE}, 1, 60)
-                durationDials[name] = dial
-                dial:setOnScreenCriteria(function() return
-                    button:isOnScreen()
-                    and button.isSelected()
-                end)
-                dial:setUpdatingCriteria(getCrankDialCircuitClosure)
-                dial.getDialChange = crankhandler.subscribe(60//CRANK_DIAL_CIRCUIT.REVOLS_PER_HOUR)
-                --dial:setUnit("min")
-                dial:setValue(initialDurations[name])
-                dial:setBackground(function(width, height)
-                    gfx.setColor(COLOR_1)
-                    gfx.fillRect(0, 0, width, height)
-                end)
-                dial:setFont(font_settingDial, gfx.kDrawModeInverted)
-                dial:setScale(SETTING_DIAL.FONT.SCALE)
-                dial:setPosition(MARGIN, MARGIN)
-                local renderText = dial.renderText
-                dial.renderText = function () -- render 1-digit values with a space in the tens position
-                    if string.len(dial.text) == 1 then dial.text = " " .. dial.text end
-                    renderText()
-                end
-                dial:setZIndex(timersMenu:getZIndex() - 10)
-            end
-
-            -- timer's clock face
-            face = Dial({name .. "FaceDial", FACE_DIAL.WIDTH // FACE_DIAL.FONT.SCALE, FACE_DIAL.HEIGHT // FACE_DIAL.FONT.SCALE})
-            face.getDialValue = function () return t:getClockTime() end
-            face:setOnScreenCriteria(function () return t:isActive() end)
-            face:setFont(font_faceDial)
-            face:setScale(FACE_DIAL.FONT.SCALE)
-            face:setPosition(W_CENTRE - face.width / 2, FACE_DIAL.Y)
-            --[[ -- Check timer face sprite location
-            local update = face.update
-            face.update = function (self)
-                d.illustrateBounds(self)
-                update(self)
-            end
-            --]]
-
-            -- TODO move func def below to be local func more visible at root of this file
-            if isSelectable then           -- selectable timer
-                button.pressedAction = function ()
-                    face:setValue(dial.value)
-                    toRun(t, dial.value)
-                end
-            end
-            return button
-        end
-
-        for _, timer in pairs(timers) do
-            local button = makeOneTimerUI(timer.t, timer.label)
-            if button then list:addChildren(button, 'alwaysOnScreenWithParent') end
-        end
-    end
-
+    -- create the timer-selecting and timer-face UI
     local ntimers = #timers
     timersMenu = List(
         {"timersMenu",
@@ -357,11 +390,15 @@ local function init(timers)
 
     makeTimerUI(timersMenu, timers, cursor)
 
+
+    -- create signage
     local timerDoneSign = UIElement({"timerDoneSign", 300, 100}) -- simple textbox
     timerDoneSign:setText("NEXT")
     timerDoneSign:setPosition(MARGIN, MARGIN)
     timerDoneSign:setOnScreenCriteria(stateIsDONE_TIMER)
     timerDoneSign:forceConfigured()
+
+    -- create the A/B buttons used to navigate most of the timer/menu flow
 
     --- Initialize a button that sits directly above the A or B buttons
     ---@param name string button name
@@ -399,10 +436,12 @@ local function init(timers)
         stateIsRUN_TIMER()
         or stateIsDONE_TIMER()
     end)
+    --[[
     backButton:setInteractivityCriteria(function() return
         stateIsRUN_TIMER()
         or stateIsDONE_TIMER()
     end)
+    --]] --TODO uncomment
     --local backIconRender = BackIcon("backButtonIcon", 14, 14, COLOR_0)
     --backButton:setForeground(backIconRender.imagetable)
     backButton:setForeground(gfx.image.new(ICON.backPath))
@@ -412,7 +451,8 @@ local function init(timers)
         toDone() --TODO should be a distinct function in main
     end
     skipButton:setOnScreenCriteria(stateIsRUN_TIMER)
-    skipButton:setInteractivityCriteria(stateIsRUN_TIMER)
+    --TODO BUG will collide with the setInteractivityCriteria call in Button:init
+    --skipButton:setInteractivityCriteria(stateIsRUN_TIMER) --TODO uncomment
     skipButton:setForeground(gfx.image.new(ICON.skipPath))
 
     snoozeButton = makeABButton("snooze", B)
@@ -421,7 +461,7 @@ local function init(timers)
         stateIsDONE_TIMER()
         and confs.snoozeOn
     end)
-    snoozeButton:setInteractivityCriteria(stateIsDONE_TIMER)
+    --snoozeButton:setInteractivityCriteria(stateIsDONE_TIMER) --TODO uncomment
     snoozeButton:setForeground(gfx.image.new(ICON.snoozePath))
 
     -- The next button is an invisible button parenting a dial that makes up the appearance of the button.
@@ -431,11 +471,12 @@ local function init(timers)
         toMenu()
     end
     nextButton:setOnScreenCriteria(stateIsDONE_TIMER)
-    nextButton:setInteractivityCriteria(stateIsDONE_TIMER)
+    --nextButton:setInteractivityCriteria(stateIsDONE_TIMER) --TODO uncomment
     nextButton:setForeground(gfx.image.new(ICON.nextPath)) --TODO rm
     local nextButtonVisualizer = Dial({"nextButtonVisualizer", BUTTONS.L.HEIGHT,BUTTONS.TRAVEL_DISTANCE - MARGIN})
     nextButton:addChildren(nextButtonVisualizer, "alwaysOnScreenWithParent")
     nextButtonVisualizer.getDialValue = getSnoozeCount
+
 
     --- Initialize a score display.
     ---@param scoringFunc function that returns the score when called

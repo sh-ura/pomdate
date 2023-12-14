@@ -46,28 +46,26 @@ local UIElement <const> = UIElement
 local _ENV = uielement -- enter pkg namespace
 name = "uielement"
 
----Actions whose initiation/completion may be depended upon by UIElements.
-dependableActions = {
-    enteringScreen = "entering",
-    exitingScreen = "exiting"
-}
----Check if an action is a member of uielement.dependableActions
+---Check if an action is a member of a uielement's dependableActions
+---@param e UIElement
 ---@param str string
 ---@return boolean true iff member
-local function isaDependableAction(str)
-    for _, v in pairs(dependableActions) do
+local function isaDependableAction(e, str)
+    if not (e and e.isaUIElement) then return false end
+    for _, v in pairs(e.dependableActions) do
         if v == str then return true end
     end
     return false
 end
+
 ---Lock a UIElement's relevant dependent locks while it does some action.
----Remember to call unlockDependents (below) when action is done.
----@param e UIElement
+---Remember to call _unlockDependents (below) when action is done.
 ---@param action string a member of uielement.dependableActions
-local function lockDependents(e, action)
-    if not (e and e.isaUIElement and e._locks) then return end -- class.isa() not working
-    if not (action and isaDependableAction(action)) then return end
-    local locks = e._locks[action]
+function UIElement:_lockDependents(action)
+    d.log("attempting to lock dependents for "..self.name)
+    if not self._locks then return end -- class.isa() not working
+    if not (action and isaDependableAction(self, action)) then return end
+    local locks = self._locks[action]
     if not locks then return end
 
     for _, lock in ipairs(locks) do
@@ -75,13 +73,18 @@ local function lockDependents(e, action)
     end
 end
 ---Unlock a UIElement's relevant dependent locks upon completion of some action.
----@param e UIElement
 ---@param action string a member of uielement.dependableActions
-local function unlockDependents(e, action)
-    if not (e and e.isaUIElement and e._locks) then return end -- class.isa() not working
-    if not (action and isaDependableAction(action)) then return end
-    local locks = e._locks[action]
-    if not locks then return end
+function UIElement:_unlockDependents(action)
+    if not self._locks then
+        return
+    end -- class.isa() not working
+    if not (action and isaDependableAction(self, action)) then
+        return
+    end
+    local locks = self._locks[action]
+    if not locks then
+        return
+    end
 
     for _, lock in ipairs(locks) do
         lock:unlock()
@@ -140,6 +143,12 @@ function UIElement:init(coreProps)
 
     --- prop to contain dependent locks, which are to be locked while doing some task
     self._locks = {}
+
+    ---Actions whose initiation/completion may be depended upon by other UIElements.
+    self.dependableActions = {
+        enteringScreen = "entering",
+        exitingScreen = "exiting"
+    }
 
     -- position props
     self.position = {
@@ -544,21 +553,24 @@ end
 
 --- Add element to global sprites list and animate it into position.
 function UIElement:add()
+    self:_lockDependents(self.dependableActions.enteringScreen)
     UIElement.super.add(self)
     self._isOnScreen = true
-    lockDependents(self, dependableActions.enteringScreen)
-    self:reposition(self.position.default + self.position.offsets.disabled, self.position.default)
+    self:reposition(self.position.default + self.position.offsets.disabled, self.position.default, function ()
+        self:_unlockDependents(self.dependableActions.enteringScreen)
+    end)
 end
 
 --- Remove element from global sprites list, first animating it offscreen.
 --- Also deselects the element.
 function UIElement:remove()
+    self:_lockDependents(self.dependableActions.exitingScreen)
     self._isOnScreen = false
     self:reposition(self:getPointPosition(), self.position.default + self.position.offsets.disabled, function()
         UIElement.super.remove(self)
         self._wasSelected = false
+        self:_unlockDependents(self.dependableActions.exitingScreen)
     end)
-    unlockDependents(self, dependableActions.exitingScreen)
 end
 
 --- Moves the UIElement and its children
@@ -658,11 +670,16 @@ function UIElement:setInteractivityCriteria(conditions)
         self._switch = Switch(self)
         self._switch:add()
     end
+    d.log("Interactivity Conditions being set for "..self.name)
     self._switch.shouldBeInteractable = conditions
 end
 
+--- When this element begins performing an action, lock given lock.
+--- When action completes, unlock it.
+---@param action string member of the .dependableActions property for this UIElement
+---@param lock Lock to lock during action
 function UIElement:lockWhile(action, lock)
-    if not (action and isaDependableAction(action)) then
+    if not (action and isaDependableAction(self, action)) then
         d.log("attempt to depend on invalid action for "..self.name)
         return
     end

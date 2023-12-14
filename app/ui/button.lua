@@ -4,6 +4,7 @@ button = {}
 local _G = _G
 
 import 'ui/uielement'
+import 'ui/middleware/lock'
 
 local pd <const> = playdate
 local gfx <const> = pd.graphics
@@ -14,6 +15,7 @@ local COLOR_0 <const> = COLOR_0
 local COLOR_1 <const> = COLOR_1
 local COLOR_CLEAR <const> = COLOR_CLEAR
 local pairs = pairs
+local Lock <const> = Lock
 
 ---@class Button is a UI element governing some behaviour if selected.
 --- A button, when pressed, may modify global state indicators and animate itself.
@@ -40,8 +42,9 @@ function Button:init(coreProps, invisible)
         self:setImage(self._img)
     end
 
+    -- declare button behaviours, to be configured elsewhere, prob by UI Manager
     --- Determines if this button is selected, ie. "focused on".
-    ---@return boolean true if the button's selection criteria are met
+    ---@return boolean true iff the button's selection criteria are met
     self.isSelected = function()
         if not self._isConfigured then d.log("button '" .. self.name .. "' select criteria not set") end
         return true
@@ -52,7 +55,8 @@ function Button:init(coreProps, invisible)
     --- Called once each time selected button becomes deselected
     self.justDeselectedAction = function () end
 
-    -- declare button behaviours, to be configured elsewhere, prob by UI Manager
+    --- Determines if this button is pressed.
+    ---@return boolean true iff the button's press criteria are met.
     self.isPressed = function ()
         if not self._isConfigured then d.log("button '" .. self.name .. "' press criteria not set") end
         return false
@@ -64,12 +68,17 @@ function Button:init(coreProps, invisible)
     self.position.offsets.pressed = newVector(0,0)
     self.justReleasedAction = function () end -- optional action to take when button is released, one time per press
 
+    self.dependableActions.pressed = "pressed"
+    local lock = Lock(self.name .. "IsPressed")
+    self:lockWhile(self.dependableActions.pressed, lock)
+    self:setInteractivityCriteria(lock.checkIfUnlocked)
+
     self._isConfigured = true
 end
 
 --- Updates the button UIElement.
 function Button:update()
-    if not Button.super.update(self) then return end
+    Button.super.update(self)
 
     if not self._isInteractable then return end
     if self.isSelected() then
@@ -84,6 +93,7 @@ function Button:update()
 
         if self.isPressed() then
             --d.log(self.name .. " is pressed")
+            self:_lockDependents(self.dependableActions.pressed)
 
             if not self._wasPressed then
                 if self.sounds.touched then self.sounds.touched:play(1) end
@@ -96,8 +106,10 @@ function Button:update()
                 self:getPointPosition(),
                 selectedPosition + self.position.offsets.pressed,
                 function ()
+                    d.log("reposition callback for "..self.name) --TODO rm
                     if self.sounds.clicked then self.sounds.clicked:play(1) end
                     self.pressedAction()
+                    self:_unlockDependents(self.dependableActions.pressed)
                 end,
                 reverses)
             self._wasPressed = true
@@ -107,6 +119,8 @@ function Button:update()
             self._wasPressed = false
         end
     else
+        --TODO POTENTIAL BUG if crank circuit B switch is fucky, the problem is probs that:
+        -- the button is being locked until it completes animation, so this line is not being reached until posn anim finishes
         if self._wasSelected then
             self.justDeselectedAction()
             self:reposition(self:getPointPosition(), self.position.default)

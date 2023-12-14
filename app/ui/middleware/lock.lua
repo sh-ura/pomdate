@@ -30,10 +30,10 @@ function Lock:init(name)
     local bolts = 0
 
     --- To be used by a dependency to lock the lock.
-    lock.lock = function () bolts = bolts + 1 end
+    self.lock = function () bolts = bolts + 1 end
 
     --- To be used by a dependency to unlock the lock.
-    lock.unlock = function ()
+    self.unlock = function ()
         bolts = bolts - 1
         if bolts < 0 then bolts = 0 end --this shouldn't happen tho
     end
@@ -53,7 +53,7 @@ function Lock:init(name)
 
     --- To be used by a dependent in action-permission decision-making.
     ---@return boolean true iff the lock is unlocked, hence there are no blocking dependencies.
-    lock.checkIfUnlocked = function () return bolts <= 0 end
+    self.checkIfUnlocked = function () return bolts <= 0 end
 end
 
 -- pkg footer: pack and export the namespace.
