@@ -74,7 +74,7 @@ local function init()
     debugger.disable() --TODO uncomment
     --render.bakeAll("force bake all future renders")
     render.disableWriting() --TODO once all renders are refactored, go into data folder and delete the assets subfolder
-    drawFPS = true --TODO comment out
+    --drawFPS = true --TODO comment out
 
     -- snooze duration is in the confs data file
     d.log("attempting to load state: durations")
