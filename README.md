@@ -1,7 +1,7 @@
 # pomdate
 Pomodoro timer for Playdate. In development.
 
-![gif of the pomdate menu screen][menu] ![gif of the pomdate run-timer screen][run]
+<img src="docs/gifs/2023-01-18_menu.gif" width="240" height="144"> <img src="docs/gifs/2023-01-18_run.gif" width="240" height="144">
 
 <!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} -->
 
@@ -62,6 +62,3 @@ Various tracks from the [Two Months of Moments](https://steviasphere.bandcamp.co
 ### SFX
 
 Sound effects sourced (and in some cases remixed) from the [Cassette](https://shapeforms.itch.io/cassette) and [Future UI](https://shapeforms.itch.io/future-ui) sound libraries by [Shapeforms](https://shapeforms.itch.io/).
-
-[menu]: docs/gifs/2023-01-18_menu.gif "pomdate menu screen"
-[run]: docs/gifs/2023-01-18_run.gif "pomdate run-timer screen"
