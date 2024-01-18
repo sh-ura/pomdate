@@ -1,7 +1,9 @@
 # pomdate
 Pomodoro timer for Playdate. In development.
 
-<img src="docs/gifs/2023-01-18_menu.gif" width="240" height="144"> <img src="docs/gifs/2023-01-18_run.gif" width="240" height="144">
+<img src="docs/gifs/2023-01-18_menu.gif" width="240" height="144">
+
+<img src="docs/gifs/2023-01-18_run.gif" width="240" height="144">
 
 <!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} -->
 
