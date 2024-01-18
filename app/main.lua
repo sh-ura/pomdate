@@ -18,7 +18,27 @@ import "rendering/render"
 
 -- Gives all subsequently-imported project files access to state
 local state = STATES.LOADING
---- Query for the current app state
+
+--- Get the state that precedes the query state.
+---@param queryState integer member of gconsts.STATES
+---@return table containing integer members of gconsts.STATES that precedes the query state.
+function getPrevStates(queryState)
+    if queryState == STATES.MENU then
+        return {STATES.RUN_TIMER, STATES.DONE_TIMER}
+    elseif queryState == STATES.RUN_TIMER then
+        return {STATES.MENU, STATES.DONE_TIMER}
+    elseif queryState == STATES.DONE_TIMER then
+        return {STATS.DONE_TIMER}
+    else return {}
+    end
+end
+
+--- Check that the current state matches the query state.
+---@param queryState integer member of gconsts.STATES
+---@return boolean true iff match when the function is called.
+function stateIs(queryState) return state == queryState end
+
+--TODO deprecate the stateIs funcs below?
 ---@return boolean true iff app state is LOADING mode
 function stateIsLOADING() return state == STATES.LOADING end
 ---@return boolean true iff app state is CONFiguration mode
@@ -29,6 +49,7 @@ function stateIsMENU() return state == STATES.MENU end
 function stateIsRUN_TIMER() return state == STATES.RUN_TIMER end
 ---@return boolean true iff app state is DONE_TIMER mode
 function stateIsDONE_TIMER() return state == STATES.DONE_TIMER end
+
 import "timer"
 import "confmanager"
 import "uimanager"

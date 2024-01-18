@@ -9,6 +9,7 @@ local d <const> = debugger
 local Object <const> = Object
 local pairs <const> = pairs
 local UIElement <const> = UIElement
+local insert <const> = table.insert
 
 --- Switches can turn the UIElement they attach to on and off.
 --- They enable UIElement behaviour that gfx.sprite:remove() otherwise
@@ -41,36 +42,74 @@ function Switch:init(uielement)
     end
 end
 
+--- Check that all conditions return true.
+---@param conditions table containing functions that return a boolean value
+---@return boolean true iff all conditions return true
+local function allConditionsMet(conditions)
+    if not conditions then d.log("no conditions to check") return nil end
+
+    for _, condition in conditions do
+        if condition() ~= true then
+            return false
+        end
+    end
+    return true
+end
+
 function Switch:update()
     local uielement = self._attachedTo
 
     if uielement._isOnScreen then
 
-        if not self.shouldBeOnScreen() then
+        if not allConditionsMet(self.onScreenConditions) then
             uielement:remove()
         end
 
-        if self.shouldUpdate then
-            if uielement._isUpdating and not self.shouldUpdate() then
+        if self.updateConditions then
+            if uielement._isUpdating and not allConditionsMet(self.updateConditions) then
                 uielement._isUpdating = false
-            elseif not uielement._isUpdating and self.shouldUpdate() then
+            elseif not uielement._isUpdating and allConditionsMet(self.updateConditions) then
                 uielement._isUpdating = true
             end
         end
 
-        if self.shouldBeInteractable ~= nil then
-            local shouldBeInteractable = self.shouldBeInteractable()
-
-            if uielement._isInteractable and not shouldBeInteractable then
+        if self.interactivityConditions then
+            if uielement._isInteractable and not allConditionsMet(self.interactivityConditions) then
                 uielement._isInteractable = false
-            elseif not uielement._isInteractable and shouldBeInteractable then
+            elseif not uielement._isInteractable and allConditionsMet(self.interactivityConditions) then
                 uielement._isInteractable = true
             end
         end
 
-    elseif self.shouldBeOnScreen() then
+    elseif allConditionsMet(self.onScreenConditions) then
         uielement:add()
     end
+end
+
+conditionalStatus = {
+    onscreen = "onscreen",
+    updating = "update",
+    interactable = "interactivity"
+}
+---Check if an action is possible conditional status, ie. member of switch.conditionalStatus
+---@param str string
+---@return boolean true iff member
+local function isaConditionalStatus(str)
+    for _, v in pairs(conditionalStatus) do
+        if v == str then return true end
+    end
+    return false
+end
+
+function Switch:addCondition(conditionalStatus, condition)
+    if not isaConditionalStatus(conditionalStatus) then
+        d.log("not a valid member of switch.conditionalStatus")
+        return
+    end
+
+    local conditionsTable = conditionalStatus .. "Conditions"
+    if not self[conditionsTable] then self[conditionsTable] = {} end
+    insert(self[conditionsTable], condition)
 end
 
 --- Add this Switch to the set of switches to be updated each frame

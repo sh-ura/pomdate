@@ -11,6 +11,7 @@ local gfx <const> = pd.graphics
 local utils <const> = utils
 local d <const> = debugger
 local newVector <const> = utils.newVector
+local getPrevState <const> = getPrevState
 local COLOR_0 <const> = COLOR_0
 local COLOR_1 <const> = COLOR_1
 local COLOR_CLEAR <const> = COLOR_CLEAR
@@ -26,14 +27,13 @@ local _ENV = button
 name = "button"
 
 --- Initializes a button UIElement.
----@param coreProps table containing the following core properties, named or array-indexed:
----         'name' or 1: (string) button name for debugging
----         'w' or 2: (integer; optional) initial width, defaults to screen width
----         'h' or 3: (integer; optional) initial height, defaults to screen height
+---@param configs table adhering to the format of uielement.getDefaultConfigs().
+---                 Note that Button will override configs.isInteractable to become true.
 ---@param invisible boolean whether to make the button invisible. Defaults to false, ie. visible
-function Button:init(coreProps, invisible)
+function Button:init(configs, invisible)
     -- TODO give each timer a name
-    Button.super.init(self, coreProps)
+    configs.isInteractable = true
+    Button.super.init(self, configs)
 
     self._isVisible = true
     if invisible then
@@ -71,7 +71,7 @@ function Button:init(coreProps, invisible)
     self.dependableActions.pressed = "pressed"
     local lock = Lock(self.name .. "IsPressed")
     self:lockWhile(self.dependableActions.pressed, lock)
-    self:setInteractivityCriteria(lock.checkIfUnlocked)
+    self:addInteractivityCondition(lock.checkIfUnlocked)
 
     self._isConfigured = true
 end
@@ -92,7 +92,7 @@ function Button:update()
         self._wasSelected = true
 
         if self.isPressed() then
-            --d.log(self.name .. " is pressed")
+            d.log(self.name .. " is pressed")
             self:_lockDependents(self.dependableActions.pressed)
 
             if not self._wasPressed then
@@ -106,7 +106,6 @@ function Button:update()
                 self:getPointPosition(),
                 selectedPosition + self.position.offsets.pressed,
                 function ()
-                    d.log("reposition callback for "..self.name) --TODO rm
                     if self.sounds.clicked then self.sounds.clicked:play(1) end
                     self.pressedAction()
                     self:_unlockDependents(self.dependableActions.pressed)

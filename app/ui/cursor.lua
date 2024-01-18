@@ -18,12 +18,9 @@ local _ENV = cursor     -- enter pkg namespace
 name = "cursor"
 
 --- Initializes a new Cursor instance.
----@param coreProps table containing the following core properties, named or array-indexed:
----         'name' or 1: (string) button name for debugging
----         'w' or 2: (integer; optional) initial width, defaults to screen width
----         'h' or 3: (integer; optional) initial height, defaults to screen height
-function Cursor:init(coreProps)
-    Cursor.super.init(self, coreProps)
+---@param configs table adhering to the format of uielement.getDefaultConfigs()
+function Cursor:init(configs)
+    Cursor.super.init(self, configs)
 
     self._targetWas = nil -- what's currently being pointed to
     self._targets = {} -- array-indexed

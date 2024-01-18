@@ -26,13 +26,10 @@ name = "textbox"
 --local function localfunc() end --TODO local funcs go here
 
 --- Initializes a new Textbox UIElement instance.
----@param coreProps table containing the following core properties, named or array-indexed:
----         'name' or 1: (string) button name for debugging
----         'w' or 2: (integer; optional) initial width, defaults to screen width
----         'h' or 3: (integer; optional) initial height, defaults to screen height
+---@param configs table adhering to the format of uielement.getDefaultConfigs()
 ---@param text string (optional) text to set
-function Textbox:init(coreProps, text)
-    Textbox.super.init(self, coreProps) --should always be at top of init func
+function Textbox:init(configs, text)
+    Textbox.super.init(self, configs) --should always be at top of init func
 
     self.text = self.name .. " no-text"
     if text then self.text = text end

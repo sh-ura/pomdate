@@ -140,15 +140,6 @@ local function drawButtonShapeAB(width, height, x, y)
     gfx.fillRoundRect(x, y, width, height, width/2)
 end
 
-local function initLocks()
-    locks.menu.entering = Lock("enteringMenu")
-    locks.menu.exiting = Lock("exitingMenu")
-    locks.runTimer.entering = Lock("enteringRunTimer")
-    locks.runTimer.exiting = Lock("exitingRunTimer")
-    locks.doneTimer.entering = Lock("enteringRunTimer")
-    locks.doneTimer.exiting = Lock("exitingRunTimer")
-end
-
 --- Draws the crank-dial circuit UI for setting the pomodoro timer with the crank.
 --- The purpose of this UI is to show the user that they should hold B while cranking to modify the timer dial face.
 --- The purpose of holding B is to prevent unintentional time-changing when the crank is bumped.
@@ -158,10 +149,10 @@ local function initCrankDialCircuit()
 
     -- These var names borrow similar-function circuitry vocab,
     --      don't necessarily represent how the sprite looks
-    local wire = UIElement({"wire", w_circuit, h_circuit})
-    local switch = Button({"switch", 60, 60})
-    local preSwitchLED = Dial({"preSwitchLED", 40, 80})
-    local postSwitchLED = Dial({"postSwitchLED", 80, 40})
+    local wire = UIElement({name = "wire", w = w_circuit, h = h_circuit, onscreenStates = {STATES.MENU}})
+    local switch = Button({name = "switch", w=60, h=60})
+    local preSwitchLED = Dial({name = "preSwitchLED", w=40, h=80})
+    local postSwitchLED = Dial({name = "postSwitchLED", w=80, h=40})
     
     local p = { -- wire junctures to draw, in crank -> dial face order
         {x=410, y=100},
@@ -181,7 +172,6 @@ local function initCrankDialCircuit()
         gfx.drawLine(p[5].x, p[5].y, p[5].x, p[6].y)
     end)
     wire:setPosition(0, 100)
-    wire:setOnScreenCriteria(stateIsMENU)
     wire:forceConfigured()
 
     -- TODO we're searching for these files in the wrong place.
@@ -196,7 +186,7 @@ local function initCrankDialCircuit()
         CRANK_DIAL_CIRCUIT.WIRE.WIDTH,
         MARGIN
     )
-    switch:setInteractivityCriteria(stateIsMENU)
+    switch:addInteractivityCondition(stateIsMENU)
     switch:setForeground(switchRender.imagetable)
     switch:setPosition(X_B_BUTTON - BUTTONS.L.HEIGHT/4, h_circuit - switch.height)
     switch.isPressed = function() return pd.buttonIsPressed(B) end
@@ -223,7 +213,7 @@ local function initCrankDialCircuit()
     preSwitchLED:setSound("dialing", snd.fileplayer.new(SOUND.preSwitchLED.path), SOUND.preSwitchLED.volume) --would prefer a sampleplayer here
     postSwitchLED:setForeground(postSwitchLEDRender.imagetable, 16)
     postSwitchLED:setPosition(10, 34)
-    postSwitchLED:setUpdatingCriteria(getCrankDialCircuitClosure)
+    postSwitchLED:addUpdatingCondition(getCrankDialCircuitClosure)
     postSwitchLED.getDialChange = crankhandler.subscribe()
     postSwitchLED:setMode(dial.visualizers.animation)
 
@@ -251,11 +241,11 @@ local function makeTimerUI (list, timers, cursor)
 
         if isSelectable then       -- selectable timer
             -- timer-selecting button
-            button = Button({name .. "Button", BUTTONS.L.WIDTH, BUTTONS.M.HEIGHT})
+            button = Button({name = name .. "Button", w = BUTTONS.L.WIDTH, h = BUTTONS.M.HEIGHT})
             timerSelectButtons[name] = button
             button:setSound("touched", snd.sampleplayer.new(SOUND.timerButtonPressed.paths[name]), SOUND.timerButtonPressed.volume)
             button:setSound("selected", snd.sampleplayer.new(SOUND.timerButtonSelected.paths[name]), SOUND.timerButtonSelected.volume)
-            button:setInteractivityCriteria(stateIsMENU)
+            button:addInteractivityCondition(stateIsMENU)
             button.isPressed = function() return pd.buttonJustPressed(A) end
             button:setBackground(function(width, height)
                 local w_line = 8 -- must be even
@@ -267,8 +257,6 @@ local function makeTimerUI (list, timers, cursor)
             button:setFont(gfx.getFont())
             button:setText(label)
             button:offsetPositions({selected = newVector(-BUTTONS.TRAVEL_DISTANCE, 0)})
-            button:lockWhile(button.dependableActions.enteringScreen, locks.menu.entering)
-            button:setInteractivityCriteria(locks.menu.entering.checkIfUnlocked)
 
             ---[[ -- Toggle color inversion on selected button
             button.justSelectedAction = function()
@@ -287,13 +275,15 @@ local function makeTimerUI (list, timers, cursor)
             end
 
             -- timer-setting dial
-            dial = Dial({name .. "SettingDial", SETTING_DIAL.WIDTH/SETTING_DIAL.FONT.SCALE, SETTING_DIAL.HEIGHT/SETTING_DIAL.FONT.SCALE}, 1, 60)
+            dial = Dial({name = name .. "SettingDial", w = SETTING_DIAL.WIDTH/SETTING_DIAL.FONT.SCALE,
+                            h = SETTING_DIAL.HEIGHT/SETTING_DIAL.FONT.SCALE, onscreenStates = {STATES.MENU}},
+                            1, 60)
             durationDials[name] = dial
-            dial:setOnScreenCriteria(function() return
+            dial:addOnScreenCondition(function() return
                 button:isOnScreen()
                 and button.isSelected()
             end)
-            dial:setUpdatingCriteria(getCrankDialCircuitClosure)
+            dial:addUpdatingCondition(getCrankDialCircuitClosure)
             dial.getDialChange = crankhandler.subscribe(60//CRANK_DIAL_CIRCUIT.REVOLS_PER_HOUR)
             --dial:setUnit("min")
             dial:setValue(initialDurations[name])
@@ -313,9 +303,10 @@ local function makeTimerUI (list, timers, cursor)
         end
 
         -- timer's clock face
-        face = Dial({name .. "FaceDial", FACE_DIAL.WIDTH // FACE_DIAL.FONT.SCALE, FACE_DIAL.HEIGHT // FACE_DIAL.FONT.SCALE})
+        face = Dial({name = name .. "FaceDial", w = FACE_DIAL.WIDTH // FACE_DIAL.FONT.SCALE,
+                        h = FACE_DIAL.HEIGHT // FACE_DIAL.FONT.SCALE, onscreenStates = {STATES.RUN_TIMER}})
         face.getDialValue = function () return t:getClockTime() end
-        face:setOnScreenCriteria(function () return t:isActive() end)
+        face:addOnScreenCondition(function () return t:isActive() end)
         face:setFont(font_faceDial)
         face:setScale(FACE_DIAL.FONT.SCALE)
         face:setPosition(W_CENTRE - face.width / 2, FACE_DIAL.Y)
@@ -354,28 +345,32 @@ end
 ---                 param   t       Timer
 ---                 param   label   string  to set to selector button. If not provided, timer is not selectable (ex. snooze)
 local function init(timers)
-    -- initialize screen-transition interactivity locks
-    initLocks()
-
+    -- setup state transition locks
+    locks.menu.entering = Lock("enteringMENU")
+    locks.menu.exiting = Lock("exitingMENU")
+    locks.runTimer.entering = Lock("enteringRUN_TIMER")
+    locks.runTimer.exiting = Lock("exitingRUN_TIMER")
+    locks.doneTimer.entering = Lock("enteringDONE_TIMER")
+    locks.doneTimer.exiting = Lock("exitingDONE_TIMER")
+    uielement.setupStateTransitionLocks(locks)
 
     -- create the timer-selecting and timer-face UI
     local ntimers = #timers
     timersMenu = List(
-        {"timersMenu",
-        BUTTONS.L.WIDTH + MARGIN * 2,
-        (BUTTONS.L.HEIGHT + MARGIN) * ntimers + MARGIN},
+        {name = "timersMenu",
+        w = BUTTONS.L.WIDTH + MARGIN * 2,
+        h = (BUTTONS.L.HEIGHT + MARGIN) * ntimers + MARGIN, 
+        onscreenStates = {STATES.MENU}},
         list.orientations.vertical,
         MARGIN
     )
-    timersMenu:setOnScreenCriteria(stateIsMENU)
-    timersMenu:setInteractivityCriteria(stateIsMENU) --TODO lock this until elements have completed transition
     timersMenu:setPosition(W_SCREEN - (BUTTONS.L.WIDTH + MARGIN*2), MARGIN)
     timersMenu:offsetPositions({disabled = newVector(BUTTONS.TRAVEL_DISTANCE, 0)})
 
     local cursor = nil
     --[[ -- toggle timers-menu-navigating cursor
-    cursor = Cursor({"timerSelectCursor", BUTTONS.TRAVEL_DISTANCE - MARGIN, BUTTONS.M.HEIGHT})
-    cursor:setOnScreenCriteria(stateIsMENU)
+    cursor = Cursor({name = "timerSelectCursor", w = BUTTONS.TRAVEL_DISTANCE - MARGIN, h = BUTTONS.M.HEIGHT})
+    cursor:addOnScreenCondition(stateIsMENU)
     cursor:setBackground(function(width, height)
         gfx.setColor(COLOR_1)
         gfx.fillRoundRect(0, 0, width, height, height/2)
@@ -392,22 +387,18 @@ local function init(timers)
 
 
     -- create signage
-    local timerDoneSign = UIElement({"timerDoneSign", 300, 100}) -- simple textbox
+    local timerDoneSign = UIElement({name = "timerDoneSign", w=300, h=100, onscreenStates = {STATES.DONE_TIMER}}) -- simple textbox
     timerDoneSign:setText("NEXT")
     timerDoneSign:setPosition(MARGIN, MARGIN)
-    timerDoneSign:setOnScreenCriteria(stateIsDONE_TIMER)
     timerDoneSign:forceConfigured()
 
     -- create the A/B buttons used to navigate most of the timer/menu flow
 
     --- Initialize a button that sits directly above the A or B buttons
-    ---@param name string button name
+    ---@param button Button
     ---@param input A or B from the global namespace
     ---@param invisible boolean true iff button should be invisible
-    ---@return Button
-    local function makeABButton (name, input, invisible)
-        local button = Button({name .. "Button", BUTTONS.L.HEIGHT, BUTTONS.TRAVEL_DISTANCE - MARGIN})
-        
+    local function configureABButton (button, input, invisible)
         button.isPressed = function () return pd.buttonIsPressed(input) end
         if not invisible then
             button:setBackground(drawButtonShapeAB)
@@ -425,81 +416,57 @@ local function init(timers)
             { pressed = { reverses = true } })
         button:repositionForeground(0.5, 0.4)
         button:forceConfigured()
-        return button
     end
     
-    backButton = makeABButton("back", B)
+    local backButton = Button({name = "backButton", w = BUTTONS.L.HEIGHT, h = BUTTONS.TRAVEL_DISTANCE - MARGIN,
+                                onscreenStates = {STATES.RUN_TIMER, STATES.DONE_TIMER}})
+    configureABButton(backButton, B)
     backButton.pressedAction = function ()
         toMenu()
     end
-    backButton:setOnScreenCriteria(function() return
-        stateIsRUN_TIMER()
-        or stateIsDONE_TIMER()
-    end)
-    --[[
-    backButton:setInteractivityCriteria(function() return
-        stateIsRUN_TIMER()
-        or stateIsDONE_TIMER()
-    end)
-    --]] --TODO uncomment
     --local backIconRender = BackIcon("backButtonIcon", 14, 14, COLOR_0)
     --backButton:setForeground(backIconRender.imagetable)
     backButton:setForeground(gfx.image.new(ICON.backPath))
 
-    skipButton = makeABButton("skip", A)
+    local skipButton = Button({name = "skipButton", w = BUTTONS.L.HEIGHT, h = BUTTONS.TRAVEL_DISTANCE - MARGIN,
+                                onscreenStates = {STATES.RUN_TIMER}})
+    configureABButton(skipButton, A)
     skipButton.pressedAction = function ()
         toDone() --TODO should be a distinct function in main
     end
-    skipButton:setOnScreenCriteria(stateIsRUN_TIMER)
-    --TODO BUG will collide with the setInteractivityCriteria call in Button:init
-    --skipButton:setInteractivityCriteria(stateIsRUN_TIMER) --TODO uncomment
     skipButton:setForeground(gfx.image.new(ICON.skipPath))
 
-    snoozeButton = makeABButton("snooze", B)
+    local snoozeButton = Button({name = "snoozeButton", w = BUTTONS.L.HEIGHT, h = BUTTONS.TRAVEL_DISTANCE - MARGIN,
+                                    onscreenStates = {STATES.DONE_TIMER}})
+    configureABButton(snoozeButton, B)
     snoozeButton.pressedAction = snooze
-    snoozeButton:setOnScreenCriteria(function() return
-        stateIsDONE_TIMER()
-        and confs.snoozeOn
-    end)
-    --snoozeButton:setInteractivityCriteria(stateIsDONE_TIMER) --TODO uncomment
+    snoozeButton:addOnScreenCondition(function() return confs.snoozeOn end)
     snoozeButton:setForeground(gfx.image.new(ICON.snoozePath))
 
     -- The next button is an invisible button parenting a dial that makes up the appearance of the button.
     -- This dial-button grows in size as the user snoozes, encouraging the user to press it instead of continuing to snooze.
-    nextButton = makeABButton("next", A) --TODO "invisible"
+    local nextButton = Button({name = "backButton", w = BUTTONS.L.HEIGHT, h = BUTTONS.TRAVEL_DISTANCE - MARGIN,
+                                onscreenStates = {STATES.DONE_TIMER}})
+    configureABButton(nextButton, A) --TODO "invisible"
     nextButton.pressedAction = function ()
         toMenu()
     end
-    nextButton:setOnScreenCriteria(stateIsDONE_TIMER)
-    --nextButton:setInteractivityCriteria(stateIsDONE_TIMER) --TODO uncomment
     nextButton:setForeground(gfx.image.new(ICON.nextPath)) --TODO rm
     local nextButtonVisualizer = Dial({"nextButtonVisualizer", BUTTONS.L.HEIGHT,BUTTONS.TRAVEL_DISTANCE - MARGIN})
     nextButton:addChildren(nextButtonVisualizer, "alwaysOnScreenWithParent")
     nextButtonVisualizer.getDialValue = getSnoozeCount
 
 
-    --- Initialize a score display.
+    --- Configure a score display.
+    ---@param display Dial to use as the display
     ---@param scoringFunc function that returns the score when called
-    ---@return Dial new display dial
-    local function makeScoreDisplay(unit, scoringFunc, width, height)
-        local display = Dial({unit .. "Score", width, height})
+    local function configureScoreDisplay(display, scoringFunc)
         display:setUnit(unit)
 
         local prevScore = 0
         display.getDialValue = scoringFunc
         return display
     end
-
-    --[[
-    --TODO redesign, then remake these score displays
-    scoreboard = List({"scoreboard", 100, 80})
-    scoreboard:setOnScreenCriteria(stateIsDONE_TIMER)
-    makeScoreDisplays(scoreboard, {
-        snooze = getSnoozeCount
-    })
-    scoreboard:moveTo(300, 60)
-    scoreboard:setZIndex(80)
-    --]]
 
     local spacing = 4
     local pomCounter = gfx.image.new(POM_COUNTER.DIAMETER, POM_COUNTER.DIAMETER, COLOR_CLEAR)
@@ -508,34 +475,30 @@ local function init(timers)
         gfx.fillCircleAtPoint(POM_COUNTER.DIAMETER//2, POM_COUNTER.DIAMETER//2, POM_COUNTER.DIAMETER//2)
     gfx.popContext()
 
-    local pomCountDisplay_menu = makeScoreDisplay("pomMenu", getPomCount,
-        confs.pomsPerCycle * (POM_COUNTER.DIAMETER + spacing), POM_COUNTER.DIAMETER)
-    pomCountDisplay_menu:setOnScreenCriteria(function () return
-        stateIsMENU()
-        and getPomCount() ~= 0
-    end)
+    local pomCountDisplay_menu = Dial({name = "pomCountDisplay_menu", w = confs.pomsPerCycle * (POM_COUNTER.DIAMETER + spacing),
+                                        h = POM_COUNTER.DIAMETER, onscreenStates = {STATES.MENU}})
+    configureScoreDisplay(pomCountDisplay_menu, getPomCount)
+    pomCountDisplay_menu:addOnScreenCondition(function () return getPomCount() ~= 0 end)
     pomCountDisplay_menu:setMode(dial.visualizers.horiCounter) -- visualize poms as counters
     pomCountDisplay_menu:setCounter(pomCounter, spacing)
     pomCountDisplay_menu:setPosition(MARGIN + SETTING_DIAL.WIDTH - pomCountDisplay_menu.width, MARGIN*2 + SETTING_DIAL.HEIGHT)
     pomCountDisplay_menu:setZIndex(400)
 
-    local pomReel = UIElement({"pomReel", POM_COUNTER.REEL.DIAMETER + 2, POM_COUNTER.REEL.DIAMETER + 2})
+    local pomReel = UIElement({name = "pomReel", w = POM_COUNTER.REEL.DIAMETER + 2,
+                                h = POM_COUNTER.REEL.DIAMETER + 2, onscreenStates = {STATES.RUN_TIMER}})
     local pomReelRender = Reel("pomReel", reel.motions.cw, POM_COUNTER.REEL.DIAMETER, POM_COUNTER.REEL.LINE_WIDTH)
     pomReel:setForeground(pomReelRender.imagetable)
     pomReel:setPosition(MARGIN * 2, H_SCREEN - pomReel.height - MARGIN)
-    pomReel:setOnScreenCriteria(stateIsRUN_TIMER)
     pomReel:setZIndex(120)
     pomReel.fg_anim:play(1, 0)
     pomReel:forceConfigured()
     local x_pomReel, y_pomReel = pomReel:getConfiguredPosition():unpack()
 
     -- TODO refactor (or at least rename) duplicate pomCountDisplay
-    local pomCountDisplay_run = makeScoreDisplay("pomRun", getPomCount,
-        confs.pomsPerCycle * (POM_COUNTER.DIAMETER + spacing), POM_COUNTER.DIAMETER)
-    pomCountDisplay_run:setOnScreenCriteria(function () return
-        stateIsRUN_TIMER()
-        and getPomCount() ~= 0
-    end)
+    local pomCountDisplay_run = Dial({name = "pomCountDisplay_run", w = confs.pomsPerCycle * (POM_COUNTER.DIAMETER + spacing),
+                                        h = POM_COUNTER.DIAMETER, onscreenStates = {STATES.RUN_TIMER}})
+    configureScoreDisplay(pomCountDisplay_run, getPomCount)
+    pomCountDisplay_run:addOnScreenCondition(function () return getPomCount() ~= 0 end)
     pomCountDisplay_run:setMode(dial.visualizers.horiCounter) -- visualize poms as counters
     pomCountDisplay_run:setCounter(pomCounter, spacing)
     pomCountDisplay_run:setPosition(x_pomReel + pomReel.width + spacing, y_pomReel + (pomReel.height/2 - pomCountDisplay_run.height/2))

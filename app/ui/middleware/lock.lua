@@ -9,7 +9,7 @@ local d <const> = debugger
 --- Lock provides a checkIfUnlocked function that returns true if there are no locking dependencies,
 ---     false otherwise.
 --- Thus, Lock.checkIfUnlocked can be used as the conditions function argument for
----     UIElement.setInteractivityCriteria, etc.
+---     UIElement.addInteractivityCondition, etc.
 class('Lock').extends()
 local Lock <const> = Lock
 local _ENV = lock      -- enter pkg namespace
@@ -21,7 +21,7 @@ name = "lock"
 ---        local dependency = UIElement()
 ---        local lock = Lock()
 ---        dependency:lockWhile(uielement.dependableActions.enteringScreen, lock)
----        dependent:setInteractivityCriteria(lock.checkIfUnlocked)
+---        dependent:addInteractivityCondition(lock.checkIfUnlocked)
 ---@param name string instance name for debugging
 function Lock:init(name)
     Lock.super.init(self) --should always be at top of init func

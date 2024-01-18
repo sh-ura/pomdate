@@ -2,6 +2,7 @@
 --      and it enables user configuration of some app functionality.
 
 --TODO standardize use of conf vs setting vocab
+--TODO a whole bunch of stuff needs upgrading in this file, including:
 
 import 'ui/list'
 import 'ui/textbox'
@@ -90,13 +91,13 @@ local function init(savestate)
     backMenuItem = sysmenu:addMenuItem("Back to app", back)
     sysmenu:removeMenuItem(backMenuItem)
 
-    local backButton = Button({"backFromConfButton"}, 'invisible')
-    backButton:setOnScreenCriteria(stateIsCONF)
+    local backButton = Button({name = "backFromConfButton", onscreenStates = {STATES.CONF}}, 'invisible')
+    backButton:addOnScreenCondition(stateIsCONF)
     backButton.isPressed = function() return pd.buttonJustPressed(B) end
     backButton.pressedAction = back
     backButton:forceConfigured()
-    local inst = Textbox({"backFromConfInst", 300, 20}, "_B returns to app_")
-    inst:setOnScreenCriteria(function () return backButton:isOnScreen() end)
+    local inst = Textbox({name = "backFromConfInst", w=300, h=20, onscreenStates = {STATES.CONF}}, "_B returns to app_")
+    inst:addOnScreenCondition(function () return backButton:isOnScreen() end)
     inst:moveTo(MARGIN, H_SCREEN - MARGIN - inst.height) -- bottom of screen
 
     local c_confs = 0
@@ -107,32 +108,32 @@ local function init(savestate)
     local w_setter, h_setter
 
     local confList = List(
-        {"confList", W_SCREEN - MARGIN*2, inst.y - 10 - MARGIN},
+        {name = "confList", w = W_SCREEN - MARGIN*2, h = inst.y - 10 - MARGIN, onscreenStates = {STATES.CONF}},
         vert, 2
     )
     confList:moveTo(MARGIN, MARGIN)
     w_setting, h_setting = confList:getMaxContentDim(c_confs)
-    confList:setOnScreenCriteria(stateIsCONF)
 
     --- Creates a list item, label, and setter for a configurable setting
     ---@param name string setting name to be used in debugging
     ---@param description string label to be shown to the user
     ---@return List setter, to contain the interactable UIElements for this setting
     local function initConfItem(name, description)
-        local item = List({name, w_setting, h_setting}, hori, 1)
+        local item = List({name = name, w = w_setting, h = h_setting}, hori, 1)
+        confList:addChildren(item, 'alwaysOnScreenWithParent')
+
         w_setter, h_setter = item:getMaxContentDim(2)
         h_label = h_setter
         w_label = w_setter + w_labelBonus -- give label a bit more room
         w_setter = w_setter - w_labelBonus
-        local label = Button({name.."Desc", w_label, h_label})
-        local setter = List({name.."Setter", w_setter, h_setter}, hori, 0)
+        local label = Button({name = name.."Desc", w = w_label, h = h_label})
+        local setter = List({name = name.."Setter", w = w_setter, h = h_setter}, hori, 0)
         item:addChildren({label, setter}, 'alwaysOnScreenWithParent')
-        confList:addChildren(item, 'alwaysOnScreenWithParent')
 
         label:setText(description)
         label.isSelected = item.isSelected
         label:forceConfigured() -- label only needs to hilight like a button
-        setter:setInteractivityCriteria(item.isSelected)
+        setter:addInteractivityCondition(item.isSelected)
 
         return setter
     end
@@ -144,11 +145,11 @@ local function init(savestate)
     local function fillONFSetterGetter(setter, init)
         local w, h = setter:getMaxContentDim(2)
         local switch = init
-        local OnBtn = Button({setter.name.."OnBtn", w, h})
+        local OnBtn = Button({name = setter.name.."OnBtn", w = w, h = h})
         OnBtn:setText("On")
         OnBtn.isPressed = OnBtn.isSelected
         OnBtn.pressedAction = function() switch = true end
-        local OffBtn = Button({setter.name.."OffBtn", w, h})
+        local OffBtn = Button({name = setter.name.."OffBtn", w = w, h = h})
         OffBtn:setText("Off")
         OffBtn.isPressed = OffBtn.isSelected
         OffBtn.pressedAction = function() switch = false end
@@ -167,11 +168,11 @@ local function init(savestate)
     ---@return function that yields the current value
     local function fillDialSetterGetter(setter, unit, min, max, init)
         local w, h = setter:getMaxContentDim()
-        local dial = Dial({setter.name.."Dial", w, h}, min, max)
+        local dial = Dial({name = setter.name.."Dial", w = w, h = h}, min, max)
         dial.getDialChange = crankhandler.subscribe(max)
         dial:setUnit(unit)
         setter:addChildren(dial, 'alwaysOnScreenWithParent')
-        dial:setUpdatingCriteria(setter.isSelected)
+        dial:addUpdatingCondition(setter.isSelected)
         
         dial:setValue(init)
         return function() return dial.value end

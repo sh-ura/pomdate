@@ -15,6 +15,7 @@ local newVector <const> = utils.newVector
 local newPoint <const> = utils.newPoint
 local Switch <const> = Switch
 local Animation <const> = Animation
+local conditionalStatus <const> = switch.conditionalStatus
 local type <const> = type
 local pairs <const> = pairs
 local ipairs <const> = ipairs
@@ -62,7 +63,6 @@ end
 ---Remember to call _unlockDependents (below) when action is done.
 ---@param action string a member of uielement.dependableActions
 function UIElement:_lockDependents(action)
-    d.log("attempting to lock dependents for "..self.name)
     if not self._locks then return end -- class.isa() not working
     if not (action and isaDependableAction(self, action)) then return end
     local locks = self._locks[action]
@@ -91,39 +91,116 @@ function UIElement:_unlockDependents(action)
     end
 end
 
+--- Sample configs table, containing the core configuration data needed for initializing a UIElement
+local defaultConfigs = {
+    name = "string",        -- string name for debugging
+    onscreenStates = {},    -- table containing integer members of gconsts.STATES
+    isInteractable = false, -- boolean true IFF uielement should be interactable; optional, defaults to false.
+    w = W_SCREEN,           -- integer; optional, defaults to W_SCREEN
+    h = H_SCREEN            -- integer; optional, defaults to H_SCREEN
+}
+--- Get a sample configs table, containing the core configuration data needed for initializing a UIElement.
+---@return table configs example. Passed by reference; please do not edit it directly.
+function getDefaultConfigs()
+    return defaultConfigs
+end
+
+--- Lock UIElement interactivity while other UIElements are transitioning on/offscreen
+local locks = nil
+--- Add a state-transition-specific Lock to the set of state transition locks shared by all UIElements.
+---@param table table in the following format, with as many integer_states as desired:
+---                 table = { integer_state = {entering = Lock, exiting = Lock}}
+function setupStateTransitionLocks(table)
+    if not (table and type(table) == 'table' and #table > 0) then
+        d.log("missing arg for setupStateTransitionLocks. Printing arg and returning.", table)
+        return
+    elseif locks then
+        d.log("uielement.locks has already been setup. Forbidden to successfully call setupStateTransitionLocks more than once. Returning.")
+        return
+    end
+    for i, v in ipairs(table) do
+        if type(v) ~= "table" then
+            d.log("uielement.setupStateTransitionLocks: states must be subtables. Printing arg and returing.", table)
+            return
+        elseif not (v["entering"] and v["exiting"]) then
+            d.log("uielement.setupStateTransitionLocks: state subtables must contain 'entering' and 'exiting' keys. Printing arg and returing.", table)
+            return
+        elseif not (v["entering"].checkIfUnlocked and v["exiting"].checkIfUnlocked) then
+            d.log("uielement.setupStateTransitionLocks: 'entering' and 'exiting' keys must have Lock values. Printing arg and returing.", table)
+            return
+        end
+    end
+    locks = table
+end
+
+--- Set up transitions on and off screen.
+---@param self the UIElement to set up transitions for.
+---@param isIntendedInteractable boolean true iff this UIElement will be interactable at some point while onscreen.
+local function setupStateTransitions(self, isIntendedInteractable)
+    local onscreenStates = self._onscreenStates
+    if not onscreenStates then
+        d.log(self.name .. " has no onscreen states; cannot setupStateTransitions. Returning.")
+        return
+    end
+    if not locks then
+        d.log("must add state locks via uielement.setupStateTransitionLocks prior to setting up state transitions for a UIElement instance. Returning.")
+        return
+    end
+
+    for _, state in ipairs(onscreenStates) do
+        local stateLock = locks[state]
+        if stateLock then
+            self:addOnScreenCondition(function () stateIs(state) end)
+            self:lockWhile(self.dependableActions.enteringScreen, stateLock.entering)
+            self:lockWhile(self.dependableActions.exitingScreen, stateLock.exiting)
+            if isIntendedInteractable then
+                for _, prevState in getPrevStates(state) do
+                    local prevStateLock = locks[prevState]
+                    if prevStateLock then
+                        self:addInteractivityCondition(prevStateLock.exiting.checkIfUnlocked)
+                    else
+                        d.log("partially failed attempt to setupStateTransitions for " .. self.name
+                        .. " on the following prevState, due to missing locks. See uielement.setupStateTransitionLocks", prevState)
+                    end
+                end
+                self:addInteractivityCondition(stateLock.entering.checkIfUnlocked)
+                self:addInteractivityCondition(stateLock.exiting.checkIfUnlocked)
+            end
+        else
+            d.log("failed attempt to setupStateTransitions for " .. self.name
+                .. " on the following state, due to missing locks. See uielement.setupStateTransitionLocks", state)
+        end
+    end
+end
+
 --- Initializes a new UIElement sprite.
----@param coreProps table containing the following core properties, named or array-indexed:
----         'name' or 1: (string) button name for debugging
----         'w' or 2: (integer; optional) initial width, defaults to screen width
----         'h' or 3: (integer; optional) initial height, defaults to screen height
-function UIElement:init(coreProps)
+---@param configs table adhering to the format of uielement.getDefaultConfigs()
+function UIElement:init(configs)
     UIElement.super.init(self)
     self:setCenter(0, 0) --anchor top-left
     self.isaUIElement = true
 
-    -- unpack coreProps
-    local name, w, h
-    if coreProps then
-        if coreProps.name then
-            name = coreProps.name
-        elseif coreProps[1] then
-            name = coreProps[1]
-        end
+    -- boolean props controlling the UIElement's visibility and interactivity
+    -- May be modified by the ui.switch package.
+    self._isOnScreen = false
+    self._isUpdating = true
+    self._isInteractable = nil
 
-        if coreProps.w then
-            w = coreProps.w
-        elseif coreProps[2] then
-            w = coreProps[2]
-        end
-
-        if coreProps.h then
-            h = coreProps.h
-        elseif coreProps[3] then
-            h = coreProps[3]
-        end
+    -- unpack configs
+    local name, onscreenStates, isIntendedInteractable, w, h
+    if configs then
+        name = configs.name
+        onscreenStates = configs.onscreenStates
+        isIntendedInteractable = configs.isInteractable
+        w = configs.w
+        h = configs.h
     end
     if not name or name == "" or type(name) ~= 'string' then
         name = "unnamed-UIElement"
+    end
+    if not isIntendedInteractable or type(isIntendedInteractable) ~= 'boolean' then
+        d.log("defaulting to nonInteractable " .. name .. " uielement")
+        isIntendedInteractable = false
     end
     if not w or w == 0 or type(w) ~= 'number' then
         w = W_SCREEN
@@ -134,12 +211,7 @@ function UIElement:init(coreProps)
     w = w // 1 -- ensure int
     h = h // 1
     self.name = name
-
-    -- boolean props controlling the UIElement's visibility and interactivity
-    -- May be modified by the ui.switch package.
-    self._isOnScreen = false
-    self._isUpdating = true
-    self._isInteractable = false
+    if isIntendedInteractable then self._isInteractable = false end -- interactivity off by default, but not nil.
 
     --- prop to contain dependent locks, which are to be locked while doing some task
     self._locks = {}
@@ -149,6 +221,14 @@ function UIElement:init(coreProps)
         enteringScreen = "entering",
         exitingScreen = "exiting"
     }
+
+    self._onScreenStates = onscreenStates
+    if not onscreenStates or type(onscreenStates) ~= 'table' or #onscreenStates < 1 then
+        self._onScreenStates = {}
+        d.log(name .. " uielement initializing with no onscreenStates")
+    else
+        setupStateTransitions(self, isIntendedInteractable)
+    end
 
     -- position props
     self.position = {
@@ -195,7 +275,7 @@ function UIElement:init(coreProps)
     self._i_selectChild = 1 -- index of currently selected child
 
     --- Enables/disables this UIElement.
-    --- If setOnScreenCriteria() is not called on this element, it will remain disabled by default.
+    --- If addOnScreenCondition() is not called on this element, it will remain disabled by default.
     self._switch = Switch(self)
     self._switch.shouldClose = function()
         if not self._isConfigured then d.log("uielement '" .. self.name .. "' disabled! Set enabling conditions.") end
@@ -523,28 +603,31 @@ function UIElement:addChildren(e, alwaysOnScreenWithParent)
     end
 
     local newChildren = {}
-    local function addChild(element)
-        if not (element.isa and element:isa(UIElement)) then
-            local name = element.name
+    local function addChild(child)
+        if not (child.isa and child:isa(UIElement)) then
+            local name = child.name
             if not name then name = 'no_name' end
-            d.log("element " .. name .. " is not a UIElement; can't be child to " .. self.name)
+            d.log(name .. " is not a UIElement; can't be child to " .. self.name)
             return
         end
 
-        element._parent = self
-        insert(self._children, element)
-        insert(newChildren, element)
+        child._parent = self
+        insert(self._children, child)
+        insert(newChildren, child)
         if alwaysOnScreenWithParent then
-            element:setOnScreenCriteria(function() return self:isOnScreen() end)
+            child._onscreenStates = self._onScreenStates
+            local childIsIntendedInteractable = false
+            if child._isInteractable ~= nil then childIsIntendedInteractable = true end
+            setupStateTransitions(child, childIsIntendedInteractable)
         end
-        element:setPosition(element.position.default + newVector(self.position.default:unpack()))
-        element:setZIndex(element:getZIndex() + self:getZIndex())
+        child:setPosition(child.position.default + newVector(self.position.default:unpack()))
+        child:setZIndex(child:getZIndex() + self:getZIndex())
     end
 
     if e.isa then
         addChild(e)           -- a single playdate Object
     else
-        for _, element in pairs(e) do --TODO shouldn't this be ipairs
+        for _, element in pairs(e) do --TODO BUG shouldn't this be ipairs
             addChild(element)
         end
     end
@@ -622,19 +705,26 @@ function UIElement:forceConfigured()
     self._isConfigured = true
 end
 
---- Set the conditions under which this UIElement should render onto the screen. 
----@param conditions function that returns a boolean if the conditions for rendering have been met
-function UIElement:setOnScreenCriteria(conditions)
-    if type(conditions) ~= 'function' then
-        d.log(self.name .. "-OnScreen conditions must be func", conditions)
+local function getSwitch(self)
+    local switch = self._switch
+    if not switch then
+        switch = Switch(self)
+        switch:add()
+        self._switch = switch
+    end
+    return switch
+end
+
+--- Add a condition under which this UIElement should render onto the screen. 
+---@param condition function that returns a boolean if the condition for rendering has been met
+function UIElement:addOnScreenCondition(condition)
+    if type(condition) ~= 'function' then
+        d.log(self.name .. "-OnScreen condition must be func", condition)
         return
     end
 
-    if not self._switch then
-        self._switch = Switch(self)
-        self._switch:add()
-    end
-    self._switch.shouldBeOnScreen = conditions
+    local switch = getSwitch(self)
+    switch:addCondition(conditionalStatus.onscreen, condition)
 end
 
 --- Check if the UIElement is being rendered onto the screen.
@@ -644,34 +734,27 @@ function UIElement:isOnScreen()
 end
 
 --- Set the conditions under which this UIElement should run custom (ex dial-specific) update code. 
----@param conditions function that returns a boolean if the conditions for custom updates have been met
-function UIElement:setUpdatingCriteria(conditions)
-    if type(conditions) ~= 'function' then
-        d.log(self.name .. "-Updating conditions must be func", conditions)
+---@param condition function that returns a boolean if the condition for custom updates has been met
+function UIElement:addUpdatingCondition(condition)
+    if type(condition) ~= 'function' then
+        d.log(self.name .. "-Updating conditions must be func", condition)
         return
     end
 
-    if not self._switch then
-        self._switch = Switch(self)
-        self._switch:add()
-    end
-    self._switch.shouldUpdate = conditions
+    local switch = getSwitch(self)
+    switch:addCondition(conditionalStatus.updating, condition)
 end
 
 --- Set the conditions under which this UIElement should be interactable. 
----@param conditions function that returns a boolean if the conditions for interactivity have been met
-function UIElement:setInteractivityCriteria(conditions)
-    if type(conditions) ~= 'function' then
-        d.log(self.name .. "-Interactivity conditions must be func", conditions)
+---@param condition function that returns a boolean if the condition for interactivity has been met
+function UIElement:addInteractivityCondition(condition)
+    if type(condition) ~= 'function' then
+        d.log(self.name .. "-Interactivity conditions must be func", condition)
         return
     end
 
-    if not self._switch then
-        self._switch = Switch(self)
-        self._switch:add()
-    end
-    d.log("Interactivity Conditions being set for "..self.name)
-    self._switch.shouldBeInteractable = conditions
+    local switch = getSwitch(self)
+    switch:addCondition(conditionalStatus.interactable, condition)
 end
 
 --- When this element begins performing an action, lock given lock.

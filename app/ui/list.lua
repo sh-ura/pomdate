@@ -34,15 +34,12 @@ orientations = {
 
 --      bug in current app is caused by the text not fitting in the list
 --- Initializes a list UIElement.
----@param coreProps table containing the following core properties, named or array-indexed:
----         'name' or 1: (string) button name for debugging
----         'w' or 2: (integer; optional) initial width, defaults to screen width
----         'h' or 3: (integer; optional) initial height, defaults to screen height
+---@param configs table adhering to the format of uielement.getDefaultConfigs()
 ---@param orientiation enum (optional) member of list.orientations. Defaults to vert.
 ---@param spacing integer (optional) number of pixels between UIElements (this list & its children)
-function List:init(coreProps, orientiation, spacing)
+function List:init(configs, orientiation, spacing)
     if not spacing or type(spacing) ~= 'number' then spacing = 0 end
-    List.super.init(self, coreProps)
+    List.super.init(self, configs)
 
     self._spacing = spacing
     self._orientation = orientiation

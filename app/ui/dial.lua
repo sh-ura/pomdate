@@ -28,16 +28,13 @@ visualizers = {
 }
 
 --- Initializes a new Dial instance.
----@param coreProps table containing the following core properties, named or array-indexed:
----         'name' or 1: (string) button name for debugging
----         'w' or 2: (integer; optional) initial width, defaults to screen width
----         'h' or 3: (integer; optional) initial height, defaults to screen height
+---@param configs table adhering to the format of uielement.getDefaultConfigs()
 ---@param lowerLimit integer (optional) cease dialing back past this value
 ---@param upperLimit integer (optional) cease dialing forward past this value
 ---@param step integer (optional) step to inc/decrement the value on the dial by. Defaults to 1
-function Dial:init(coreProps, lowerLimit, upperLimit, step)
+function Dial:init(configs, lowerLimit, upperLimit, step)
     if not step then step = 1 end
-    Dial.super.init(self, coreProps) --should always be at top of init func
+    Dial.super.init(self, configs) --should always be at top of init func
 
     self._step = step    -- step to inc/decrement value by
     self._lowLimit = nil
